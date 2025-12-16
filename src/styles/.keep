@@ -1,0 +1,2 @@
+/* Main design tokens are in globals.css for simplicity in this project. 
+   Future usage can split into modules. */
