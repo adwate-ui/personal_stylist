@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { identifyWardrobeItem } from "@/lib/gemini";
 
+export const runtime = 'edge';
+
 // Helper to handle formData in App Router
 export async function POST(req: NextRequest) {
     try {
