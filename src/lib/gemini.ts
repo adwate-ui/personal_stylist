@@ -3,7 +3,50 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GEMINI_API_KEY!;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' }); // Using 1.5 Pro as proxy for "Gemini 3" request if available, or update model name later. 
+export const model = genAI.getGenerativeModel({ model: 'gemini-exp-1206' });
+
+export async function analyzeProductLink(url: string) {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
+
+        // Fetch the page content
+        const response = await fetch(url);
+        const html = await response.text();
+
+        // We pass a truncated version of HTML to avoid token limits if necessary, 
+        // but 1206 has a huge context window, so we can be generous.
+        // Basic cleanup to remove scripts might help reduce noise.
+        const cleanHtml = html.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "")
+            .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
+
+        const prompt = `Analyze this product page HTML. Extract the clothing item details.
+      Return a JSON object with:
+      - category (e.g. 'Top', 'Bottom', 'Shoes')
+      - sub_category (e.g. 'T-shirt', 'Jeans')
+      - color (primary color)
+      - price (string with currency)
+      - brand (if available)
+      - description (short description)
+      - image_url (find the main product image URL)
+      
+      HTML Content:
+      ${cleanHtml.substring(0, 50000)} 
+      
+      Return ONLY raw JSON, no markdown.`;
+
+        const result = await model.generateContent(prompt);
+        const resultResponse = await result.response;
+        const text = resultResponse.text();
+
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanText);
+    } catch (error) {
+        console.error("Gemini Link Analysis Failed:", error);
+        return {
+            error: "Could not analyze link."
+        };
+    }
+}
 
 // Helper to convert File to GoogleGenerativeAI Part
 async function fileToGenerativePart(file: File): Promise<{ inlineData: { data: string; mimeType: string } }> {
@@ -25,7 +68,7 @@ async function fileToGenerativePart(file: File): Promise<{ inlineData: { data: s
 
 export async function identifyWardrobeItem(file: File) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
 
         const imagePart = await fileToGenerativePart(file);
         const prompt = `Analyze this clothing item. Return a JSON object with:
@@ -61,7 +104,7 @@ export async function identifyWardrobeItem(file: File) {
 
 export async function ratePurchase(file: File) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
 
         // Mock user profile context - in real app, fetch from Supabase
         const userContext = "User prefers minimalist style, loves neutral colors, body type is athletic.";

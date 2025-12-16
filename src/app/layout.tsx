@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   description: "AI-Powered Personal Stylist",
 };
 
+import Navigation from "@/components/Navigation";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +32,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} font-sans`}>
-        {children}
+        <Navigation />
+        <main className="md:pl-64 min-h-screen transition-all duration-300">
+          {children}
+        </main>
       </body>
     </html>
   );

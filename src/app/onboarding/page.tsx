@@ -2,136 +2,346 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ChevronRight, Check } from "lucide-react";
+import { Upload, ChevronRight, Check, ArrowLeft, Ruler, Palette, Briefcase, Sparkles, User, Shirt } from "lucide-react";
 
 export default function Onboarding() {
     const router = useRouter();
     const [step, setStep] = useState(1);
+    const [analyzing, setAnalyzing] = useState(false);
+
     const [formData, setFormData] = useState({
+        // Basics
         name: "",
         gender: "",
+        location: "", // Climate context
+
+        // Body
         height: "",
         weight: "",
-        styleGoals: [] as string[],
+        bodyShape: "", // e.g. Rectangle, Triangle, Hourglass
+        fitPreference: "regular", // tight, regular, loose
+
+        // Color
+        skinTone: "",
+        eyeColor: "",
+        hairColor: "",
+
+        // Lifestyle (0-100 slider values or categories)
+        lifestyle: {
+            work: false,
+            casual: false,
+            event: false,
+            active: false
+        },
+
+        // Style
+        archetypes: [] as string[],
         avatar: null as File | null,
     });
 
-    const handleNext = () => setStep(step + 1);
-    const handleBack = () => setStep(step - 1);
+    const totalSteps = 6;
 
-    const styles = ["Minimalist", "Streetwear", "Classic", "Bohemian", "Business", "Avant-Garde"];
-
-    const toggleStyle = (style: string) => {
-        setFormData(prev => ({
-            ...prev,
-            styleGoals: prev.styleGoals.includes(style)
-                ? prev.styleGoals.filter(s => s !== style)
-                : [...prev.styleGoals, style]
-        }));
+    const handleNext = () => {
+        if (step < totalSteps) {
+            setStep(step + 1);
+        } else {
+            finishOnboarding();
+        }
     };
 
-    const handleFinish = async () => {
-        // TODO: Submit to Supabase
-        console.log("Submitting:", formData);
+    const handleBack = () => setStep(step - 1);
+
+    const finishOnboarding = async () => {
+        setAnalyzing(true);
+        // Simulate Gemini generating "Style DNA"
+        await new Promise(resolve => setTimeout(resolve, 3000));
         router.push("/wardrobe");
     };
 
+    const toggleArchetype = (style: string) => {
+        setFormData(prev => ({
+            ...prev,
+            archetypes: prev.archetypes.includes(style)
+                ? prev.archetypes.filter(s => s !== style)
+                : [...prev.archetypes, style]
+        }));
+    };
+
+    const archetypes = [
+        { name: "Minimalist", desc: "Clean lines, neutral colors, functional." },
+        { name: "Streetwear", desc: "Urban, comfortable, bold graphics." },
+        { name: "Classic", desc: "Timeless pieces, tailored fits, structured." },
+        { name: "Bohemian", desc: "Free-spirited, flowy fabrics, earthy tones." },
+        { name: "Avant-Garde", desc: "Experimental, unconventional silhouettes." },
+        { name: "Preppy", desc: "Polished, collegiate, traditional patterns." },
+        { name: "Glamorous", desc: "Luxe fabrics, sparkles, statement pieces." },
+        { name: "Rugged", desc: "Durable materials, outdoorsy, practical." },
+    ];
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
-            <div className="w-full max-w-lg">
-                {/* Progress */}
-                <div className="flex justify-between mb-8 opacity-50 text-sm">
-                    <span>Step {step} of 3</span>
-                    <span>{Math.round((step / 3) * 100)}%</span>
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden bg-background">
+            {/* Background Texture */}
+            <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none"
+                style={{ background: 'radial-gradient(circle at 15% 50%, rgba(212,175,55,0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(255,255,255,0.05), transparent 25%)' }}
+            />
+
+            <div className="w-full max-w-2xl z-10">
+                {/* Progress Bar */}
+                <div className="mb-8">
+                    <div className="flex justify-between text-sm text-gray-500 mb-2">
+                        <span>Profile Completion</span>
+                        <span>{Math.round((step / totalSteps) * 100)}%</span>
+                    </div>
+                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-primary transition-all duration-500 ease-out"
+                            style={{ width: `${(step / totalSteps) * 100}%` }}
+                        />
+                    </div>
                 </div>
 
-                <div className="card p-8 glass animate-fade-in shadow-2xl">
-                    {step === 1 && (
-                        <div className="space-y-6">
-                            <h2 className="text-3xl font-bold">Tell us about you</h2>
-                            <p className="text-gray-400">We need a few details to perfectly tailor your recommendations.</p>
+                <div className="card glass p-8 md:p-10 min-h-[500px] flex flex-col justify-between animate-fade-in relative">
 
-                            <div>
-                                <label>Full Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="Jane Doe"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                />
-                            </div>
+                    {/* Analyzing Overlay */}
+                    {analyzing && (
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center p-8 rounded-[var(--radius-lg)]">
+                            <Sparkles size={48} className="text-primary animate-pulse mb-6" />
+                            <h2 className="text-3xl font-serif font-bold mb-2">Generating Style DNA</h2>
+                            <p className="text-gray-400 max-w-md">Gemini is analyzing your inputs to create a hyper-personalized style profile...</p>
+                        </div>
+                    )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label>Height (cm)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="175"
-                                        value={formData.height}
-                                        onChange={e => setFormData({ ...formData, height: e.target.value })}
-                                    />
+                    {/* Step Content */}
+                    <div className="flex-1">
+                        {step === 1 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <User size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">The Basics</span>
                                 </div>
-                                <div>
-                                    <label>Weight (kg)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="70"
-                                        value={formData.weight}
-                                        onChange={e => setFormData({ ...formData, weight: e.target.value })}
-                                    />
+                                <h1 className="text-4xl font-serif font-bold">Introduction</h1>
+                                <p className="text-gray-400">Let's start with the essentials to address you properly and understand your environment.</p>
+
+                                <div className="space-y-4 pt-4">
+                                    <div>
+                                        <label>Full Name</label>
+                                        <input type="text" placeholder="Your Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label>Gender Identity</label>
+                                            <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
+                                                <option value="">Select...</option>
+                                                <option value="female">Female</option>
+                                                <option value="male">Male</option>
+                                                <option value="non-binary">Non-binary</option>
+                                                <option value="other">Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label>Location (City)</label>
+                                            <input type="text" placeholder="New York, NY" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        )}
 
-                            <button className="btn btn-primary w-full" onClick={handleNext}>
-                                Continue <ChevronRight size={20} className="ml-2" />
+                        {step === 2 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <Ruler size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">Measurements</span>
+                                </div>
+                                <h1 className="text-4xl font-serif font-bold">Body & Fit</h1>
+                                <p className="text-gray-400">Help us find clothes that flatter your unique geometry.</p>
+
+                                <div className="grid grid-cols-2 gap-6 pt-4">
+                                    <div>
+                                        <label>Height (cm)</label>
+                                        <input type="number" placeholder="175" value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label>Weight (kg)</label>
+                                        <input type="number" placeholder="70" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label>Body Shape Category</label>
+                                    <div className="grid grid-cols-3 gap-3 mt-2">
+                                        {['Inverted Triangle', 'Rectangle', 'Triangle', 'Hourglass', 'Oval'].map(shape => (
+                                            <button
+                                                key={shape}
+                                                className={`p-3 rounded-lg border text-sm transition-all ${formData.bodyShape === shape ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:border-white/30'
+                                                    }`}
+                                                onClick={() => setFormData({ ...formData, bodyShape: shape })}
+                                            >
+                                                {shape}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label>Fit Preference</label>
+                                    <div className="flex gap-4 mt-2 bg-surface p-1 rounded-xl border border-white/5">
+                                        {['tight', 'regular', 'loose'].map(fit => (
+                                            <button
+                                                key={fit}
+                                                className={`flex-1 py-2 rounded-lg text-sm capitalize transition-all ${formData.fitPreference === fit ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'
+                                                    }`}
+                                                onClick={() => setFormData({ ...formData, fitPreference: fit })}
+                                            >
+                                                {fit}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <Palette size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">Color Analysis</span>
+                                </div>
+                                <h1 className="text-4xl font-serif font-bold">Color Profile</h1>
+                                <p className="text-gray-400">We use this to determine your seasonal color palette.</p>
+
+                                <div className="space-y-4 pt-4">
+                                    <div>
+                                        <label>Skin Tone & Undertone</label>
+                                        <select value={formData.skinTone} onChange={e => setFormData({ ...formData, skinTone: e.target.value })}>
+                                            <option value="">Select...</option>
+                                            <option value="fair_cool">Fair (Cool/Pink)</option>
+                                            <option value="fair_warm">Fair (Warm/Yellow)</option>
+                                            <option value="medium_cool">Medium (Cool/Olive)</option>
+                                            <option value="medium_warm">Medium (Warm/Golden)</option>
+                                            <option value="dark_cool">Dark (Cool/Blue)</option>
+                                            <option value="dark_warm">Dark (Warm/Red)</option>
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label>Natural Hair Color</label>
+                                            <input type="text" placeholder="e.g. Dark Brown" value={formData.hairColor} onChange={e => setFormData({ ...formData, hairColor: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label>Eye Color</label>
+                                            <input type="text" placeholder="e.g. Hazel" value={formData.eyeColor} onChange={e => setFormData({ ...formData, eyeColor: e.target.value })} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 4 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <Briefcase size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">Lifestyle</span>
+                                </div>
+                                <h1 className="text-4xl font-serif font-bold">Your Day-to-Day</h1>
+                                <p className="text-gray-400">Select the environments you dress for most often.</p>
+
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    {[
+                                        { id: 'work', label: 'Corporate / Office' },
+                                        { id: 'casual', label: 'Casual / Weekend' },
+                                        { id: 'event', label: 'Formal Events' },
+                                        { id: 'active', label: 'Gym / Active' }
+                                    ].map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setFormData(prev => ({
+                                                ...prev,
+                                                lifestyle: { ...prev.lifestyle, [item.id]: !prev.lifestyle[item.id as keyof typeof prev.lifestyle] }
+                                            }))}
+                                            className={`p-6 rounded-xl border text-left transition-all h-32 flex flex-col justify-end ${formData.lifestyle[item.id as keyof typeof formData.lifestyle]
+                                                    ? 'border-primary bg-primary/10 text-primary'
+                                                    : 'border-white/10 hover:border-white/20 bg-surface'
+                                                }`}
+                                        >
+                                            <span className="font-medium text-lg">{item.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 5 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <Shirt size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">Aesthetic</span>
+                                </div>
+                                <h1 className="text-4xl font-serif font-bold">Style Archetypes</h1>
+                                <p className="text-gray-400">Select up to 3 styles that resonate with you.</p>
+
+                                <div className="grid grid-cols-2 gap-3 pt-4 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                                    {archetypes.map(archetype => (
+                                        <button
+                                            key={archetype.name}
+                                            onClick={() => toggleArchetype(archetype.name)}
+                                            className={`p-4 rounded-xl border text-left transition-all ${formData.archetypes.includes(archetype.name)
+                                                    ? 'border-primary bg-primary/10'
+                                                    : 'border-white/10 hover:bg-white/5'
+                                                }`}
+                                        >
+                                            <div className={`font-bold mb-1 ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>
+                                                {archetype.name}
+                                            </div>
+                                            <div className="text-xs text-gray-400 leading-relaxed">{archetype.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 6 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <Upload size={24} />
+                                    <span className="uppercase tracking-widest text-xs font-bold">One last thing</span>
+                                </div>
+                                <h1 className="text-4xl font-serif font-bold">Visual Reference</h1>
+                                <p className="text-gray-400">Upload a photo to give our AI the clearest picture of you. (Optional)</p>
+
+                                <div className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-white/5 relative group mt-8">
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                                    <Upload size={48} className="text-gray-500 mb-4 group-hover:text-primary transition-colors z-10" />
+                                    <span className="text-gray-400 z-10">Click to upload photo</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/5">
+                        {step > 1 ? (
+                            <button
+                                onClick={handleBack}
+                                className="text-gray-400 hover:text-white flex items-center gap-2 px-4 py-2 transition-colors"
+                            >
+                                <ArrowLeft size={18} /> Back
                             </button>
-                        </div>
-                    )}
+                        ) : (
+                            <div />
+                        )}
 
-                    {step === 2 && (
-                        <div className="space-y-6">
-                            <h2 className="text-3xl font-bold">Define your style</h2>
-                            <p className="text-gray-400">Select the aesthetics that resonate with you.</p>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                {styles.map(style => (
-                                    <button
-                                        key={style}
-                                        onClick={() => toggleStyle(style)}
-                                        className={`p-4 rounded-xl border text-left transition-all ${formData.styleGoals.includes(style)
-                                                ? 'border-[#d4af37] bg-[rgba(212,175,55,0.1)] text-[#d4af37]'
-                                                : 'border-white/10 hover:bg-white/5'
-                                            }`}
-                                    >
-                                        {style}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button className="btn btn-outline flex-1" onClick={handleBack}>Back</button>
-                                <button className="btn btn-primary flex-1" onClick={handleNext}>Continue</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-6">
-                            <h2 className="text-3xl font-bold">Your Look</h2>
-                            <p className="text-gray-400">Upload a photo to help AI understand your body type (optional).</p>
-
-                            <div className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-[#d4af37]/50 transition-colors bg-white/5">
-                                <Upload size={48} className="text-gray-500 mb-4" />
-                                <span className="text-gray-400">Click to upload photo</span>
-                                {/* Input would go here */}
-                            </div>
-
-                            <button className="btn btn-primary w-full" onClick={handleFinish}>
-                                Complete Profile <Check size={20} className="ml-2" />
-                            </button>
-                            <button className="btn btn-outline w-full mt-2" onClick={handleBack}>Back</button>
-                        </div>
-                    )}
+                        <button
+                            onClick={handleNext}
+                            className="btn btn-primary px-8"
+                        >
+                            {step === totalSteps ? (
+                                <>Analyze Profile <Sparkles size={18} className="ml-2" /></>
+                            ) : (
+                                <>Continue <ChevronRight size={18} className="ml-2" /></>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
