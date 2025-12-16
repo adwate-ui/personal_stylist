@@ -1,150 +1,65 @@
-:root {
-  /* Color Palette - Premium & Chic */
-  /* Dark Mode Default for that 'World Class' feel or soft High-End Light */
-  /* Let's go with a sophisticated palette: Deep Charcoal, Soft Cream, Accent Gold/Bronze */
-  
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  
-  --primary: #d4af37; /* Metallic Gold */
-  --primary-glow: rgba(212, 175, 55, 0.3);
-  
-  --surface: #171717;
-  --surface-hover: #262626;
-  
-  --border: #333333;
-  
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
-  
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  
-  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+@layer base {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+
+    --primary: #d4af37;
+    /* Metallic Gold */
+    --primary-glow: rgba(212, 175, 55, 0.3);
+
+    --surface: #171717;
+    --surface-hover: #262626;
+
+    --border: #333333;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-screen antialiased flex flex-col;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+@layer utilities {
+  .glass {
+    @apply bg-[#171717]/70 backdrop-blur-xl border border-white/10 shadow-lg;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ease-out cursor-pointer text-base border-none;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-black shadow-[0_0_20px_var(--primary-glow)] hover:-translate-y-0.5 hover:shadow-[0_0_30px_var(--primary-glow)];
+  }
+
+  .btn-outline {
+    @apply bg-transparent border border-[var(--border)] text-foreground hover:bg-[var(--surface-hover)] hover:border-foreground;
+  }
+
+  .card {
+    @apply bg-surface rounded-[var(--radius-lg)] overflow-hidden transition-all duration-300 ease-out border border-[var(--border)] hover:-translate-y-1 hover:border-primary;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Utilities */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-  width: 100%;
-}
-
-.glass {
-  background: rgba(23, 23, 23, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: all 0.3s var(--ease-out);
-  cursor: pointer;
-  border: none;
-  font-size: 1rem;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: #000;
-  box-shadow: 0 0 20px var(--primary-glow);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px var(--primary-glow);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--foreground);
-}
-
-.btn-outline:hover {
-  background: var(--surface-hover);
-  border-color: var(--foreground);
-}
-
-/* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-.animate-fade-in {
-  animation: fadeIn 0.6s var(--ease-out) forwards;
-}
-
-.grid-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-.card {
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: transform 0.3s var(--ease-out);
-  border: 1px solid var(--border);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary);
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--foreground);
-  font-family: inherit;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #a1a1a1;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

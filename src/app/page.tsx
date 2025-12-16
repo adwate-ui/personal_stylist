@@ -11,17 +11,17 @@ export default function Home() {
       />
 
       <div className="z-10 text-center max-w-2xl animate-fade-in">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 text-sm text-[#d4af37]">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 text-sm text-primary">
           <Sparkles size={16} />
           <span>Your AI-Powered Personal Stylist</span>
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight">
-          Elevate Your <span style={{ color: 'var(--primary)' }}>Style</span><br />
+        <h1 className="text-5xl md:text-7xl font-bold font-serif mb-6 tracking-tight leading-tight">
+          Elevate Your <span className="text-primary italic">Style</span><br />
           Effortlessly.
         </h1>
 
-        <p className="text-xl text-gray-400 mb-10 leading-relaxed">
+        <p className="text-xl text-gray-400 mb-10 leading-relaxed max-w-lg mx-auto">
           The world's most advanced stylist, powered by Gemini 3.
           Curate your wardrobe, get personalized scores, and shop with confidence.
         </p>
