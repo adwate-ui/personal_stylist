@@ -27,8 +27,8 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/onboarding" className="btn btn-primary">
-            Get Started <ArrowRight size={20} className="ml-2" />
+          <Link href="/auth/login" className="btn btn-primary text-lg px-8 py-4 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+            Start Your Style Journey
           </Link>
           <Link href="/auth/login" className="btn btn-outline">
             Sign In

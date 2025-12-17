@@ -240,7 +240,7 @@ export default function AddItemPage() {
                                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-gray-300 uppercase tracking-widest border border-white/5">
                                             {preview.brand || "Unknown Brand"}
                                         </span>
-                                        {preview.price && <span className="text-sm text-gray-400 font-mono">{preview.price}</span>}
+                                        {(preview.price || preview.price_estimate) && <span className="text-sm text-gray-400 font-mono">{preview.price || preview.price_estimate}</span>}
                                     </div>
                                     <h2 className="text-3xl font-serif font-bold leading-tight mb-4">{preview.item_name || preview.sub_category || "Identified Item"}</h2>
                                     <p className="text-gray-300 leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1">
@@ -262,24 +262,22 @@ export default function AddItemPage() {
                                     </div>
                                 </div>
 
-                                {preview.sku_query && (
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <div className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
-                                                <Search size={12} /> Identified SKU / Link
-                                            </div>
-                                            <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <div className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <Search size={12} /> Find on Google
                                         </div>
-                                        <a
-                                            href={`https://www.google.com/search?q=${encodeURIComponent(preview.sku_query)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4"
-                                        >
-                                            Search for "{preview.sku_query}"
-                                        </a>
+                                        <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
                                     </div>
-                                )}
+                                    <a
+                                        href={`https://www.google.com/search?q=${encodeURIComponent((preview.brand || "") + " " + (preview.item_name || preview.sub_category))}&btnI=1`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4"
+                                    >
+                                        View Product Page (Best Match)
+                                    </a>
+                                </div>
 
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2 block flex items-center gap-1">
@@ -311,7 +309,7 @@ export default function AddItemPage() {
                                     onClick={saveDetails}
                                     className="btn btn-primary flex-[2] py-4 text-sm group shadow-lg shadow-primary/20"
                                 >
-                                    Done / Add to Wardrobe
+                                    Add to Wardrobe
                                 </button>
                             </div>
                         </div>
