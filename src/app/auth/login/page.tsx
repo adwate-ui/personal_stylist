@@ -3,12 +3,27 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { createClient } from '@supabase/supabase-js';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+    const router = useRouter();
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
+
+    useEffect(() => {
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_IN') {
+                router.push('/onboarding');
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [supabase, router]);
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-2">
@@ -46,7 +61,7 @@ export default function LoginPage() {
                             input: '!bg-white/5 !border-white/10 !text-white placeholder:!text-gray-600',
                         }
                     }}
-                    providers={['google', 'apple']}
+                    providers={[]}
                     redirectTo={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`}
                 />
             </div>
