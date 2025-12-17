@@ -36,8 +36,12 @@ async function generateWithFallback(promptParts: any[]) {
     }
 }
 
-export async function analyzeProductLink(url: string, imageBuffer?: Buffer, metadata?: any) {
+export async function analyzeProductLink(url: string, imageBuffer?: Buffer, metadata?: any, styleProfile?: any) {
     if (!genAI) return null;
+
+    const profileContext = styleProfile
+        ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
+        : "";
 
     const prompt = `
     You are the world's greatest fashion stylist and expert. Detailed Analysis Required.
@@ -48,6 +52,7 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     Description: ${metadata?.description || 'Unknown'}
     
     Analyze the accompanying image (if provided) and the context to extract details with EXTREME precision.
+    ${profileContext}
     
     1. Category & Sub-category (Be specific: "Cashmere Turtleneck" not just "Sweater")
     2. Color (Precise fashion terminology: "Chartreuse", "Burgundy", "Navy", "Ecru")
@@ -55,8 +60,22 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     4. Price (Estimate range if not in metadata)
     5. Description: A sophisticated, editorial-style 1-sentence summary.
     6. Style Tags: [Old Money, Y2K, Minimalist, Avant-Garde, etc.]
+    7. SKU / Search Query for this item.
     
-    Return JSON: { "category": "", "sub_category": "", "color": "", "brand": "", "price": "", "description": "", "image_url": "${metadata?.image || ''}" }
+    If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
+    
+    Return JSON: { 
+        "category": "", 
+        "sub_category": "", 
+        "color": "", 
+        "brand": "", 
+        "sku_query": "",
+        "price": "", 
+        "description": "", 
+        "image_url": "${metadata?.image || ''}",
+        "style_score": 0,
+        "style_reasoning": ""
+    }
     `;
 
     const parts: any[] = [prompt];
@@ -77,11 +96,16 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     }
 }
 
-export async function identifyWardrobeItem(imageBuffer: Buffer) {
+export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: any) {
     if (!genAI) return null;
+
+    const profileContext = styleProfile
+        ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
+        : "";
 
     const prompt = `
     You are the world's most renowned fashion curator. Perform a detailed stylistic analysis of this item.
+    ${profileContext}
     
     Identify with HIGH PRECISION:
     - Detailed Category & Specific Silhouette (e.g. "Double-Breasted Blazer" vs "Jacket")
@@ -89,8 +113,24 @@ export async function identifyWardrobeItem(imageBuffer: Buffer) {
     - Material / Fabric appearance (e.g. "Ribbed Knit", "Silk Satin")
     - Brand Aesthetic (e.g. "Minimalist Scandinavian", "Italian Luxury", "Streetwear")
     - Specific Occasions (e.g. "Boardroom", "Gallery Opening", "Weekend Brunch")
+    - Brand Name (Prediction if logo visible or style is iconic)
+    - SKU Search Query (Keywords to find this item online)
     
-    Return JSON: { "item_name": "Concise Name", "category": "", "sub_category": "", "color": "", "occasion": "", "tags": [], "description": "Editorial summary" }
+    If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
+    
+    Return JSON: { 
+        "item_name": "Concise Name", 
+        "category": "", 
+        "sub_category": "", 
+        "brand": "", 
+        "sku_query": "",
+        "color": "", 
+        "occasion": "", 
+        "tags": [], 
+        "description": "Editorial summary",
+        "style_score": 0,
+        "style_reasoning": ""
+    }
     `;
 
     const imagePart = {
