@@ -15,6 +15,9 @@ const getSupabase = () => {
 };
 
 export async function POST(req: NextRequest) {
+    if (!process.env.GEMINI_API_KEY) {
+        return NextResponse.json({ error: "Server Configuration Error: GEMINI_API_KEY missing" }, { status: 500 });
+    }
     try {
         const supabase = getSupabase();
         const formData = await req.formData();
