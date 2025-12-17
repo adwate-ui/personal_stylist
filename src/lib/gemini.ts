@@ -12,10 +12,17 @@ const generationConfig = {
 };
 
 async function generateWithFallback(promptParts: any[]) {
-    const models = ["gemini-exp-1206", "gemini-1.5-flash-001", "gemini-1.5-pro-001", "gemini-pro"];
+    const preferredModel = process.env.GEMINI_MODEL;
+    const defaultModels = ["gemini-1.5-pro-latest", "gemini-1.5-pro", "gemini-exp-1206", "gemini-1.5-flash"];
 
-    for (const modelName of models) {
+    // Create a unique list of models, prioritizing the env var if set
+    const models = preferredModel ? [preferredModel, ...defaultModels] : defaultModels;
+    // Deduplicate
+    const uniqueModels = [...new Set(models)];
+
+    for (const modelName of uniqueModels) {
         try {
+            console.log(`Using model: ${modelName}`);
             const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
             const result = await model.generateContent(promptParts);
             const response = await result.response;
@@ -23,7 +30,7 @@ async function generateWithFallback(promptParts: any[]) {
         } catch (error: any) {
             console.warn(`Model ${modelName} failed:`, error.message);
             // If it's the last model, throw
-            if (modelName === models[models.length - 1]) throw error;
+            if (modelName === uniqueModels[uniqueModels.length - 1]) throw error;
             // Continue to next model
         }
     }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeProductLink } from "@/lib/gemini";
+import { Buffer } from "buffer"; // Edge requires explicit buffer import often, though Next sometimes polyfills it globally
 
-// Use Node runtime for full Buffer support and scraping capability
-// export const runtime = 'edge'; 
+
+
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
     try {
