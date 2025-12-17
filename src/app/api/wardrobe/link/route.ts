@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeProductLink } from "@/lib/gemini";
-import { Buffer } from "node:buffer";
 
 export const runtime = 'edge';
 
@@ -42,14 +41,15 @@ export async function POST(req: NextRequest) {
         const description = getMeta("og:description") || getMeta("description") || getMeta("twitter:description");
         const imageUrl = getMeta("og:image") || getMeta("twitter:image");
 
-        let imageBuffer: Buffer | undefined;
+        let imageBuffer: ArrayBuffer | undefined;
 
         // 3. Download the Image
         if (imageUrl) {
             try {
                 const imageRes = await fetch(imageUrl);
-                const arrayBuffer = await imageRes.arrayBuffer();
-                imageBuffer = Buffer.from(arrayBuffer);
+                if (imageRes.ok) {
+                    imageBuffer = await imageRes.arrayBuffer();
+                }
             } catch (imgError) {
                 console.warn("Failed to download image:", imgError);
             }

@@ -47,8 +47,19 @@ async function generateWithFallback(promptParts: any[]) {
     }
 }
 
-export async function analyzeProductLink(url: string, imageBuffer?: Buffer, metadata?: any, styleProfile?: any) {
-    if (!genAI) return null;
+// Helper to convert ArrayBuffer to Base64 (Universal)
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+export async function analyzeProductLink(url: string, imageBuffer?: ArrayBuffer, metadata?: any, styleProfile?: any) {
+    if (!genAI) return { error: "Gemini API Key missing" };
 
     const profileContext = styleProfile
         ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
@@ -99,7 +110,7 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     if (imageBuffer) {
         parts.push({
             inlineData: {
-                data: imageBuffer.toString("base64"),
+                data: arrayBufferToBase64(imageBuffer),
                 mimeType: "image/jpeg",
             },
         });
@@ -113,8 +124,8 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     }
 }
 
-export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: any) {
-    if (!genAI) return null;
+export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfile?: any) {
+    if (!genAI) return { error: "Gemini API Key missing" };
 
     const profileContext = styleProfile
         ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
@@ -160,7 +171,7 @@ export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: a
 
     const imagePart = {
         inlineData: {
-            data: imageBuffer.toString("base64"),
+            data: arrayBufferToBase64(imageBuffer),
             mimeType: "image/jpeg",
         },
     };
@@ -173,8 +184,8 @@ export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: a
     }
 }
 
-export async function ratePurchase(imageBuffer: Buffer, wardrobeContext: any[] = []) {
-    if (!genAI) return null;
+export async function ratePurchase(imageBuffer: ArrayBuffer, wardrobeContext: any[] = []) {
+    if (!genAI) return { rating: 0, verdict: "Error", reasoning: "Gemini not initialized" };
 
     const contextString = wardrobeContext.length > 0
         ? `User's current wardrobe includes: ${wardrobeContext.map(i => i.name || i.category).join(', ')}.`
@@ -194,7 +205,7 @@ export async function ratePurchase(imageBuffer: Buffer, wardrobeContext: any[] =
 
     const imagePart = {
         inlineData: {
-            data: imageBuffer.toString("base64"),
+            data: arrayBufferToBase64(imageBuffer),
             mimeType: "image/jpeg",
         },
     };

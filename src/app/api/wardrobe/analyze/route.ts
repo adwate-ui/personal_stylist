@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { identifyWardrobeItem } from "@/lib/gemini";
 import { createClient } from "@supabase/supabase-js";
-import { Buffer } from "node:buffer";
 
 export const runtime = 'edge';
 
@@ -45,10 +44,16 @@ export async function POST(req: NextRequest) {
             ? `${publicUrlBase}/storage/v1/object/public/wardrobe_items/${uploadData.path}`
             : "";
 
+
         // 2. Analyze with Gemini (passing style profile)
-        // Convert ArrayBuffer to Buffer for Gemini (using imported node:buffer)
-        const buffer = Buffer.from(bytes);
-        const analysis = await identifyWardrobeItem(buffer, styleProfile);
+        let analysis;
+        try {
+            // Pass ArrayBuffer directly (Universal)
+            analysis = await identifyWardrobeItem(bytes, styleProfile);
+        } catch (geminiError: any) {
+            console.error("Gemini Analysis Exception:", geminiError);
+            return NextResponse.json({ error: "Gemini Analysis failed", details: geminiError.message }, { status: 502 });
+        }
 
         if (!analysis) {
             return NextResponse.json({ error: "AI Analysis failed" }, { status: 500 });
