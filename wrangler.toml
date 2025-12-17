@@ -2,3 +2,7 @@ name = "personal-stylist"
 compatibility_date = "2024-04-05"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
+
+[vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://cumlbufsdynpoarkaxaz.supabase.co" # Replace with valid placeholder or user instruction
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1bWxidWZzZHlucG9hcmtheGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4ODc2MDMsImV4cCI6MjA4MTQ2MzYwM30.mM0Q9FgKWzI9Xnk8Ssm_7ZqR80jEqzWRgkcx2meRY_s" # Replace with valid placeholder or user instruction

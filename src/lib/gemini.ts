@@ -13,7 +13,8 @@ const generationConfig = {
 
 async function generateWithFallback(promptParts: any[]) {
     const preferredModel = process.env.GEMINI_MODEL;
-    const defaultModels = ["gemini-1.5-pro-latest", "gemini-1.5-pro", "gemini-exp-1206", "gemini-1.5-flash"];
+    // Removed legacy 1.5-flash to avoid 404s, prioritized 2.5 and 3.0
+    const defaultModels = ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-1.5-pro"];
 
     // Create a unique list of models, prioritizing the env var if set
     const models = preferredModel ? [preferredModel, ...defaultModels] : defaultModels;
@@ -29,9 +30,10 @@ async function generateWithFallback(promptParts: any[]) {
             return JSON.parse(response.text());
         } catch (error: any) {
             console.warn(`Model ${modelName} failed:`, error.message);
-            // If it's the last model, throw
+            // If it's the last model, throw the error to the caller
             if (modelName === uniqueModels[uniqueModels.length - 1]) throw error;
-            // Continue to next model
+            // Otherwise, continue to the next model
+            continue;
         }
     }
 }

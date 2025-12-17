@@ -4,13 +4,19 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = 'edge';
 
-// Initialize Supabase Client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Initialize Supabase Client lazily to avoid build-time errors if env vars are missing
+const getSupabase = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Missing Supabase Environment Variables");
+    }
+    return createClient(supabaseUrl, supabaseKey);
+};
 
 export async function POST(req: NextRequest) {
     try {
+        const supabase = getSupabase();
         const formData = await req.formData();
         const file = formData.get("file") as File;
         const styleProfileStr = formData.get("style_profile") as string;
@@ -31,14 +37,12 @@ export async function POST(req: NextRequest) {
 
         if (uploadError) {
             console.error("Storage Upload Error:", uploadError);
-            // Continue even if storage fails? No, we need the URL.
-            // But maybe we can proceed with analysis and just not have a perm link if it fails?
-            // Let's fail hard for now as "Add Item" implies saving.
-            // return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
         }
 
-        const imageUrl = uploadData?.path
-            ? `${supabaseUrl}/storage/v1/object/public/wardrobe_items/${uploadData.path}`
+        // Use process.env directly for URL construction since it's compatible with Edge Runtime access patterns
+        const publicUrlBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const imageUrl = uploadData?.path && publicUrlBase
+            ? `${publicUrlBase}/storage/v1/object/public/wardrobe_items/${uploadData.path}`
             : "";
 
         // 2. Analyze with Gemini (passing style profile)
