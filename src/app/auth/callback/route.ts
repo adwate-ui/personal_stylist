@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 
@@ -7,20 +7,18 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get("code");
+    const redirectedFrom = requestUrl.searchParams.get("redirectedFrom") || "/onboarding";
 
     if (code) {
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                auth: {
-                    persistSession: false // Prevent Edge storage crash
-                }
-            }
-        );
-        await supabase.auth.exchangeCodeForSession(code);
+        const supabase = await createClient();
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+            console.error("Auth Callback Error:", error);
+            return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=callback_failed`);
+        }
     }
 
     // URL to redirect to after sign in process completes
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(`${requestUrl.origin}${redirectedFrom}`);
 }

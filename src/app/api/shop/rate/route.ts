@@ -1,24 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ratePurchase } from "@/lib/gemini";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
     try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ error: "Authentication required. Please log in." }, { status: 401 });
+        }
+
+        // Fetch user's Style DNA
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('style_dna, full_name')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error("Profile fetch error:", profileError);
+        }
+
+        const styleDNA = profile?.style_dna || null;
+
+        // Fetch user's wardrobe for context
+        const { data: wardrobeItems, error: wardrobeError } = await supabase
+            .from('wardrobe_items')
+            .select('category, sub_category, brand, primary_color, description, style_tags')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(20); // Limit to recent items to avoid token overflow
+
+        if (wardrobeError) {
+            console.error("Wardrobe fetch error:", wardrobeError);
+        }
+
+        const wardrobeContext = wardrobeItems || [];
+
         const formData = await req.formData();
         const file = formData.get("file") as File;
 
         if (!file) {
-            return NextResponse.json({ error: "No file provided" }, { status: 400 });
+            return NextResponse.json({ error: "No image file provided in request." }, { status: 400 });
         }
 
         const bytes = await file.arrayBuffer();
         // Pass ArrayBuffer directly (Universal)
-        const result = await ratePurchase(bytes);
+        const result = await ratePurchase(bytes, wardrobeContext, styleDNA);
         return NextResponse.json(result);
 
     } catch (error) {
         console.error("API Error:", error);
-        return NextResponse.json({ error: "Rating failed" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to analyze item. Please try again." }, { status: 500 });
     }
 }

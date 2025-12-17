@@ -1,27 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = 'edge';
 
-// Initialize Supabase Client lazily
-const getSupabase = () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    if (!supabaseUrl || !supabaseKey) {
-        throw new Error("Missing Supabase Environment Variables");
-    }
-    return createClient(supabaseUrl, supabaseKey);
-};
-
 export async function POST(req: NextRequest) {
     try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const item = await req.json();
+
+        // Security check: Ensure user is only saving their own images
+        // Expected format: .../wardrobe_items/USER_ID/filename.jpg
+        if (item?.image_url) {
+            const hasUserInPath = item.image_url.includes(`/${user.id}/`);
+            if (!hasUserInPath) {
+                console.error("Security Alert: User attempted to save image from another path", {
+                    attemptedUrl: item.image_url,
+                    userId: user.id
+                });
+                return NextResponse.json({ error: "Forbidden: Invalid image path" }, { status: 403 });
+            }
+        }
 
         if (!item || !item.image_url) {
             return NextResponse.json({ error: "Invalid item data" }, { status: 400 });
         }
-
-        const supabase = getSupabase();
 
         // Save to Database
         const { data, error: dbError } = await supabase
@@ -32,10 +40,11 @@ export async function POST(req: NextRequest) {
                 sub_category: item.sub_category,
                 brand: item.brand,
                 primary_color: item.color,
-                price_estimate: item.price_estimate, // New Field
+                price_estimate: item.price_estimate,
                 description: item.description,
                 style_tags: item.tags,
                 style_score: item.style_score,
+                user_id: user.id, // Securely obtained from session
                 ai_analysis: item
             })
             .select()

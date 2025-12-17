@@ -5,6 +5,7 @@ import { GlossaryText } from "@/components/GlossaryText";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
+import { createClient } from "@supabase/supabase-js";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -14,6 +15,11 @@ export default function AddItemPage() {
     const [progress, setProgress] = useState(0);
     const [url, setUrl] = useState("");
     const [preview, setPreview] = useState<any>(null);
+
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     const simulateProgress = () => {
         setProgress(0);
@@ -103,9 +109,17 @@ export default function AddItemPage() {
             const res = await fetch("/api/wardrobe/add", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(preview)
+                body: JSON.stringify({ ...preview })
             });
+
             const data = await res.json();
+
+            if (res.status === 401) {
+                // Should have been caught by middleware, but just in case
+                router.push("/auth/login");
+                return;
+            }
+
             if (!res.ok) throw new Error(data.error || "Failed");
 
             // Success

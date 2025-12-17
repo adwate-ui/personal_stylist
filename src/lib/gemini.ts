@@ -184,23 +184,43 @@ export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfil
     }
 }
 
-export async function ratePurchase(imageBuffer: ArrayBuffer, wardrobeContext: any[] = []) {
+export async function ratePurchase(
+    imageBuffer: ArrayBuffer,
+    wardrobeContext: any[] = [],
+    styleDNA?: any
+) {
     if (!genAI) return { rating: 0, verdict: "Error", reasoning: "Gemini not initialized" };
 
+    const styleDNAContext = styleDNA
+        ? `\n\nUser's Style DNA:\n${JSON.stringify(styleDNA, null, 2)}\nEvaluate how this item aligns with their established aesthetic.`
+        : "";
+
     const contextString = wardrobeContext.length > 0
-        ? `User's current wardrobe includes: ${wardrobeContext.map(i => i.name || i.category).join(', ')}.`
+        ? `User's current wardrobe includes: ${wardrobeContext.map(i =>
+            `${i.category || 'Item'} (${i.brand || 'Unknown brand'}, ${i.primary_color || 'color N/A'})`
+        ).join(', ')}.`
         : "User is building their wardrobe from scratch.";
 
     const prompt = `
     ${contextString}
+    ${styleDNAContext}
+
     A user is considering buying the item in this image. 
-    As a world - class stylist, provide a brutally honest but constructive rating(1 - 10).
-        consider:
-    1. Versatility with current wardrobe(if known).
-    2. Timelessness vs Trendiness.
-    3. Quality perception.
-    
-    Return JSON: { "rating": 0, "verdict": "Buy/Pass", "reasoning": "Expert explanation..." }
+    As a world-class stylist, provide a brutally honest but constructive rating (1-10).
+
+    Consider:
+    1. Alignment with their Style DNA (if available)
+    2. Versatility with current wardrobe (if known)
+    3. Timelessness vs Trendiness
+    4. Quality perception
+    5. Gap-filling potential in their wardrobe
+
+    Return JSON: { 
+        "rating": 0, 
+        "verdict": "Buy/Pass/Consider", 
+        "reasoning": "Expert explanation addressing Style DNA alignment and wardrobe gaps...",
+        "alternatives": "Suggest better options if rating < 7"
+    }
     `;
 
     const imagePart = {

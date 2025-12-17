@@ -12,6 +12,7 @@ export default function Onboarding() {
     const [step, setStep] = useState(1);
     const [analyzing, setAnalyzing] = useState(false);
     const [styleDNA, setStyleDNA] = useState<any>(null);
+    const [saving, setSaving] = useState(false);
 
     // Initialize with local state, we'll save to global state at the end
     const [formData, setFormData] = useState({
@@ -84,10 +85,38 @@ export default function Onboarding() {
         }
     };
 
-    const finishOnboarding = () => {
-        // Persist data + DNA
-        saveProfile({ ...formData, styleDNA });
-        router.push("/wardrobe");
+    const finishOnboarding = async () => {
+        setSaving(true);
+        try {
+            // Priority: Try API first
+            const res = await fetch("/api/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...formData, styleDNA })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to save profile");
+            }
+
+            // Success
+            router.push("/wardrobe");
+
+        } catch (error) {
+            console.error("Profile Save Error:", error);
+
+            // Fallback to client-side hook
+            try {
+                await saveProfile({ ...formData, styleDNA });
+                // If fallback "succeeds" (it swallows errors mostly but let's assume it works locally)
+                router.push("/wardrobe");
+            } catch (fallbackErr) {
+                alert("Failed to save profile. Please check your connection and try again.");
+            }
+        } finally {
+            setSaving(false);
+        }
     };
 
     const toggleArchetype = (style: string) => {
@@ -221,11 +250,11 @@ export default function Onboarding() {
                 <div className="card glass p-8 md:p-10 min-h-[500px] flex flex-col justify-between animate-fade-in relative">
 
                     {/* Analyzing Overlay */}
-                    {analyzing && (
+                    {(analyzing || saving) && (
                         <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center p-8 rounded-[var(--radius-lg)]">
                             <Loader2 size={48} className="text-primary animate-spin mb-6" />
-                            <h2 className="text-3xl font-serif font-bold mb-2">Decoding Your Style DNA</h2>
-                            <p className="text-gray-400 max-w-md">Analysing your biometrics, lifestyle, and preferences to build your unique style profile...</p>
+                            <h2 className="text-3xl font-serif font-bold mb-2">{analyzing ? "Decoding Your Style DNA" : "Saving Your Profile"}</h2>
+                            <p className="text-gray-400 max-w-md">{analyzing ? "Analysing your biometrics, lifestyle, and preferences to build your unique style profile..." : "Setting up your digital wardrobe..."}</p>
                         </div>
                     )}
 

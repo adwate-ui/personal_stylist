@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { Shirt, PlusCircle, Settings, LogOut, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function Navigation() {
     const pathname = usePathname();
     const router = useRouter();
-    const { clearProfile } = useProfile();
+    const { profile, loading, clearProfile } = useProfile();
 
     // Hide navigation on landing page, onboarding, and auth pages
     const isHidden = pathname === "/" || pathname?.startsWith("/onboarding") || pathname?.startsWith("/auth");
@@ -22,10 +23,12 @@ export default function Navigation() {
         { name: "Preferences", href: "/preferences", icon: Settings },
     ];
 
-    const handleSignOut = () => {
+    const handleSignOut = async () => {
         if (confirm("Are you sure you want to sign out?")) {
+            await supabase.auth.signOut();
             clearProfile();
             router.push("/");
+            router.refresh(); // Refresh to update middleware state
         }
     };
 
@@ -56,6 +59,39 @@ export default function Navigation() {
                         );
                     })}
                 </nav>
+
+                {/* User Profile Section */}
+                {!isHidden && (
+                    <div className="mb-4 p-4 bg-white/5 backdrop-blur border border-white/10 rounded-xl mx-2">
+                        {loading ? (
+                            <div className="flex flex-col items-center animate-pulse">
+                                <div className="w-12 h-12 bg-gray-700/50 rounded-full mb-3" />
+                                <div className="h-4 w-20 bg-gray-700/50 rounded" />
+                            </div>
+                        ) : (
+                            <Link href="/preferences" className="flex flex-col items-center group cursor-pointer hover:bg-white/5 transition-colors rounded-lg p-2 -m-2">
+                                {profile.avatar_url ? (
+                                    <img
+                                        src={profile.avatar_url}
+                                        alt={profile.name || "User"}
+                                        className="w-12 h-12 rounded-full border-2 border-primary/30 shadow-lg shadow-primary/10 object-cover mb-3"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30 shadow-lg shadow-primary/10 mb-3">
+                                        <span className="text-primary font-bold text-xl">
+                                            {profile.name
+                                                ? profile.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+                                                : "U"}
+                                        </span>
+                                    </div>
+                                )}
+                                <span className="text-gray-300 text-sm font-medium truncate max-w-[180px] group-hover:text-white transition-colors">
+                                    {profile.name || "User"}
+                                </span>
+                            </Link>
+                        )}
+                    </div>
+                )}
 
                 <div className="pt-6 border-t border-white/10">
                     <button
