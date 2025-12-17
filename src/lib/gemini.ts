@@ -45,8 +45,13 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
         ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
         : "";
 
+    const userNameInstruction = styleProfile?.name
+        ? `Address the user as "${styleProfile.name}" instead of "user" or "they" in your output.`
+        : "Avoid addressing the user as 'user'. Be direct.";
+
     const prompt = `
     You are the world's greatest fashion stylist and expert. Detailed Analysis Required.
+    ${userNameInstruction}
     
     Item Context:
     URL: ${url}
@@ -106,8 +111,13 @@ export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: a
         ? `\nUser Style DNA: ${JSON.stringify(styleProfile)}\nAssess how well this item fits the user's Style DNA.`
         : "";
 
+    const userNameInstruction = styleProfile?.name
+        ? `Address the user as "${styleProfile.name}" instead of "user" or "they" in your output.`
+        : "Avoid addressing the user as 'user'. Be direct.";
+
     const prompt = `
     You are the world's most renowned fashion curator. Perform a detailed stylistic analysis of this item.
+    ${userNameInstruction}
     ${profileContext}
     
     Identify with HIGH PRECISION:

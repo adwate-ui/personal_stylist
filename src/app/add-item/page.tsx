@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GlossaryText } from "@/components/GlossaryText";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
@@ -226,7 +227,7 @@ export default function AddItemPage() {
                                     <TrendingUp size={16} className="text-primary" /> Style Analysis
                                 </h4>
                                 <p className="text-sm text-gray-400 leading-relaxed">
-                                    {preview.style_reasoning || "Analyzing fit with your personal style..."}
+                                    <GlossaryText text={preview.style_reasoning || "Analyzing fit with your personal style..."} />
                                 </p>
                             </div>
                         </div>
@@ -243,7 +244,7 @@ export default function AddItemPage() {
                                     </div>
                                     <h2 className="text-3xl font-serif font-bold leading-tight mb-4">{preview.item_name || preview.sub_category || "Identified Item"}</h2>
                                     <p className="text-gray-300 leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1">
-                                        "{preview.description}"
+                                        "<GlossaryText text={preview.description} />"
                                     </p>
                                 </div>
 
