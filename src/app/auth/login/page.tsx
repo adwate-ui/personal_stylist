@@ -2,16 +2,12 @@
 
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const router = useRouter();
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
 
     useEffect(() => {
         const {
@@ -23,7 +19,7 @@ export default function LoginPage() {
         });
 
         return () => subscription.unsubscribe();
-    }, [supabase, router]);
+    }, [router]);
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-2">
