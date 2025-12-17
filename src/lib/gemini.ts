@@ -1,7 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Buffer } from "node:buffer";
 
-const apiKey = process.env.GEMINI_API_KEY!;
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = process.env.GEMINI_API_KEY;
+
+// Lazy initialization or safe check
+let genAI: GoogleGenerativeAI | null = null;
+if (apiKey) {
+    genAI = new GoogleGenerativeAI(apiKey);
+} else {
+    console.error("GEMINI_API_KEY is not set in environment variables!");
+}
 
 const generationConfig = {
     temperature: 0.4,
@@ -24,6 +32,7 @@ async function generateWithFallback(promptParts: any[]) {
     for (const modelName of uniqueModels) {
         try {
             console.log(`Using model: ${modelName}`);
+            if (!genAI) throw new Error("Gemini Client not initialized (Missing API Key)");
             const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
             const result = await model.generateContent(promptParts);
             const response = await result.response;

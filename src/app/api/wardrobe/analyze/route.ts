@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { identifyWardrobeItem } from "@/lib/gemini";
 import { createClient } from "@supabase/supabase-js";
+import { Buffer } from "node:buffer";
 
 export const runtime = 'edge';
 
@@ -27,13 +28,12 @@ export async function POST(req: NextRequest) {
         }
 
         const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
 
-        // 1. Upload to Supabase Storage
+        // 1. Upload to Supabase Storage (Compatible with ArrayBuffer in Edge)
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('wardrobe_items')
-            .upload(fileName, buffer, { contentType: file.type || 'image/jpeg' });
+            .upload(fileName, bytes, { contentType: file.type || 'image/jpeg' });
 
         if (uploadError) {
             console.error("Storage Upload Error:", uploadError);
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
             : "";
 
         // 2. Analyze with Gemini (passing style profile)
+        // Convert ArrayBuffer to Buffer for Gemini (using imported node:buffer)
+        const buffer = Buffer.from(bytes);
         const analysis = await identifyWardrobeItem(buffer, styleProfile);
 
         if (!analysis) {
@@ -54,12 +56,6 @@ export async function POST(req: NextRequest) {
 
         // 3. Save to Database - MOVED TO /api/wardrobe/add
         // We now return the analysis and the image URL, and let the client call 'save' after review.
-
-        // Return combined result
-        return NextResponse.json({
-            ...analysis,
-            image_url: imageUrl
-        });
 
         // Return combined result
         return NextResponse.json({
