@@ -6,8 +6,8 @@ export const runtime = 'edge';
 
 // Initialize Supabase Client lazily to avoid build-time errors if env vars are missing
 const getSupabase = () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseKey) {
         throw new Error("Missing Supabase Environment Variables");
     }
@@ -15,10 +15,17 @@ const getSupabase = () => {
 };
 
 export async function POST(req: NextRequest) {
-    if (!process.env.GEMINI_API_KEY) {
-        return NextResponse.json({ error: "Server Configuration Error: GEMINI_API_KEY missing" }, { status: 500 });
-    }
+    // FAIL-SAFE WRAPPER: Catch absolutely everything and return JSON 200 with error details.
+    // This ensures the client always gets a readable response instead of a 500 crash page.
     try {
+        // Environment Check
+        if (!process.env.GEMINI_API_KEY) {
+            return NextResponse.json({ success: false, error: "CONFIG_ERROR", details: "GEMINI_API_KEY is not set in environment variables." });
+        }
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+            return NextResponse.json({ success: false, error: "CONFIG_ERROR", details: "NEXT_PUBLIC_SUPABASE_URL is not set." });
+        }
+
         const supabase = getSupabase();
         const formData = await req.formData();
         const file = formData.get("file") as File;
@@ -26,12 +33,12 @@ export async function POST(req: NextRequest) {
         const styleProfile = styleProfileStr ? JSON.parse(styleProfileStr) : null;
 
         if (!file) {
-            return NextResponse.json({ error: "No file provided" }, { status: 400 });
+            return NextResponse.json({ success: false, error: "BAD_REQUEST", details: "No file provided in form data." });
         }
 
         const bytes = await file.arrayBuffer();
 
-        // 1. Upload to Supabase Storage (Compatible with ArrayBuffer in Edge)
+        // 1. Upload to Supabase Storage
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('wardrobe_items')
@@ -39,40 +46,43 @@ export async function POST(req: NextRequest) {
 
         if (uploadError) {
             console.error("Storage Upload Error:", uploadError);
+            // Non-fatal: continue without image URL
         }
 
-        // Use process.env directly for URL construction since it's compatible with Edge Runtime access patterns
         const publicUrlBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const imageUrl = uploadData?.path && publicUrlBase
             ? `${publicUrlBase}/storage/v1/object/public/wardrobe_items/${uploadData.path}`
             : "";
 
-
-        // 2. Analyze with Gemini (passing style profile)
+        // 2. Analyze with Gemini
         let analysis;
         try {
-            // Pass ArrayBuffer directly (Universal)
             analysis = await identifyWardrobeItem(bytes, styleProfile);
         } catch (geminiError: any) {
             console.error("Gemini Analysis Exception:", geminiError);
-            return NextResponse.json({ error: "Gemini Analysis failed", details: geminiError.message }, { status: 502 });
+            return NextResponse.json({ success: false, error: "GEMINI_ERROR", details: geminiError.message || String(geminiError) });
         }
 
         if (!analysis) {
-            return NextResponse.json({ error: "AI Analysis failed" }, { status: 500 });
+            return NextResponse.json({ success: false, error: "AI_FAILURE", details: "Gemini returned no analysis." });
         }
 
-        // 3. Save to Database - MOVED TO /api/wardrobe/add
-        // We now return the analysis and the image URL, and let the client call 'save' after review.
+        // Check if analysis itself is an error object from gemini.ts
+        if (analysis.error) {
+            return NextResponse.json({ success: false, error: "AI_FAILURE", details: analysis.error });
+        }
 
         // Return combined result
         return NextResponse.json({
+            success: true,
             ...analysis,
             image_url: imageUrl
         });
 
-    } catch (error) {
-        console.error("API Error:", error);
-        return NextResponse.json({ error: "Analysis failed", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    } catch (error: any) {
+        // CRITICAL CATCH-ALL: This should never be reached if internal catches work,
+        // but this guarantees no 500 crash.
+        console.error("CRITICAL API Error:", error);
+        return NextResponse.json({ success: false, error: "CRITICAL_FAILURE", details: error.message || String(error) });
     }
 }
