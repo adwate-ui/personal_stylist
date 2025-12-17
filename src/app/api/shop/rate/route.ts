@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
         }
 
         const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const result = await ratePurchase(buffer);
+        // Pass ArrayBuffer directly (Universal)
+        const result = await ratePurchase(bytes);
         return NextResponse.json(result);
 
     } catch (error) {
