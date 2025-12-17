@@ -3,8 +3,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GEMINI_API_KEY!;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export const model = genAI.getGenerativeModel({ model: 'gemini-exp-1206' });
-
 const generationConfig = {
     temperature: 0.4,
     topP: 0.95,
@@ -13,48 +11,79 @@ const generationConfig = {
     responseMimeType: "application/json",
 };
 
-export async function analyzeProductLink(url: string) {
+async function generateWithFallback(promptParts: any[]) {
+    const models = ["gemini-exp-1206", "gemini-1.5-flash-001", "gemini-1.5-pro-001", "gemini-pro"];
+
+    for (const modelName of models) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
+            const result = await model.generateContent(promptParts);
+            const response = await result.response;
+            return JSON.parse(response.text());
+        } catch (error: any) {
+            console.warn(`Model ${modelName} failed:`, error.message);
+            // If it's the last model, throw
+            if (modelName === models[models.length - 1]) throw error;
+            // Continue to next model
+        }
+    }
+}
+
+export async function analyzeProductLink(url: string, imageBuffer?: Buffer, metadata?: any) {
     if (!genAI) return null;
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig });
 
     const prompt = `
-    You are the world's greatest fashion stylist and expert. Analyze this product URL: ${url}
+    You are the world's greatest fashion stylist and expert. Detailed Analysis Required.
     
-    Extract the following details with high precision:
-    1. Category (e.g., Tops, Bottoms, Outerwear)
-    2. Sub-category (e.g., Cashmere Sweater, Wide-leg Trousers)
-    3. Color (precise shade name, e.g., 'Midnight Blue' not just 'Blue')
-    4. Brand (if identifiable)
-    5. Price (estimate if not explicit)
-    6. Description: A chic, expert 1-sentence summary of the item avoiding marketing fluff.
-    7. Style Tags: [Old Money, Minimalist, Avant-Garde, etc.]
+    Item Context:
+    URL: ${url}
+    Title: ${metadata?.title || 'Unknown'}
+    Description: ${metadata?.description || 'Unknown'}
     
-    Return JSON: { "category": "", "sub_category": "", "color": "", "brand": "", "price": "", "description": "", "image_url": "placeholder" }
+    Analyze the accompanying image (if provided) and the context to extract details with EXTREME precision.
+    
+    1. Category & Sub-category (Be specific: "Cashmere Turtleneck" not just "Sweater")
+    2. Color (Precise fashion terminology: "Chartreuse", "Burgundy", "Navy", "Ecru")
+    3. Brand (Identify from metadata or visual logo if possible)
+    4. Price (Estimate range if not in metadata)
+    5. Description: A sophisticated, editorial-style 1-sentence summary.
+    6. Style Tags: [Old Money, Y2K, Minimalist, Avant-Garde, etc.]
+    
+    Return JSON: { "category": "", "sub_category": "", "color": "", "brand": "", "price": "", "description": "", "image_url": "${metadata?.image || ''}" }
     `;
 
+    const parts: any[] = [prompt];
+    if (imageBuffer) {
+        parts.push({
+            inlineData: {
+                data: imageBuffer.toString("base64"),
+                mimeType: "image/jpeg",
+            },
+        });
+    }
+
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return JSON.parse(response.text());
+        return await generateWithFallback(parts);
     } catch (error) {
         console.error("Gemini Link Analysis Error:", error);
-        return null;
+        return { error: `Gemini Error: ${error instanceof Error ? error.message : String(error)}` };
     }
 }
 
 export async function identifyWardrobeItem(imageBuffer: Buffer) {
     if (!genAI) return null;
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig });
 
     const prompt = `
-    You are the world's most renonwed fashion curator. Analyze this image of a clothing item.
-    Identify:
-    - Detailed Category & Sub-category
-    - Precise Color & Material (visual guess)
-    - Brand aesthetic (e.g., "Minimalist Scandinavian", "Italian Luxury")
-    - Occasion (Work, Gala, Casual)
+    You are the world's most renowned fashion curator. Perform a detailed stylistic analysis of this item.
     
-    Return JSON: { "item_name": "", "category": "", "color": "", "occasion": "", "tags": [] }
+    Identify with HIGH PRECISION:
+    - Detailed Category & Specific Silhouette (e.g. "Double-Breasted Blazer" vs "Jacket")
+    - Precise Color (e.g. "Crimson", "Slate", "Taupe")
+    - Material / Fabric appearance (e.g. "Ribbed Knit", "Silk Satin")
+    - Brand Aesthetic (e.g. "Minimalist Scandinavian", "Italian Luxury", "Streetwear")
+    - Specific Occasions (e.g. "Boardroom", "Gallery Opening", "Weekend Brunch")
+    
+    Return JSON: { "item_name": "Concise Name", "category": "", "sub_category": "", "color": "", "occasion": "", "tags": [], "description": "Editorial summary" }
     `;
 
     const imagePart = {
@@ -65,9 +94,7 @@ export async function identifyWardrobeItem(imageBuffer: Buffer) {
     };
 
     try {
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = await result.response;
-        return JSON.parse(response.text());
+        return await generateWithFallback([prompt, imagePart]);
     } catch (error) {
         console.error("Gemini Identification Error:", error);
         return null;
@@ -76,7 +103,6 @@ export async function identifyWardrobeItem(imageBuffer: Buffer) {
 
 export async function ratePurchase(imageBuffer: Buffer, wardrobeContext: any[] = []) {
     if (!genAI) return null;
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig });
 
     const contextString = wardrobeContext.length > 0
         ? `User's current wardrobe includes: ${wardrobeContext.map(i => i.name || i.category).join(', ')}.`
@@ -102,9 +128,7 @@ export async function ratePurchase(imageBuffer: Buffer, wardrobeContext: any[] =
     };
 
     try {
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = await result.response;
-        return JSON.parse(response.text());
+        return await generateWithFallback([prompt, imagePart]);
     } catch (error) {
         console.error("Gemini Rating Error:", error);
         return { rating: 0, verdict: "Error", reasoning: "Could not generate rating." };
