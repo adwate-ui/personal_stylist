@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Buffer } from "node:buffer";
+
 
 const apiKey = process.env.GEMINI_API_KEY;
 
