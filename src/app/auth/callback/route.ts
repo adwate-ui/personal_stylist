@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
     if (code) {
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    persistSession: false // Prevent Edge storage crash
+                }
+            }
         );
         await supabase.auth.exchangeCodeForSession(code);
     }
