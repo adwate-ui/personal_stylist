@@ -148,7 +148,7 @@ export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfil
     - Specific Occasions (e.g. "Boardroom", "Gallery Opening", "Weekend Brunch")
     - Brand Name (Prediction if logo visible or style is iconic)
     - SKU Search Query (Keywords to find this item online)
-    - Estimated Price Range (e.g. "$50-100", "$500+") based on brand/material visibility.
+    - Estimated Price Range (e.g. "Rs. 1,500-5,000", "Rs. 20,000+") based on brand/material visibility.
     
     If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
     If Style DNA is NOT provided, set "style_score" to null.
@@ -162,7 +162,7 @@ export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfil
         "color": "", 
         "occasion": "", 
         "tags": [], 
-        "price_estimate": "$0",
+        "price_estimate": "Rs. 0",
         "description": "Editorial summary",
         "style_score": 0,
         "style_reasoning": ""
@@ -215,5 +215,53 @@ export async function ratePurchase(imageBuffer: ArrayBuffer, wardrobeContext: an
     } catch (error) {
         console.error("Gemini Rating Error:", error);
         return { rating: 0, verdict: "Error", reasoning: "Could not generate rating." };
+    }
+}
+
+export async function generateStyleDNA(profile: any) {
+    if (!genAI) return { error: "Gemini API Key missing" };
+
+    const prompt = `
+    You are an elite personal stylist. Create a comprehensive "Style DNA" profile for this user based on their data.
+    
+    User Profile:
+    - Name: ${profile.name}
+    - Details: ${profile.gender}, ${profile.height}m, ${profile.weight}kg, ${profile.age || 'N/A'}
+    - Body Shape: ${profile.bodyShape}
+    - Coloring: Skin: ${profile.skinTone}, Hair: ${profile.hairColor}, Eyes: ${profile.eyeColor}
+    - Lifestyle: ${JSON.stringify(profile.lifestyle)}
+    - Archetypes: ${profile.archetypes.join(', ')}
+    - Admired Brands: ${profile.brands.join(', ')}
+    - Budget: ${profile.priceRange}
+    - Location: ${profile.location}
+
+    Generate a highly personalized JSON report:
+    {
+        "archetype_name": "Creative Title (e.g. 'The Urban Sophisticate')",
+        "power_words": ["Adjective", "Adjective", "Adjective"],
+        "summary": "2-3 sentences describing their core aesthetic.",
+        "color_palette": {
+            "neutrals": ["#hex", "#hex"],
+            "accents": ["#hex", "#hex", "#hex"],
+            "avoid": ["Color name"]
+        },
+        "must_have_staples": [
+            { "item": "Name", "why": "Reason based on body/lifestyle" }
+        ],
+        "brand_recommendations": [
+            { "name": "Brand", "tier": "Budget/Mid/Luxury", "why": "Reason" }
+        ],
+        "styling_tips": [
+            "Tip specific to body shape",
+            "Tip specific to lifestyle"
+        ]
+    }
+    `;
+
+    try {
+        return await generateWithFallback([prompt]);
+    } catch (error) {
+        console.error("Gemini Style DNA Error:", error);
+        return { error: "Failed to generate Style DNA" };
     }
 }

@@ -92,10 +92,30 @@ export default function AddItemPage() {
         }
     };
 
-    const saveDetails = () => {
-        // Items are already saved to DB by the API in this new flow
-        // Just redirect
-        router.push("/wardrobe");
+
+
+    const [saving, setSaving] = useState(false);
+
+    const saveDetails = async () => {
+        if (!preview) return;
+        setSaving(true);
+        try {
+            const res = await fetch("/api/wardrobe/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(preview)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed");
+
+            // Success
+            router.push("/wardrobe");
+        } catch (error) {
+            console.error("Save Error:", error);
+            alert("Failed to save item. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -143,6 +163,14 @@ export default function AddItemPage() {
                         </div>
                         <h3 className="text-xl font-bold mb-2 text-white">Gemini 3 Pro is analyzing...</h3>
                         <p className="text-gray-400 text-sm animate-pulse">Identifying brand, SKU, and calculating style score.</p>
+                    </div>
+                )}
+
+                {/* Saving Overlay */}
+                {saving && (
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                        <Loader2 size={48} className="text-primary animate-spin mb-4" />
+                        <h3 className="text-xl font-bold mb-2 text-white">Saving to Wardrobe...</h3>
                     </div>
                 )}
 
@@ -240,7 +268,9 @@ export default function AddItemPage() {
                                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-gray-300 uppercase tracking-widest border border-white/5">
                                             {preview.brand || "Unknown Brand"}
                                         </span>
-                                        {(preview.price || preview.price_estimate) && <span className="text-sm text-gray-400 font-mono">{preview.price || preview.price_estimate}</span>}
+                                        <span className="text-sm text-gray-400 font-mono">
+                                            {preview.price || preview.price_estimate || "Price Pending"}
+                                        </span>
                                     </div>
                                     <h2 className="text-3xl font-serif font-bold leading-tight mb-4">{preview.item_name || preview.sub_category || "Identified Item"}</h2>
                                     <p className="text-gray-300 leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1">

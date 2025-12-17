@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ChevronRight, Check, ArrowLeft, Ruler, Palette, Briefcase, Sparkles, User, Shirt } from "lucide-react";
+import { Upload, ChevronRight, Check, ArrowLeft, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
+import { GlossaryText } from "@/components/GlossaryText";
 
 export default function Onboarding() {
     const router = useRouter();
     const { saveProfile } = useProfile();
     const [step, setStep] = useState(1);
     const [analyzing, setAnalyzing] = useState(false);
+    const [styleDNA, setStyleDNA] = useState<any>(null);
 
     // Initialize with local state, we'll save to global state at the end
     const [formData, setFormData] = useState({
@@ -50,20 +52,40 @@ export default function Onboarding() {
         if (step < totalSteps) {
             setStep(step + 1);
         } else {
-            finishOnboarding();
+            generateDNA();
         }
     };
 
     const handleBack = () => setStep(step - 1);
 
-    const finishOnboarding = async () => {
+    const generateDNA = async () => {
         setAnalyzing(true);
-        // Simulate Gemini generating "Style DNA"
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        try {
+            // Call API
+            const res = await fetch("/api/style-dna/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
 
-        // Persist data
-        saveProfile(formData);
+            if (data.error) throw new Error(data.error);
 
+            // Success
+            setStyleDNA(data);
+
+        } catch (error) {
+            console.error("DNA Generation Error:", error);
+            alert("Failed to generate Style DNA. Proceeding to wardrobe.");
+            finishOnboarding();
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const finishOnboarding = () => {
+        // Persist data + DNA
+        saveProfile({ ...formData, styleDNA });
         router.push("/wardrobe");
     };
 
@@ -76,16 +98,102 @@ export default function Onboarding() {
         }));
     };
 
-    const archetypes = [
-        { name: "Minimalist", desc: "Clean lines, neutral colors, functional." },
-        { name: "Streetwear", desc: "Urban, comfortable, bold graphics." },
-        { name: "Classic", desc: "Timeless pieces, tailored fits, structured." },
-        { name: "Bohemian", desc: "Free-spirited, flowy fabrics, earthy tones." },
-        { name: "Avant-Garde", desc: "Experimental, unconventional silhouettes." },
-        { name: "Preppy", desc: "Polished, collegiate, traditional patterns." },
-        { name: "Glamorous", desc: "Luxe fabrics, sparkles, statement pieces." },
-        { name: "Rugged", desc: "Durable materials, outdoorsy, practical." },
-    ];
+    // If Style DNA is generated, show the Report View
+    if (styleDNA) {
+        return (
+            <div className="min-h-screen bg-background p-6 lg:p-12 overflow-y-auto">
+                <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                    <div className="text-center space-y-4 pt-10">
+                        <Sparkles size={48} className="text-primary mx-auto animate-pulse" />
+                        <h1 className="text-5xl font-serif font-bold">Your Style DNA</h1>
+                        <p className="text-xl text-primary font-mono tracking-widest uppercase">{styleDNA.archetype_name}</p>
+                        <p className="text-gray-400 max-w-2xl mx-auto">{styleDNA.summary}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Palette */}
+                        <div className="card glass p-8">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Palette className="text-primary" /> Signature Palette</h3>
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Neutrals</label>
+                                    <div className="flex gap-3">
+                                        {styleDNA.color_palette.neutrals.map((c: string, i: number) => (
+                                            <div key={i} className="w-12 h-12 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Accents</label>
+                                    <div className="flex gap-3">
+                                        {styleDNA.color_palette.accents.map((c: string, i: number) => (
+                                            <div key={i} className="w-12 h-12 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Avoid</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {styleDNA.color_palette.avoid.map((c: string, i: number) => (
+                                            <span key={i} className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs">{c}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Staples */}
+                        <div className="card glass p-8">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Shirt className="text-primary" /> Wardrobe Essentials</h3>
+                            <ul className="space-y-4">
+                                {styleDNA.must_have_staples.map((item: any, i: number) => (
+                                    <li key={i} className="flex gap-3 items-start">
+                                        <Check size={18} className="text-primary mt-1 shrink-0" />
+                                        <div>
+                                            <div className="font-bold">{item.item}</div>
+                                            <div className="text-sm text-gray-400">{item.why}</div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Brands */}
+                        <div className="card glass p-8">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Briefcase className="text-primary" /> Recommended Brands</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {styleDNA.brand_recommendations.map((brand: any, i: number) => (
+                                    <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="font-bold text-lg mb-1">{brand.name}</div>
+                                        <div className="text-xs text-primary mb-2 uppercase tracking-wider">{brand.tier}</div>
+                                        <div className="text-sm text-gray-400">{brand.why}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Tips */}
+                        <div className="card glass p-8">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Sparkles className="text-primary" /> Styling Wisdom</h3>
+                            <ul className="space-y-3">
+                                {styleDNA.styling_tips.map((tip: string, i: number) => (
+                                    <li key={i} className="text-gray-300 italic border-l-2 border-primary/30 pl-4 py-1">
+                                        "{tip}"
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-center pt-8 pb-12">
+                        <button onClick={finishOnboarding} className="btn btn-primary px-12 py-4 text-lg shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+                            Enter My Wardrobe <ArrowRight className="ml-2" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden bg-background">
@@ -114,9 +222,9 @@ export default function Onboarding() {
                     {/* Analyzing Overlay */}
                     {analyzing && (
                         <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center p-8 rounded-[var(--radius-lg)]">
-                            <Sparkles size={48} className="text-primary animate-pulse mb-6" />
-                            <h2 className="text-3xl font-serif font-bold mb-2">Generating Style DNA</h2>
-                            <p className="text-gray-400 max-w-md">Gemini is analyzing your inputs to create a hyper-personalized style profile...</p>
+                            <Loader2 size={48} className="text-primary animate-spin mb-6" />
+                            <h2 className="text-3xl font-serif font-bold mb-2">Decoding Your Style DNA</h2>
+                            <p className="text-gray-400 max-w-md">Analysing your biometrics, lifestyle, and preferences to build your unique style profile...</p>
                         </div>
                     )}
 
@@ -151,6 +259,10 @@ export default function Onboarding() {
                                             <label>Location (City)</label>
                                             <input type="text" placeholder="New York, NY" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label>Age</label>
+                                        <input type="number" placeholder="25" onChange={e => setFormData({ ...formData, age: e.target.value })} />
                                     </div>
                                 </div>
                             </div>
@@ -287,7 +399,7 @@ export default function Onboarding() {
                                     <span className="uppercase tracking-widest text-xs font-bold">Aesthetic</span>
                                 </div>
                                 <h1 className="text-4xl font-serif font-bold">Your Signature</h1>
-                                <p className="text-gray-400">Select the archetypes that resonate with your vision.</p>
+                                <p className="text-gray-400">Select the archetypes/aesthetics that resonate with your vision.</p>
 
                                 <div className="grid grid-cols-2 gap-3 pt-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
                                     {[
@@ -336,10 +448,10 @@ export default function Onboarding() {
                                         onChange={e => setFormData({ ...formData, priceRange: e.target.value })}
                                     >
                                         <option value="">Select Range...</option>
-                                        <option value="budget">High Street ($20 - $100)</option>
-                                        <option value="mid">Contemporary ($100 - $500)</option>
-                                        <option value="luxury">Designer ($500 - $2000)</option>
-                                        <option value="high_luxury">Couture / High Jewelry ($2000+)</option>
+                                        <option value="budget">High Street (Rs. 1,500 - 8,000)</option>
+                                        <option value="mid">Contemporary (Rs. 8,000 - 40,000)</option>
+                                        <option value="luxury">Designer (Rs. 40,000 - 1,50,000)</option>
+                                        <option value="high_luxury">Couture / High Jewelry (Rs. 1,50,000+)</option>
                                     </select>
                                 </div>
                             </div>
