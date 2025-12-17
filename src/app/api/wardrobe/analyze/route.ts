@@ -52,26 +52,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "AI Analysis failed" }, { status: 500 });
         }
 
-        // 3. Save to Database
-        // We might not have a user_id if calling from anon, but we'll try.
-        // For now, insert what we have.
-        const { error: dbError } = await supabase
-            .from('wardrobe_items')
-            .insert({
-                image_url: imageUrl,
-                category: analysis.category,
-                sub_category: analysis.sub_category,
-                brand: analysis.brand,
-                primary_color: analysis.color,
-                description: analysis.description,
-                style_tags: analysis.tags,
-                style_score: analysis.style_score,
-                ai_analysis: analysis
-            });
+        // 3. Save to Database - MOVED TO /api/wardrobe/add
+        // We now return the analysis and the image URL, and let the client call 'save' after review.
 
-        if (dbError) {
-            console.warn("DB Insert Error:", dbError);
-        }
+        // Return combined result
+        return NextResponse.json({
+            ...analysis,
+            image_url: imageUrl
+        });
 
         // Return combined result
         return NextResponse.json({

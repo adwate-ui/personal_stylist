@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: analysis.error }, { status: 500 });
         }
 
-        return NextResponse.json(analysis);
+        return NextResponse.json({
+            ...analysis,
+            image_url: imageUrl || analysis.image_url // Prefer scraped image or fallback to analysis guess
+        });
 
     } catch (error) {
         console.error("API Error:", error);

@@ -65,6 +65,7 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
     7. SKU / Search Query for this item.
     
     If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
+    If Style DNA is NOT provided, set "style_score" to null.
     
     Return JSON: { 
         "category": "", 
@@ -72,7 +73,7 @@ export async function analyzeProductLink(url: string, imageBuffer?: Buffer, meta
         "color": "", 
         "brand": "", 
         "sku_query": "",
-        "price": "", 
+        "price_estimate": "", 
         "description": "", 
         "image_url": "${metadata?.image || ''}",
         "style_score": 0,
@@ -117,9 +118,11 @@ export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: a
     - Specific Occasions (e.g. "Boardroom", "Gallery Opening", "Weekend Brunch")
     - Brand Name (Prediction if logo visible or style is iconic)
     - SKU Search Query (Keywords to find this item online)
+    - Estimated Price Range (e.g. "$50-100", "$500+") based on brand/material visibility.
     
     If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
-    
+    If Style DNA is NOT provided, set "style_score" to null.
+
     Return JSON: { 
         "item_name": "Concise Name", 
         "category": "", 
@@ -129,6 +132,7 @@ export async function identifyWardrobeItem(imageBuffer: Buffer, styleProfile?: a
         "color": "", 
         "occasion": "", 
         "tags": [], 
+        "price_estimate": "$0",
         "description": "Editorial summary",
         "style_score": 0,
         "style_reasoning": ""
