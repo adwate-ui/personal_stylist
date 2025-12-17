@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { Save, User, Ruler, Palette, Shirt } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, User, Ruler, Palette, Shirt, RefreshCw, Sparkles } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { useRouter } from "next/navigation";
 
 export default function PreferencesPage() {
-    // Mock initial state - in real app, fetch from Supabase
-    const [formData, setFormData] = useState({
-        name: "Jane Doe",
-        location: "New York, NY",
-        height: "175",
-        weight: "70",
-        bodyShape: "Hourglass",
-        archetypes: ["Minimalist", "Classic"]
-    });
+    const router = useRouter();
+    const { profile, saveProfile, loading } = useProfile();
+    const [formData, setFormData] = useState(profile);
 
-    const archetypes = ["Minimalist", "Streetwear", "Classic", "Bohemian", "Avant-Garde", "Preppy", "Glamorous", "Rugged"];
+    useEffect(() => {
+        if (!loading) {
+            setFormData(profile);
+        }
+    }, [profile, loading]);
+
+    const handleSave = () => {
+        saveProfile(formData);
+        alert("Preferences saved!");
+    };
+
+    const handleRedoOnboarding = () => {
+        if (confirm("This will reset your style profile. Continue?")) {
+            router.push("/onboarding");
+        }
+    };
+
+    const archetypes = ["Old Money", "Minimalist", "High Street", "Classic", "Bohemian", "Avant-Garde", "Ivy League", "Glamorous"];
 
     const toggleArchetype = (style: string) => {
         setFormData(prev => ({
@@ -25,6 +38,8 @@ export default function PreferencesPage() {
         }));
     };
 
+    if (loading) return <div className="p-8 text-center">Loading profile...</div>;
+
     return (
         <div className="p-8 pb-20 max-w-4xl mx-auto">
             <header className="mb-10 flex justify-between items-end">
@@ -32,10 +47,52 @@ export default function PreferencesPage() {
                     <h1 className="text-4xl font-serif font-bold mb-2">Style Preferences</h1>
                     <p className="text-gray-400">Manage your Style DNA and account settings.</p>
                 </div>
-                <button className="btn btn-primary">
-                    <Save size={20} className="mr-2" /> Save Changes
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={handleRedoOnboarding} className="btn btn-outline text-sm">
+                        <RefreshCw size={16} className="mr-2" /> Redo Onboarding
+                    </button>
+                    <button onClick={handleSave} className="btn btn-primary">
+                        <Save size={20} className="mr-2" /> Save Changes
+                    </button>
+                </div>
             </header>
+
+            {/* Style DNA Report */}
+            <div className="mb-12 glass p-8 border-[#d4af37]/20 border">
+                <div className="flex items-center gap-3 mb-6">
+                    <Sparkles className="text-primary" />
+                    <h2 className="text-2xl font-serif font-bold">Your Style DNA</h2>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">Core Archetypes</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {/* Ensure archetypes is an array */}
+                            {(formData.archetypes || []).map(a => (
+                                <span key={a} className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-full font-medium">
+                                    {a}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">Preferred Brands</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {/* Safe handling for brands which might be string or array */}
+                            {(typeof formData.brands === 'string'
+                                ? (formData.brands as string).split(',')
+                                : (Array.isArray(formData.brands) ? formData.brands : [])
+                            ).map((b: string) => (
+                                <span key={b} className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-sm">
+                                    {b.trim()}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="space-y-8">
                 {/* Section 1: Basic Info */}
@@ -114,8 +171,8 @@ export default function PreferencesPage() {
                                 key={style}
                                 onClick={() => toggleArchetype(style)}
                                 className={`p-3 rounded-xl border text-sm transition-all ${formData.archetypes.includes(style)
-                                        ? 'border-primary bg-primary/10 text-primary'
-                                        : 'border-white/10 hover:bg-white/5'
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-white/10 hover:bg-white/5'
                                     }`}
                             >
                                 {style}

@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Shirt, PlusCircle, Settings, LogOut, Sparkles } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { useRouter } from "next/navigation";
 
 export default function Navigation() {
     const pathname = usePathname();
+    const router = useRouter();
+    const { clearProfile } = useProfile();
 
     // Hide navigation on landing page, onboarding, and auth pages
     const isHidden = pathname === "/" || pathname?.startsWith("/onboarding") || pathname?.startsWith("/auth");
@@ -17,6 +21,13 @@ export default function Navigation() {
         { name: "Add Item", href: "/add-item", icon: PlusCircle },
         { name: "Preferences", href: "/preferences", icon: Settings },
     ];
+
+    const handleSignOut = () => {
+        if (confirm("Are you sure you want to sign out?")) {
+            clearProfile();
+            router.push("/");
+        }
+    };
 
     return (
         <>
@@ -35,8 +46,8 @@ export default function Navigation() {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                        ? "bg-primary text-black font-medium shadow-[0_0_15px_rgba(212,175,55,0.3)]"
-                                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                                    ? "bg-primary text-black font-medium shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+                                    : "text-gray-400 hover:bg-white/5 hover:text-white"
                                     }`}
                             >
                                 <item.icon size={20} className={isActive ? "text-black" : "group-hover:text-primary transition-colors"} />
@@ -47,7 +58,10 @@ export default function Navigation() {
                 </nav>
 
                 <div className="pt-6 border-t border-white/10">
-                    <button className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-white transition-colors w-full rounded-xl hover:bg-white/5">
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-white transition-colors w-full rounded-xl hover:bg-white/5"
+                    >
                         <LogOut size={20} />
                         <span>Sign Out</span>
                     </button>

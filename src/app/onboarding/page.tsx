@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, ChevronRight, Check, ArrowLeft, Ruler, Palette, Briefcase, Sparkles, User, Shirt } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function Onboarding() {
     const router = useRouter();
+    const { saveProfile } = useProfile();
     const [step, setStep] = useState(1);
     const [analyzing, setAnalyzing] = useState(false);
 
+    // Initialize with local state, we'll save to global state at the end
     const [formData, setFormData] = useState({
         // Basics
         name: "",
@@ -36,6 +39,8 @@ export default function Onboarding() {
 
         // Style
         archetypes: [] as string[],
+        brands: "" as string | string[], // Handle as string for input
+        priceRange: "",
         avatar: null as File | null,
     });
 
@@ -55,6 +60,10 @@ export default function Onboarding() {
         setAnalyzing(true);
         // Simulate Gemini generating "Style DNA"
         await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Persist data
+        saveProfile(formData);
+
         router.push("/wardrobe");
     };
 
@@ -244,14 +253,14 @@ export default function Onboarding() {
                                     <span className="uppercase tracking-widest text-xs font-bold">Lifestyle</span>
                                 </div>
                                 <h1 className="text-4xl font-serif font-bold">Your Day-to-Day</h1>
-                                <p className="text-gray-400">Select the environments you dress for most often.</p>
+                                <p className="text-gray-400">A world-class wardrobe is one that is worn. Where do you spend your time?</p>
 
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     {[
-                                        { id: 'work', label: 'Corporate / Office' },
-                                        { id: 'casual', label: 'Casual / Weekend' },
-                                        { id: 'event', label: 'Formal Events' },
-                                        { id: 'active', label: 'Gym / Active' }
+                                        { id: 'work', label: 'Corporate / Power' },
+                                        { id: 'casual', label: 'Leisure / Weekend' },
+                                        { id: 'event', label: 'Gala / High Society' },
+                                        { id: 'active', label: 'Movement / Wellness' }
                                     ].map(item => (
                                         <button
                                             key={item.id}
@@ -260,8 +269,8 @@ export default function Onboarding() {
                                                 lifestyle: { ...prev.lifestyle, [item.id]: !prev.lifestyle[item.id as keyof typeof prev.lifestyle] }
                                             }))}
                                             className={`p-6 rounded-xl border text-left transition-all h-32 flex flex-col justify-end ${formData.lifestyle[item.id as keyof typeof formData.lifestyle]
-                                                    ? 'border-primary bg-primary/10 text-primary'
-                                                    : 'border-white/10 hover:border-white/20 bg-surface'
+                                                ? 'border-primary bg-primary/10 text-primary'
+                                                : 'border-white/10 hover:border-white/20 bg-surface'
                                                 }`}
                                         >
                                             <span className="font-medium text-lg">{item.label}</span>
@@ -277,17 +286,26 @@ export default function Onboarding() {
                                     <Shirt size={24} />
                                     <span className="uppercase tracking-widest text-xs font-bold">Aesthetic</span>
                                 </div>
-                                <h1 className="text-4xl font-serif font-bold">Style Archetypes</h1>
-                                <p className="text-gray-400">Select up to 3 styles that resonate with you.</p>
+                                <h1 className="text-4xl font-serif font-bold">Your Signature</h1>
+                                <p className="text-gray-400">Select the archetypes that resonate with your vision.</p>
 
-                                <div className="grid grid-cols-2 gap-3 pt-4 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                                    {archetypes.map(archetype => (
+                                <div className="grid grid-cols-2 gap-3 pt-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                                    {[
+                                        { name: "Old Money", desc: "Quiet luxury, heritage fabrics, understated elegance." },
+                                        { name: "Minimalist", desc: "Clean lines, neutral palette, intentional simplicity." },
+                                        { name: "High Street", desc: "Trend-driven, bold, urban edge." },
+                                        { name: "Classic", desc: "Timeless tailoring, structured silhouettes." },
+                                        { name: "Bohemian", desc: "Free-spirited, artisanal textures, earthy." },
+                                        { name: "Avant-Garde", desc: "Experimental, architectural, rule-breaking." },
+                                        { name: "Ivy League", desc: "Polished, collegiate, traditional patterns." },
+                                        { name: "Glamorous", desc: "Opulent materials, statement pieces, high impact." },
+                                    ].map(archetype => (
                                         <button
                                             key={archetype.name}
                                             onClick={() => toggleArchetype(archetype.name)}
                                             className={`p-4 rounded-xl border text-left transition-all ${formData.archetypes.includes(archetype.name)
-                                                    ? 'border-primary bg-primary/10'
-                                                    : 'border-white/10 hover:bg-white/5'
+                                                ? 'border-primary bg-primary/10'
+                                                : 'border-white/10 hover:bg-white/5'
                                                 }`}
                                         >
                                             <div className={`font-bold mb-1 ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>
@@ -296,6 +314,33 @@ export default function Onboarding() {
                                             <div className="text-xs text-gray-400 leading-relaxed">{archetype.desc}</div>
                                         </button>
                                     ))}
+                                </div>
+
+                                <div className="mt-6 border-t border-white/10 pt-6">
+                                    <label className="block text-sm font-medium mb-2">Which brands do you admire?</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Brunello Cucinelli, Ralph Lauren, ZARA"
+                                        className="w-full"
+                                        value={formData.brands}
+                                        onChange={e => setFormData({ ...formData, brands: e.target.value.split(',') })} // Simple CSV handling
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
+                                </div>
+
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium mb-2">Typical Investment per Item</label>
+                                    <select
+                                        className="w-full"
+                                        value={formData.priceRange}
+                                        onChange={e => setFormData({ ...formData, priceRange: e.target.value })}
+                                    >
+                                        <option value="">Select Range...</option>
+                                        <option value="budget">High Street ($20 - $100)</option>
+                                        <option value="mid">Contemporary ($100 - $500)</option>
+                                        <option value="luxury">Designer ($500 - $2000)</option>
+                                        <option value="high_luxury">Couture / High Jewelry ($2000+)</option>
+                                    </select>
                                 </div>
                             </div>
                         )}
