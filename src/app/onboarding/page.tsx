@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ChevronRight, Check, ArrowLeft, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
+import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { GlossaryText } from "@/components/GlossaryText";
 
@@ -18,6 +18,7 @@ export default function Onboarding() {
         // Basics
         name: "",
         gender: "",
+        age: "",
         location: "", // Climate context
 
         // Body

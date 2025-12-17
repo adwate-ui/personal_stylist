@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 const DEFAULT_PROFILE = {
     name: "",
     gender: "",
+    age: "",
     location: "New York, NY",
     height: "",
     weight: "",
@@ -23,7 +24,8 @@ const DEFAULT_PROFILE = {
     archetypes: [] as string[],
     brands: [] as string[],
     priceRange: "",
-    styleReport: null as any
+    styleReport: null as any,
+    styleDNA: null as any
 };
 
 export function useProfile() {
