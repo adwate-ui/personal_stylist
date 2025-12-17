@@ -39,7 +39,7 @@ export default function Onboarding() {
 
         // Style
         archetypes: [] as string[],
-        brands: "" as string | string[], // Handle as string for input
+        brands: [] as string[],
         priceRange: "",
         avatar: null as File | null,
     });
@@ -322,8 +322,8 @@ export default function Onboarding() {
                                         type="text"
                                         placeholder="e.g. Brunello Cucinelli, Ralph Lauren, ZARA"
                                         className="w-full"
-                                        value={formData.brands}
-                                        onChange={e => setFormData({ ...formData, brands: e.target.value.split(',') })} // Simple CSV handling
+                                        value={Array.isArray(formData.brands) ? formData.brands.join(', ') : ''}
+                                        onChange={e => setFormData({ ...formData, brands: e.target.value.split(',').map(s => s.trim()) })}
                                     />
                                     <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
                                 </div>

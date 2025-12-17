@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
         }
 
-        const result = await ratePurchase(file);
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const result = await ratePurchase(buffer);
         return NextResponse.json(result);
 
     } catch (error) {

@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
         }
 
-        const analysis = await identifyWardrobeItem(file);
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const analysis = await identifyWardrobeItem(buffer);
         return NextResponse.json(analysis);
 
     } catch (error) {
