@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers } from "lucide-react";
+import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { WardrobeItem } from "@/types/wardrobe";
+import { useProfile } from "@/hooks/useProfile";
+import { getBrandSearchUrl } from "@/lib/product-links";
+import { formatPrice } from "@/lib/currency";
 
 // Inline Skeleton Component
 const WardrobeSkeleton = () => (
@@ -44,7 +47,7 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
 
 const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
     // Combine category and sub-category for better matching
-    const searchText = `${itemCategory || ''} ${itemSubCategory || ''}`.toLowerCase();
+    const searchText = `${itemCategory || ''} ${itemSubCategory || ''} `.toLowerCase();
 
     // Check specific lists first - order matters for specificity
     const orderedGroups = [
@@ -77,6 +80,8 @@ export default function WardrobePage() {
 
     const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    const { profile } = useProfile();
 
     // Initial load of preferences
     useEffect(() => {
@@ -213,7 +218,7 @@ export default function WardrobePage() {
                             onClick={(e) => { e.stopPropagation(); setSelectedItem(null); }}
                             className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors z-10"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                            <X size={24} />
                         </button>
 
                         <div className="w-full md:w-1/2 bg-[#050505] relative min-h-[300px] md:min-h-full">
@@ -247,10 +252,10 @@ export default function WardrobePage() {
                                         <span className="text-[#d4af37] font-bold">{selectedItem.style_score}/10 Match</span>
                                     </div>
                                 )}
-                                
+
                                 {/* Price and Link Section */}
                                 <div className="flex items-center gap-4 pb-4 border-b border-white/10">
-                                    {selectedItem.price && (
+                                    {selectedItem.price && profile?.location && (
                                         <div className="text-2xl font-bold text-primary">
                                             {formatPrice(selectedItem.price, profile.location)}
                                         </div>
@@ -263,8 +268,8 @@ export default function WardrobePage() {
                                             className="btn btn-primary px-6 py-2 text-sm flex items-center gap-2"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="9" cy="9" r="7"/>
-                                                <path d="m21 21-4.35-4.35"/>
+                                                <circle cx="9" cy="9" r="7" />
+                                                <path d="m21 21-4.35-4.35" />
                                             </svg>
                                             Find Similar Items
                                         </a>
@@ -326,8 +331,8 @@ export default function WardrobePage() {
                                         className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="9" cy="9" r="7"/>
-                                            <path d="m21 21-4.35-4.35"/>
+                                            <circle cx="9" cy="9" r="7" />
+                                            <path d="m21 21-4.35-4.35" />
                                         </svg>
                                         Shop {selectedItem.brand || 'Similar'}
                                     </a>
@@ -361,7 +366,7 @@ export default function WardrobePage() {
                     <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                         <button
                             onClick={() => setGroupByCategory(!groupByCategory)}
-                            className={`p-2 rounded-md transition-all flex items-center gap-2 text-sm ${groupByCategory ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            className={`p - 2 rounded - md transition - all flex items - center gap - 2 text - sm ${groupByCategory ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'} `}
                             title="Group by Category"
                         >
                             <Layers size={18} />
@@ -372,13 +377,13 @@ export default function WardrobePage() {
                     <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                         <button
                             onClick={() => handleSetViewMode('grid')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`p - 2 rounded - md transition - all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
                         >
                             <LayoutGrid size={18} />
                         </button>
                         <button
                             onClick={() => handleSetViewMode('list')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`p - 2 rounded - md transition - all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
                         >
                             <List size={18} />
                         </button>
@@ -388,19 +393,19 @@ export default function WardrobePage() {
                         <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                             <button
                                 onClick={() => handleSetGridSize('4x4')}
-                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '4x4' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '4x4' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
                             >
                                 4×4
                             </button>
                             <button
                                 onClick={() => handleSetGridSize('5x5')}
-                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '5x5' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '5x5' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
                             >
                                 5×5
                             </button>
                             <button
                                 onClick={() => handleSetGridSize('6x6')}
-                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '6x6' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '6x6' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
                             >
                                 6×6
                             </button>
@@ -442,7 +447,7 @@ export default function WardrobePage() {
                                         </h2>
                                     )}
 
-                                    <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
+                                    <div className={viewMode === 'grid' ? `grid - gallery - ${gridSize} ` : "space-y-4"}>
                                         {groupedItems[group].map((item) => (
                                             viewMode === 'grid' ? (
                                                 <div
@@ -512,7 +517,7 @@ export default function WardrobePage() {
                                                                 {item.name || item.sub_category || item.category}
                                                             </h3>
                                                             {item.style_score && (
-                                                                <span className={`text-sm font-bold px-3 py-1 rounded-full ${item.style_score > 80 ? 'bg-green-500/20 text-green-400' : 'bg-white/10'}`}>
+                                                                <span className={`text - sm font - bold px - 3 py - 1 rounded - full ${item.style_score > 80 ? 'bg-green-500/20 text-green-400' : 'bg-white/10'} `}>
                                                                     {item.style_score}/10
                                                                 </span>
                                                             )}
