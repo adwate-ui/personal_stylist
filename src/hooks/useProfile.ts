@@ -38,6 +38,17 @@ export function useProfile() {
     const [user, setUser] = useState<User | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const loadProfileFromStorage = () => {
+        const saved = localStorage.getItem('stylist_profile');
+        if (saved) {
+            try {
+                setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
+            } catch (e) {
+                console.error("Failed to parse profile", e);
+            }
+        }
+    };
+
     const profileToDatabase = (profileData: typeof DEFAULT_PROFILE) => {
         return {
             full_name: profileData.name,
@@ -109,14 +120,7 @@ export function useProfile() {
                 // Check if Supabase is configured before attempting to use it
                 if (!isSupabaseConfigured) {
                     // Fallback to localStorage when Supabase is not configured
-                    const saved = localStorage.getItem('stylist_profile');
-                    if (saved) {
-                        try {
-                            setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
-                        } catch (e) {
-                            console.error("Failed to parse profile", e);
-                        }
-                    }
+                    loadProfileFromStorage();
                     setLoading(false);
                     return;
                 }
@@ -161,41 +165,18 @@ export function useProfile() {
                             localStorage.setItem('stylist_profile', JSON.stringify(loadedProfile));
                         } else {
                             // Profile doesn't exist in DB, fallback to localStorage
-                            const saved = localStorage.getItem('stylist_profile');
-                            if (saved) {
-                                try {
-                                    setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
-                                } catch (e) {
-                                    console.error("Failed to parse profile", e);
-                                }
-                            } else {
-                                setProfile(DEFAULT_PROFILE);
-                            }
+                            loadProfileFromStorage();
                         }
                     }
                 } else {
                     // Not authenticated, use localStorage
-                    const saved = localStorage.getItem('stylist_profile');
-                    if (saved) {
-                        try {
-                            setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
-                        } catch (e) {
-                            console.error("Failed to parse profile", e);
-                        }
-                    }
+                    loadProfileFromStorage();
                 }
             } catch (err: any) {
                 console.error("Error initializing profile:", err);
                 setError(err.message);
                 // Fallback to localStorage on error
-                const saved = localStorage.getItem('stylist_profile');
-                if (saved) {
-                    try {
-                        setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
-                    } catch (e) {
-                        console.error("Failed to parse profile", e);
-                    }
-                }
+                loadProfileFromStorage();
             } finally {
                 setLoading(false);
             }

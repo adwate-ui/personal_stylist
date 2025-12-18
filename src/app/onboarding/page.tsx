@@ -152,7 +152,7 @@ export default function Onboarding() {
         if (!e.target.files?.[0]) return;
         
         if (!isSupabaseConfigured) {
-            alert('Avatar upload requires Supabase configuration. Please configure your environment variables.');
+            alert('Avatar upload is not available at this time. Please skip this step and continue with onboarding.');
             return;
         }
         
