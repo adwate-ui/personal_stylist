@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Required for OpenNext Cloudflare deployment
+  // This creates a standalone build with all dependencies bundled
+  output: 'standalone',
+
   // Image optimization for Cloudflare (since default Next.js Image Optimization is not supported on Pages without paid worker)
   images: {
     unoptimized: true,
