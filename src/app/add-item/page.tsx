@@ -46,15 +46,20 @@ export default function AddItemPage() {
         const file = e.target.files[0];
 
         try {
-            const apiKey = localStorage.getItem("gemini_api_key");
+            // Get API key from profile (preferred) or localStorage (fallback)
+            const apiKey = profile.gemini_api_key || localStorage.getItem("gemini_api_key");
+
             if (!apiKey) {
-                // Prompt for key if missing
-                if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
-                    router.push("/profile");
-                } else {
-                    throw new Error("API Key required for AI analysis.");
-                }
+                toast.error("API Key Required", {
+                    description: "Please set your Gemini API key in your profile to use AI analysis.",
+                    duration: 6000,
+                    action: {
+                        label: "Go to Profile",
+                        onClick: () => router.push("/profile")
+                    }
+                });
                 clearInterval(interval);
+                setLoading(false);
                 return;
             }
 

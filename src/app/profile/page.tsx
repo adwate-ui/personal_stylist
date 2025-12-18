@@ -13,6 +13,7 @@ export default function ProfilePage() {
     const { profile, user, saveProfile } = useProfile();
     const { theme, setTheme } = useTheme();
     const [apiKey, setApiKey] = useState("");
+    const [isEditingKey, setIsEditingKey] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -20,18 +21,29 @@ export default function ProfilePage() {
         setMounted(true);
         if (profile.gemini_api_key) {
             setApiKey(profile.gemini_api_key);
+            setIsEditingKey(false); // Key exists, don't show edit mode
         } else {
             // Fallback to local storage if not in profile yet
             const stored = localStorage.getItem("gemini_api_key");
-            if (stored) setApiKey(stored);
+            if (stored) {
+                setApiKey(stored);
+                setIsEditingKey(false);
+            } else {
+                setIsEditingKey(true); // No key, show input
+            }
         }
     }, [profile.gemini_api_key]);
 
     const handleSaveKey = async () => {
+        if (!apiKey.trim()) {
+            toast.error("Please enter a valid API key");
+            return;
+        }
         // Save to LocalStorage
         localStorage.setItem("gemini_api_key", apiKey);
         // Save to DB
         await saveProfile({ gemini_api_key: apiKey });
+        setIsEditingKey(false);
         toast.success("API Key saved to your account and device.");
     };
 
@@ -76,6 +88,25 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                {/* API Key Setup Alert */}
+                {!apiKey && (
+                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-6 space-y-3">
+                        <div className="flex items-start gap-3">
+                            <Key size={24} className="text-primary flex-shrink-0 mt-1" />
+                            <div>
+                                <h3 className="text-lg font-bold text-primary">⚠️ Action Required: Set Your Gemini API Key</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    To use AI-powered wardrobe analysis and shopping recommendations, you need to provide your own Google Gemini API key.
+                                    This key is securely stored in your profile and used exclusively for your requests.
+                                </p>
+                                <p className="text-sm text-primary/80 mt-2 font-medium">
+                                    👇 Scroll down to &quot;AI Configuration&quot; section to add your key.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Theme Settings */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3 text-primary mb-2">
@@ -104,30 +135,48 @@ export default function ProfilePage() {
                     </div>
                     <div className="card glass p-8 rounded-xl border border-border/50 space-y-6">
                         <div>
-                            <h3 className="text-xl font-bold mb-2">Gemini API Key</h3>
-                            <p className="text-sm text-muted-foreground mb-4">Required for AI Wardrobe Analysis. Your key is stored securely linked to your account.</p>
-                            <div className="flex gap-2">
-                                <input
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
-                                    placeholder="Enter your Google Gemini API Key"
-                                />
-                                <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2">
-                                    <Save size={18} /> Save
-                                </button>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</p>
+                            <h3 className="text-xl font-bold mb-2">Your Gemini API Key</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Your personal API key for AI analysis. This key is used exclusively for your requests and is stored securely in your profile.
+                                <strong className="text-primary"> No default keys are used.</strong>
+                            </p>
+
+                            {!isEditingKey && apiKey ? (
+                                // Show masked key with edit button
+                                <div className="space-y-3">
+                                    <div className="flex gap-2 items-center">
+                                        <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
+                                            {"•".repeat(32)} {apiKey.slice(-4)}
+                                        </div>
+                                        <button
+                                            onClick={() => setIsEditingKey(true)}
+                                            className="btn btn-outline px-6 flex items-center gap-2"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-green-600 dark:text-green-400">✓ API Key configured</p>
+                                </div>
+                            ) : (
+                                // Show input for new/editing key
+                                <div className="space-y-3">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="password"
+                                            value={apiKey}
+                                            onChange={(e) => setApiKey(e.target.value)}
+                                            className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
+                                            placeholder="Enter your Google Gemini API Key"
+                                        />
+                                        <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2">
+                                            <Save size={18} /> Save
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
-
-                {/* Account Actions */}
-                <div className="space-y-6 pt-8 border-t border-border/20">
-                    <button onClick={handleSignOut} className="w-full p-4 rounded-lg border border-border/20 bg-card/50 flex items-center justify-center gap-2 text-muted-foreground hover:bg-card hover:text-foreground transition-all">
-                        <LogOut size={18} /> Sign Out
-                    </button>
                 </div>
 
                 <div className="flex items-center gap-3 text-red-400 mb-2 pt-6">
