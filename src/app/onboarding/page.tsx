@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
@@ -10,6 +10,7 @@ import { generateStyleDNA, StyleDNA } from "@/lib/style-generator";
 
 export default function Onboarding() {
     const router = useRouter();
+    const [avatarPreview, setAvatarPreview] = useState<string>("");
     const { saveProfile } = useProfile();
     const [step, setStep] = useState(1);
     const [analyzing, setAnalyzing] = useState(false);
@@ -71,6 +72,24 @@ export default function Onboarding() {
 
     const totalSteps = 6;
 
+    // Load saved form data from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('onboarding_draft');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                setFormData(parsed);
+            } catch (e) {
+                console.error('Failed to parse saved onboarding data');
+            }
+        }
+    }, []);
+
+    // Save form data to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('onboarding_draft', JSON.stringify(formData));
+    }, [formData]);
+
     const handleNext = () => {
         if (step < totalSteps) {
             setStep(step + 1);
@@ -115,6 +134,7 @@ export default function Onboarding() {
             // Direct Supabase save (Client-Side)
             // Note: server-side API is disabled in static build
             await saveProfile({ ...formData, styleDNA });
+            localStorage.removeItem('onboarding_draft');
             router.push("/wardrobe");
         } catch (error) {
             console.error("Profile Save Error:", error);
@@ -157,6 +177,7 @@ export default function Onboarding() {
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
             setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
+            setAvatarPreview(data.publicUrl);
         } catch (error) {
             console.error('Error uploading avatar:', error);
             alert('Error uploading avatar!');
@@ -640,7 +661,7 @@ export default function Onboarding() {
                                     className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-white/5 relative group mt-8 overflow-hidden"
                                     onClick={() => document.getElementById('avatar-upload')?.click()}
                                 >
-                                    {formData.avatar_url ? (
+                                    {(avatarPreview || formData.avatar_url) ? (
                                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 group-hover:bg-black/30 transition-colors">
                                             <img src={formData.avatar_url} alt="Avatar" className="w-full h-full object-cover opacity-50" />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">

@@ -49,272 +49,279 @@ export default function StyleDNAPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Color Palette */}
-                    {styleDNA.color_palette && (
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <Palette className="text-primary" /> Signature Palette
-                            </h3>
-                            <div className="space-y-6">
-                                {styleDNA.color_palette.neutrals && styleDNA.color_palette.neutrals.length > 0 && (
-                                    <div>
-                                        <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">
-                                            Neutrals
-                                        </label>
-                                        <div className="flex gap-3">
-                                            {styleDNA.color_palette.neutrals.map((c: string, i: number) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-12 h-12 rounded-full border border-white/20 shadow-lg"
-                                                    style={{ backgroundColor: c }}
-                                                    title={c}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {styleDNA.color_palette.accents && styleDNA.color_palette.accents.length > 0 && (
-                                    <div>
-                                        <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">
-                                            Accents
-                                        </label>
-                                        <div className="flex gap-3">
-                                            {styleDNA.color_palette.accents.map((c: string, i: number) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-12 h-12 rounded-full border border-white/20 shadow-lg"
-                                                    style={{ backgroundColor: c }}
-                                                    title={c}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {styleDNA.color_palette.avoid && styleDNA.color_palette.avoid.length > 0 && (
-                                    <div>
-                                        <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">
-                                            Avoid
-                                        </label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {styleDNA.color_palette.avoid.map((item: any, i: number) => (
-                                                <div key={i} className="relative group">
-                                                    <div
-                                                        className="w-12 h-12 rounded-full border-2 border-red-500/50 opacity-50 relative"
-                                                        style={{ backgroundColor: typeof item === 'string' ? item : item.color }}
-                                                    >
-                                                        <div className="absolute inset-0 flex items-center justify-center text-red-500 text-2xl font-bold">×</div>
-                                                    </div>
-                                                    {typeof item === 'object' && item.reason && (
-                                                        <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs px-3 py-2 rounded whitespace-nowrap z-10">
-                                                            {item.reason}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Seasonal Variations */}
-                                {styleDNA.color_palette.seasonal_variations && (
-                                    <div className="mt-6 pt-6 border-t border-white/10">
-                                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                                            <span>🌸</span> Seasonal Palette
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {styleDNA.color_palette.seasonal_variations.spring_summer && (
-                                                <div>
-                                                    <label className="text-xs text-gray-400 block mb-2">Spring/Summer</label>
-                                                    <div className="flex gap-2">
-                                                        {styleDNA.color_palette.seasonal_variations.spring_summer.map((c: string, i: number) => (
-                                                            <div key={i} className="w-10 h-10 rounded-lg border border-white/10" style={{ backgroundColor: c }} title={c} />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {styleDNA.color_palette.seasonal_variations.fall_winter && (
-                                                <div>
-                                                    <label className="text-xs text-gray-400 block mb-2">Fall/Winter</label>
-                                                    <div className="flex gap-2">
-                                                        {styleDNA.color_palette.seasonal_variations.fall_winter.map((c: string, i: number) => (
-                                                            <div key={i} className="w-10 h-10 rounded-lg border border-white/10" style={{ backgroundColor: c }} title={c} />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Color Theory */}
-                                {styleDNA.color_palette.color_theory && (
-                                    <div className="mt-6 pt-6 border-t border-white/10">
-                                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                                            <span>🎨</span> Color Science
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            {styleDNA.color_palette.color_theory.skin_undertone && (
-                                                <div>
-                                                    <div className="text-xs text-gray-400 mb-1">Skin Undertone</div>
-                                                    <div className="font-medium capitalize">{styleDNA.color_palette.color_theory.skin_undertone}</div>
-                                                </div>
-                                            )}
-                                            {styleDNA.color_palette.color_theory.best_metal && (
-                                                <div>
-                                                    <div className="text-xs text-gray-400 mb-1">Best Metal</div>
-                                                    <div className="font-medium capitalize flex items-center gap-2">
-                                                        <span>{styleDNA.color_palette.color_theory.best_metal}</span>
-                                                        {styleDNA.color_palette.color_theory.best_metal.includes('gold') && <span>✨</span>}
-                                                        {styleDNA.color_palette.color_theory.best_metal.includes('silver') && <span>💎</span>}
-                                                        {styleDNA.color_palette.color_theory.best_metal.includes('rose') && <span>🌹</span>}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {styleDNA.color_palette.color_theory.complementary_colors && styleDNA.color_palette.color_theory.complementary_colors.length > 0 && (
-                                            <div className="mt-4">
-                                                <div className="text-xs text-gray-400 mb-2">Complementary Colors</div>
-                                                <div className="flex gap-2">
-                                                    {styleDNA.color_palette.color_theory.complementary_colors.map((c: string, i: number) => (
-                                                        <div key={i} className="w-8 h-8 rounded border border-white/10" style={{ backgroundColor: c }} title={c} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Wardrobe Essentials - Product Type View */}
-                    {styleDNA.must_have_staples && (
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <ShoppingBag className="text-primary" /> Wardrobe Essentials
-                            </h3>
-
-                            {Object.entries(styleDNA.must_have_staples).map(([category, productTypes]: [string, any]) => (
-                                <div key={category} className="mb-8 last:mb-0">
-                                    <h4 className="text-lg font-semibold mb-4 capitalize border-b border-white/10 pb-2">
-                                        {category.replace('_', ' ')}
-                                    </h4>
-
-                                    {Object.entries(productTypes).map(([type, items]: [string, any]) => (
-                                        <div key={type} className="mb-6 last:mb-0">
-                                            <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                                                {type.replace('_', ' ')}
-                                            </h5>
-
-                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                {items.map((item: any, i: number) => {
-                                                    const productUrl = item.product_url || getBrandSearchUrl(item.brand || '', item.item);
-                                                    const icon = getProductImagePlaceholder(item.item);
-
-                                                    return (
-                                                        <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
-                                                            {/* Product Image/Icon */}
-                                                            <a
-                                                                href={productUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="block relative overflow-hidden bg-white/10 aspect-square"
-                                                            >
-                                                                {item.image_url ? (
-                                                                    <img
-                                                                        src={item.image_url}
-                                                                        alt={item.item}
-                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="absolute inset-0 flex items-center justify-center text-5xl">
-                                                                        {icon}
-                                                                    </div>
-                                                                )}
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <span className="text-xs text-white font-medium">Shop at {item.brand || 'stores'} →</span>
-                                                                </div>
-                                                            </a>
-
-                                                            {/* Product Info */}
-                                                            <div className="p-3">
-                                                                <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
-                                                                {item.brand && (
-                                                                    <div className="text-xs text-primary mb-1">@ {item.brand}</div>
-                                                                )}
-                                                                {item.why && (
-                                                                    <div className="text-xs text-gray-400 line-clamp-2 mb-2">{item.why}</div>
-                                                                )}
-                                                                <a
-                                                                    href={productUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                                                                >
-                                                                    Shop Now →
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))}
+                {/* Style Pillars */}
+                {styleDNA.style_pillars && Array.isArray(styleDNA.style_pillars) && styleDNA.style_pillars.length > 0 && (
+                    <div className="card glass p-8">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <Heart className="text-primary" /> Style Pillars
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {styleDNA.style_pillars.map((pillar: string, i: number) => (
+                                <div key={i} className="bg-white/5 p-6 rounded-xl border border-white/10 text-center hover:border-primary/30 transition-all">
+                                    <div className="text-3xl mb-3">✨</div>
+                                    <div className="font-semibold">{pillar}</div>
                                 </div>
                             ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Brand Recommendations */}
-                    {styleDNA.brand_recommendations && styleDNA.brand_recommendations.length > 0 && (
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <Briefcase className="text-primary" /> Recommended Brands
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {styleDNA.brand_recommendations.map((brand: { name: string; tier: string; why?: string }, i: number) => (
-                                    <div
-                                        key={i}
-                                        className="bg-white/5 p-4 rounded-xl border border-white/5"
-                                    >
-                                        <div className="font-bold text-lg mb-1">{brand.name}</div>
-                                        <div className="text-xs text-primary mb-2 uppercase tracking-wider">
-                                            {brand.tier}
-                                        </div>
-                                        {brand.why && (
-                                            <div className="text-sm text-gray-400">{brand.why}</div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                {/* Color Palette */}
+                {styleDNA.color_palette && (
+                    <div className="card glass p-8">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <Palette className="text-primary" /> Signature Palette
+                        </h3>
 
-                    {/* Styling Tips */}
-                    {styleDNA.styling_tips && styleDNA.styling_tips.length > 0 && (
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <Sparkles className="text-primary" /> Styling Wisdom
-                            </h3>
-                            <div className="space-y-4">
-                                {styleDNA.styling_tips.map((tip: string, i: number) => (
-                                    <div
-                                        key={i}
-                                        className="bg-primary/5 border border-primary/20 rounded-xl p-4 hover:bg-primary/10 transition-all group"
-                                    >
-                                        <div className="flex gap-3 items-start">
-                                            <span className="text-primary text-2xl group-hover:scale-110 transition-transform">💡</span>
-                                            <p className="text-gray-300 italic flex-1">
-                                                &quot;{tip}&quot;
-                                            </p>
+                        {/* Neutrals and Accents */}
+                        <div className="grid grid-cols-2 gap-6 mb-6">
+                            {styleDNA.color_palette.neutrals && Array.isArray(styleDNA.color_palette.neutrals) && (
+                                <div>
+                                    <label className="text-sm text-gray-400 block mb-3">Your Neutrals</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {styleDNA.color_palette.neutrals.map((c: string, i: number) => (
+                                            <div key={i} className="w-16 h-16 rounded-lg border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {styleDNA.color_palette.accents && Array.isArray(styleDNA.color_palette.accents) && (
+                                <div>
+                                    <label className="text-sm text-gray-400 block mb-3">Accent Colors</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {styleDNA.color_palette.accents.map((c: string, i: number) => (
+                                            <div key={i} className="w-16 h-16 rounded-lg border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Avoid Colors */}
+                        {styleDNA.color_palette.avoid && Array.isArray(styleDNA.color_palette.avoid) && styleDNA.color_palette.avoid.length > 0 && (
+                            <div className="mb-6 pt-6 border-t border-white/10">
+                                <label className="text-sm text-gray-400 block mb-3">Colors to Avoid</label>
+                                <div className="flex gap-3 flex-wrap">
+                                    {styleDNA.color_palette.avoid.map((item: any, i: number) => {
+                                        const colorName = typeof item === 'string' ? item : item.color;
+                                        const reason = typeof item === 'object' ? item.reason : '';
+                                        return (
+                                            <div key={i} className="relative group">
+                                                <div className="w-12 h-12 rounded-lg border-2 border-red-500/50 bg-white/5 flex items-center justify-center">
+                                                    <span className="text-red-400 text-2xl">×</span>
+                                                </div>
+                                                {reason && (
+                                                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/90 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                        {reason}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Seasonal Variations */}
+                        {styleDNA.color_palette.seasonal_variations && (
+                            <div className="mt-6 pt-6 border-t border-white/10">
+                                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                                    <span>🌸</span> Seasonal Palette
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {styleDNA.color_palette.seasonal_variations.spring_summer && Array.isArray(styleDNA.color_palette.seasonal_variations.spring_summer) && (
+                                        <div>
+                                            <label className="text-xs text-gray-400 block mb-2">Spring/Summer</label>
+                                            <div className="flex gap-2">
+                                                {styleDNA.color_palette.seasonal_variations.spring_summer.map((c: string, i: number) => (
+                                                    <div key={i} className="w-10 h-10 rounded-lg border border-white/10" style={{ backgroundColor: c }} title={c} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {styleDNA.color_palette.seasonal_variations.fall_winter && Array.isArray(styleDNA.color_palette.seasonal_variations.fall_winter) && (
+                                        <div>
+                                            <label className="text-xs text-gray-400 block mb-2">Fall/Winter</label>
+                                            <div className="flex gap-2">
+                                                {styleDNA.color_palette.seasonal_variations.fall_winter.map((c: string, i: number) => (
+                                                    <div key={i} className="w-10 h-10 rounded-lg border border-white/10" style={{ backgroundColor: c }} title={c} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Color Theory */}
+                        {styleDNA.color_palette.color_theory && (
+                            <div className="mt-6 pt-6 border-t border-white/10">
+                                <h4 className="text-sm font-semibold mb-4">Color Science</h4>
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    {styleDNA.color_palette.color_theory.skin_undertone && (
+                                        <div>
+                                            <label className="text-xs text-gray-400 block mb-1">Undertone</label>
+                                            <div className="font-medium capitalize">{styleDNA.color_palette.color_theory.skin_undertone}</div>
+                                        </div>
+                                    )}
+                                    {styleDNA.color_palette.color_theory.best_metal && (
+                                        <div>
+                                            <label className="text-xs text-gray-400 block mb-1">Best Metal</label>
+                                            <div className="font-medium">
+                                                {styleDNA.color_palette.color_theory.best_metal === 'gold' && '✨ Gold'}
+                                                {styleDNA.color_palette.color_theory.best_metal === 'silver' && '💎 Silver'}
+                                                {styleDNA.color_palette.color_theory.best_metal === 'rose gold' && '🌹 Rose Gold'}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                {styleDNA.color_palette.color_theory.complementary_colors && Array.isArray(styleDNA.color_palette.color_theory.complementary_colors) && (
+                                    <div className="mt-4">
+                                        <label className="text-xs text-gray-400 block mb-2">Complementary Colors</label>
+                                        <div className="flex gap-2">
+                                            {styleDNA.color_palette.color_theory.complementary_colors.map((c: string, i: number) => (
+                                                <div key={i} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />
+                                            ))}
                                         </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Wardrobe Essentials */}
+                {styleDNA.must_have_staples && (
+                    <div className="card glass p-8">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <ShoppingBag className="text-primary" /> Wardrobe Essentials
+                        </h3>
+
+                        {(() => {
+                            const essentials = styleDNA.must_have_staples;
+
+                            // Handle array format (old)
+                            if (Array.isArray(essentials)) {
+                                return (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {essentials.map((item: any, i: number) => {
+                                            const productUrl = getBrandSearchUrl(item.brand || '', item.item);
+                                            const icon = getProductImagePlaceholder(item.item);
+                                            return (
+                                                <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
+                                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
+                                                        <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
+                                                    </a>
+                                                    <div className="p-3">
+                                                        <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
+                                                        {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
+                                                        {item.why && <div className="text-xs text-gray-400 line-clamp-2">{item.why}</div>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            }
+
+                            // Handle object format (new)
+                            if (typeof essentials === 'object' && essentials !== null) {
+                                return Object.entries(essentials).map(([category, productTypes]: [string, any]) => {
+                                    if (!productTypes || typeof productTypes !== 'object') return null;
+
+                                    return (
+                                        <div key={category} className="mb-8 last:mb-0">
+                                            <h4 className="text-lg font-semibold mb-4 capitalize border-b border-white/10 pb-2">
+                                                {category.replace(/_/g, ' ')}
+                                            </h4>
+
+                                            {Object.entries(productTypes).map(([type, items]: [string, any]) => {
+                                                if (!Array.isArray(items)) return null;
+
+                                                return (
+                                                    <div key={type} className="mb-6 last:mb-0">
+                                                        <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
+                                                            {type.replace(/_/g, ' ')}
+                                                        </h5>
+
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                            {items.map((item: any, i: number) => {
+                                                                const productUrl = item.product_url || getBrandSearchUrl(item.brand || '', item.item);
+                                                                const icon = getProductImagePlaceholder(item.item);
+
+                                                                return (
+                                                                    <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
+                                                                        <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
+                                                                            {item.image_url ? (
+                                                                                <img src={item.image_url} alt={item.item} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                                            ) : (
+                                                                                <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
+                                                                            )}
+                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <span className="text-xs text-white font-medium">Shop at {item.brand || 'stores'} →</span>
+                                                                            </div>
+                                                                        </a>
+                                                                        <div className="p-3">
+                                                                            <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
+                                                                            {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
+                                                                            {item.why && <div className="text-xs text-gray-400 line-clamp-2 mb-2">{item.why}</div>}
+                                                                            <a href={productUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                                                                                Shop Now →
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                });
+                            }
+
+                            return null;
+                        })()}
+                    </div>
+                )}
+
+                {/* Brand Recommendations */}
+                {styleDNA.brand_recommendations && Array.isArray(styleDNA.brand_recommendations) && styleDNA.brand_recommendations.length > 0 && (
+                    <div className="card glass p-8">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <Briefcase className="text-primary" /> Recommended Brands
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {styleDNA.brand_recommendations.map((brand: { name: string; tier: string; why?: string }, i: number) => (
+                                <div key={i} className="bg-white/5 p-4 rounded-lg border border-white/10 hover:border-primary/30 transition-all">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="font-bold">{brand.name}</div>
+                                        <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full">{brand.tier}</span>
+                                    </div>
+                                    {brand.why && <p className="text-sm text-gray-400">{brand.why}</p>}
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                {/* Styling Wisdom */}
+                {styleDNA.styling_wisdom && Array.isArray(styleDNA.styling_wisdom) && styleDNA.styling_wisdom.length > 0 && (
+                    <div className="card glass p-8">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <TrendingUp className="text-primary" /> Pro Styling Tips
+                        </h3>
+                        <div className="space-y-4">
+                            {styleDNA.styling_wisdom.map((tip: string, i: number) => (
+                                <div key={i} className="flex gap-4 bg-white/5 p-4 rounded-lg border border-white/10">
+                                    <div className="text-primary text-xl flex-shrink-0">💡</div>
+                                    <div className="text-sm text-gray-300">{tip}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

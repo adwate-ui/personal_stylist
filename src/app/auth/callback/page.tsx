@@ -15,16 +15,18 @@ function CallbackContent() {
         if (code) {
             supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
                 if (!error && data.session) {
-                    // Check if profile exists
+                    // Check if profile exists AND has completed onboarding (has styleDNA)
                     const { data: profile } = await supabase
                         .from('profiles')
-                        .select('id')
+                        .select('id, style_dna')
                         .eq('id', data.session.user.id)
                         .single();
 
-                    if (profile) {
+                    if (profile && profile.style_dna) {
+                        // Profile exists and onboarding complete
                         router.push('/wardrobe');
                     } else {
+                        // New user or incomplete onboarding
                         router.push(next); // Defaults to /onboarding
                     }
                 } else {

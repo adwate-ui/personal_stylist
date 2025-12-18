@@ -339,14 +339,38 @@ export async function generateStyleDNA(profile: any) {
                 "watches": [{ "item": "Minimal Watch", "brand": "...", "why": "...", "search_query": "..." }]
             }
         },
+        "celebrity_style_twins": [
+            { "name": "Celebrity/Icon", "why": "Style match reason" }
+        ],
+        "runway_inspiration": {
+            "designers": ["Designer names"],
+            "trends":  "Runway trends",
+            "adapt": "How to wear"
+        },
+        "seasonal_tips": "Tips for each season",
+        "occasion_outfits": {
+            "work": "Office formula",
+            "casual": "Weekend look",
+            "evening": "Date outfit",
+            "formal": "Event attire"
+        },
         "brand_recommendations": [
-            { "name": "Brand", "tier": "Budget/Mid/Luxury", "why": "Reason" }
+            { "name": "Brand in ${profile.location}", "tier": "${profile.priceRange}", "why": "Reason", "region": "${profile.location}", "gender": "${profile.gender}" }
+        ],
+        "shopping_strategy": {
+            "invest": ["Priority pieces"],
+            "save": ["Affordable items"],
+            "timing": "When to shop"
+        },
+        "budget_allocation": "How to split ${profile.priceRange} budget",
         ],
         "styling_tips": [
             "Tip specific to body shape",
             "Tip specific to lifestyle"
         ]
     }
+    
+    IMPORTANT: Filter brands by location ${profile.location}, gender ${profile.gender}, budget ${profile.priceRange}. Use brands: ${profile.brands.join(', ')}.
     `;
 
     try {
