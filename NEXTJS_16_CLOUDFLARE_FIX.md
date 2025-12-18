@@ -122,6 +122,8 @@ Expected output:
 OpenNext build complete.
 ```
 
+**Note on Local Testing**: If you encounter Google Fonts fetch errors during local builds (due to network restrictions), these won't occur on Cloudflare Pages which has internet access. The build will succeed in the Cloudflare Pages environment.
+
 ## API Routes Still Use Edge Runtime
 
 All API routes should continue to declare Edge runtime explicitly:
@@ -150,4 +152,4 @@ This is still required and works correctly in Next.js 16.
 
 ## Date
 
-December 18, 2025
+December 18, 2024
