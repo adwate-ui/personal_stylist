@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
+    // Skip middleware for RSC (React Server Components) requests
+    // These are internal Next.js requests and should not be intercepted
+    if (req.nextUrl.searchParams.has('_rsc')) {
+        return NextResponse.next();
+    }
+
     // Create an unmodified response first
     const res = NextResponse.next({
         request: {
@@ -31,5 +37,13 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: [
+        /*
+         * Match all request paths except:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         */
+        '/((?!_next/static|_next/image|favicon.ico).*)',
+    ],
 };
