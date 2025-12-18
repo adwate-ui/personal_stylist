@@ -6,8 +6,15 @@ compatibility_flags = ["nodejs_compat"]
 # This tells Cloudflare Pages where to find the build output
 pages_build_output_dir = ".open-next"
 
+# IMPORTANT: Cloudflare Pages Build Settings (set in dashboard):
+# - Build command: npm run build:cloudflare
+# - Build output directory: .open-next
+# - Framework preset: Next.js
+# - NODE_VERSION environment variable: 20
+
 # Environment variables should be set in Cloudflare Pages dashboard or using wrangler secrets:
-# - NEXT_PUBLIC_SUPABASE_URL
-# - NEXT_PUBLIC_SUPABASE_ANON_KEY
-# - GEMINI_API_KEY (as Secret)
-# - SUPABASE_SERVICE_ROLE_KEY (as Secret, optional)
+# - NEXT_PUBLIC_SUPABASE_URL (required)
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY (required)
+# - GEMINI_API_KEY (required, as Secret)
+# - NODE_VERSION (required, set to 20)
+# - SUPABASE_SERVICE_ROLE_KEY (optional, as Secret)
