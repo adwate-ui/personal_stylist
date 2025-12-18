@@ -1,9 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { supabaseUrl, supabaseKey, isSupabaseConfigured, isBrowser } from './supabase-config';
 
-// Warn during build if env vars are missing
-if (!isSupabaseConfigured && !isBrowser) {
-  console.warn('Missing Supabase environment variables - using placeholder values for build');
+// Only warn in browser if Supabase is not configured (indicating a deployment issue)
+// Suppress warning during build process to avoid confusion
+if (!isSupabaseConfigured && isBrowser) {
+  console.warn('⚠️ Supabase is not configured. Authentication and database features will not work. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.');
 }
 
 // Create a proxy that throws helpful errors when not configured

@@ -3,8 +3,10 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseUrl, supabaseKey, isSupabaseConfigured } from './supabase-config';
 
-if (!isSupabaseConfigured) {
-    console.warn('Missing Supabase environment variables - using placeholder values for build');
+// Warn only once during server initialization if Supabase is not configured
+// This is suppressed during build to avoid confusion in build logs
+if (!isSupabaseConfigured && typeof process !== 'undefined' && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ Supabase environment variables not configured in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
 }
 
 // Utility for Server Components and API Routes
