@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { ProfileData } from '@/types/profile';
 
@@ -86,6 +86,9 @@ export function useProfile() {
     };
 
     const getUser = async () => {
+        if (!isSupabaseConfigured) {
+            return null;
+        }
         try {
             const { data, error } = await supabase.auth.getUser();
             if (error) {
@@ -103,6 +106,21 @@ export function useProfile() {
     useEffect(() => {
         const init = async () => {
             try {
+                // Check if Supabase is configured before attempting to use it
+                if (!isSupabaseConfigured) {
+                    // Fallback to localStorage when Supabase is not configured
+                    const saved = localStorage.getItem('stylist_profile');
+                    if (saved) {
+                        try {
+                            setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) });
+                        } catch (e) {
+                            console.error("Failed to parse profile", e);
+                        }
+                    }
+                    setLoading(false);
+                    return;
+                }
+
                 const { data: { user } } = await supabase.auth.getUser();
                 setUser(user);
 
@@ -194,7 +212,11 @@ export function useProfile() {
         // 2. Sync to localStorage
         localStorage.setItem('stylist_profile', JSON.stringify(updated));
 
-        // 3. Sync to API / Supabase
+        // 3. Sync to API / Supabase (only if configured)
+        if (!isSupabaseConfigured) {
+            return; // Only use localStorage when Supabase is not configured
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return; // Fallback to localStorage only
 
@@ -245,14 +267,16 @@ export function useProfile() {
         // Reset local state
         setProfile(DEFAULT_PROFILE);
 
-        // Optional: Clear from Supabase
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            try {
-                await supabase.from('profiles').delete().eq('id', user.id);
-            } catch (err) {
-                // Silent fail
-                console.error("Error deleting profile from Supabase", err);
+        // Optional: Clear from Supabase (only if configured)
+        if (isSupabaseConfigured) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                try {
+                    await supabase.from('profiles').delete().eq('id', user.id);
+                } catch (err) {
+                    // Silent fail
+                    console.error("Error deleting profile from Supabase", err);
+                }
             }
         }
     };
