@@ -447,7 +447,7 @@ export default function WardrobePage() {
                                         </h2>
                                     )}
 
-                                    <div className={viewMode === 'grid' ? `grid - gallery - ${gridSize} ` : "space-y-4"}>
+                                    <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
                                         {groupedItems[group].map((item) => (
                                             viewMode === 'grid' ? (
                                                 <div

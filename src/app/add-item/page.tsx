@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GlossaryText } from "@/components/GlossaryText";
 import { AddItemSkeleton } from "@/components/Skeleton";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
@@ -19,6 +19,7 @@ export default function AddItemPage() {
     const [activeTab, setActiveTab] = useState<'upload' | 'link'>('upload');
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [wardrobeItems, setWardrobeItems] = useState<Array<{ name: string; category: string; color?: string }>>([]);
     const [url, setUrl] = useState("");
     const [preview, setPreview] = useState<WardrobeItemAnalysis | null>(null);
 
@@ -63,8 +64,8 @@ export default function AddItemPage() {
                 return;
             }
 
-            // Client-side analysis
-            const data = await analyzeImageWithGemini(file, apiKey);
+            // Client-side analysis with wardrobe context
+            const data = await analyzeImageWithGemini(file, apiKey, profile.location, wardrobeItems);
 
             clearInterval(interval);
             setProgress(100);
@@ -72,6 +73,10 @@ export default function AddItemPage() {
             if (data.error) throw new Error(data.message || data.error);
             // Append the uploaded image as a blob URL for preview
             data.image_url = URL.createObjectURL(file);
+            // Map primary_color to color field
+            if (data.primary_color && !data.color) {
+                data.color = data.primary_color;
+            }
             setPreview(data);
 
         } catch (err) {
@@ -133,7 +138,7 @@ export default function AddItemPage() {
                 throw new Error("API Key required");
             }
 
-            const analysis = await analyzeImageWithGemini(imgFile, apiKey, profile.location);
+            const analysis = await analyzeImageWithGemini(imgFile, apiKey, profile.location, wardrobeItems);
 
             // Merge scraped data with AI analysis
             const previewData: WardrobeItemAnalysis = {
@@ -143,6 +148,7 @@ export default function AddItemPage() {
                 description: data.description || analysis.description,
                 brand: data.brand || analysis.brand,
                 price: data.price || analysis.price,
+                color: analysis.primary_color || data.color, // Map primary_color to color
             };
 
             clearInterval(interval);
@@ -164,6 +170,34 @@ export default function AddItemPage() {
 
 
     const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        // Fetch wardrobe items for complementary suggestions
+        const fetchWardrobe = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const { data } = await supabase
+                    .from('wardrobe_items')
+                    .select('name, category, color')
+                    .eq('user_id', user.id)
+                    .limit(50); // Limit to prevent huge prompts
+
+                if (data) {
+                    setWardrobeItems(data.map(item => ({
+                        name: item.name || item.category,
+                        category: item.category,
+                        color: item.color
+                    })));
+                }
+            } catch (err) {
+                console.error('Failed to fetch wardrobe:', err);
+            }
+        };
+
+        fetchWardrobe();
+    }, []);
 
     const saveDetails = async () => {
         if (!preview) return;

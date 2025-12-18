@@ -53,11 +53,26 @@
   }
 
   .light .glass {
-    @apply bg-white/90 border-gray-200;
+    @apply bg-white/95 border-gray-200 shadow-sm;
   }
 
   .light .card {
     @apply bg-white border-gray-200;
+  }
+
+  .light .text-muted-foreground {
+    color: #1f2937 !important;
+    /* gray-800 for better contrast */
+  }
+
+  .light .text-gray-400 {
+    color: #4b5563 !important;
+    /* gray-600 */
+  }
+
+  .light .text-gray-300 {
+    color: #374151 !important;
+    /* gray-700 */
   }
 
   input,

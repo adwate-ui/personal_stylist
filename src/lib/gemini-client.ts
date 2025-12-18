@@ -46,25 +46,35 @@ async function createModelWithFallback(genAI: GoogleGenerativeAI) {
     return genAI.getGenerativeModel({ model: MODELS.free_secondary });
 }
 
-export async function analyzeImageWithGemini(file: File, apiKey: string, userLocation?: string): Promise<WardrobeItemAnalysis> {
+export async function analyzeImageWithGemini(
+    file: File,
+    apiKey: string,
+    userLocation?: string,
+    wardrobeItems?: Array<{ name: string; category: string; color?: string }>
+): Promise<WardrobeItemAnalysis> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const base64Data = await fileToBase64(file);
 
     // Import currency utility inline to avoid circular deps
     const currencySymbol = userLocation && userLocation.toLowerCase().includes('india') ? '₹' : '$';
 
+    // Build wardrobe context for complementary items
+    const wardrobeContext = wardrobeItems && wardrobeItems.length > 0
+        ? `\n\nUser's Current Wardrobe:\n${wardrobeItems.map((item, i) => `${i + 1}. ${item.name || item.category} (${item.color || 'color N/A'})`).join('\n')}\n\nFor complementary_items, ONLY suggest items from the above wardrobe list by their exact names.`
+        : '\n\nUser has no wardrobe items yet. For complementary_items, suggest 5 general item types (e.g., "White sneakers", "Navy chinos") that would pair well.';
+
     const prompt = `Analyze this clothing item for a personal stylist app. Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
     - category: string (Top, Bottom, Outerwear, Shoes, Accessory, Dress, Bag, Other)
     - sub_category: string (e.g., T-Shirt, Jeans, Blazer, Sneakers)
-    - primary_color: string (generic color name)
+    - primary_color: string (precise color name, e.g., "Navy Blue", "Charcoal Gray", "Crimson Red", NOT just "Blue" or "Red")
     - style_tags: string[] (e.g., ["casual", "streetwear", "minimalist", "vintage"])
     - description: string (short, engaging description)
     - price_estimate: string (e.g., "${currencySymbol}${currencySymbol}", "${currencySymbol}${currencySymbol}${currencySymbol}", "${currencySymbol}") - use ${currencySymbol} symbol
     - style_score: number (1-100, purely objective style rating based on versatility and trend)
     - brand: string (brand name if visible, else empty)
     - styling_tips: string[] (3 short tips on how to style this item)
-    - complementary_items: string[] (5 specific items that would pair well with this piece, e.g., "Navy chinos", "White sneakers", "Denim jacket")
-    `;
+    - complementary_items: string[] (5 items that would pair well with this piece${wardrobeItems && wardrobeItems.length > 0 ? ' - ONLY from the user\'s wardrobe list above' : ''})
+    ${wardrobeContext}`;
 
     const modelsToTry = [
         MODELS.premium_primary,
