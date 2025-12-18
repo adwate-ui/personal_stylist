@@ -1,20 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
-
-// Check if we're in a browser environment
-const isBrowser = typeof window !== 'undefined';
-
-// Use placeholder values for build-time only
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-
-// Check if configuration is valid
-const isConfigured = 
-  process.env.NEXT_PUBLIC_SUPABASE_URL && 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-  !supabaseUrl.includes('placeholder');
+import { supabaseUrl, supabaseKey, isSupabaseConfigured, isBrowser } from './supabase-config';
 
 // Warn during build if env vars are missing
-if (!isConfigured && !isBrowser) {
+if (!isSupabaseConfigured && !isBrowser) {
   console.warn('Missing Supabase environment variables - using placeholder values for build');
 }
 
@@ -23,7 +11,7 @@ const createSafeClient = () => {
   const client = createBrowserClient(supabaseUrl, supabaseKey);
   
   // If running in browser with placeholder values, wrap the client
-  if (isBrowser && !isConfigured) {
+  if (isBrowser && !isSupabaseConfigured) {
     return new Proxy(client, {
       get(target, prop) {
         // Allow certain properties to be accessed for compatibility
@@ -56,4 +44,4 @@ const createSafeClient = () => {
 };
 
 export const supabase = createSafeClient();
-export const isSupabaseConfigured = isConfigured;
+export { isSupabaseConfigured };
