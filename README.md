@@ -95,6 +95,17 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Cloudflare Pages Deployment
 
+> [!WARNING]
+> **🚨 GETTING 404 ERRORS FOR STATIC ASSETS?**
+> 
+> If you see 404 errors for CSS, JS, or fonts with "turbopack" in the file names:
+> 
+> **👉 ACTION REQUIRED:** [ACTION_REQUIRED.md](./ACTION_REQUIRED.md)
+> 
+> **Quick Fix (5 min):** [QUICK_FIX_404_ERRORS.md](./QUICK_FIX_404_ERRORS.md)
+>
+> Your code is correct, but Cloudflare Pages needs to rebuild with cleared cache.
+
 This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare) for deployment, which replaces the deprecated `@cloudflare/next-on-pages` package.
 
 > [!IMPORTANT]
@@ -105,10 +116,11 @@ This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/clou
 
 ### Quick Start
 
-1. Set environment variables in Cloudflare Pages (see below)
-2. Configure build settings (Framework: Next.js, Build command: `npm run build:cloudflare`, Output: `.open-next`)
-3. Add your Cloudflare Pages URL to Supabase Auth redirect URLs
-4. Deploy!
+1. **Verify your build configuration**: Run `npm run verify:config` to ensure everything is set up correctly
+2. Set environment variables in Cloudflare Pages (see below)
+3. Configure build settings (Framework: Next.js, Build command: `npm run build:cloudflare`, Output: `.open-next`)
+4. Add your Cloudflare Pages URL to Supabase Auth redirect URLs
+5. Deploy!
 
 📖 **For detailed step-by-step instructions, see [CLOUDFLARE_DEPLOYMENT_GUIDE.md](./CLOUDFLARE_DEPLOYMENT_GUIDE.md)**
 
@@ -149,10 +161,15 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 
 ### Common Issues
 
-**404 errors for static assets (CSS, JS, fonts)**
+**404 errors for static assets (CSS, JS, fonts) - STILL HAPPENING AFTER FIX?**
 - **Cause**: Next.js 16 defaulted to Turbopack, which is incompatible with `@opennextjs/cloudflare`
-- **Fix**: Fixed in current build configuration using `--webpack` flag
-- **Details**: See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md) for technical details
+- **Fix**: The build configuration has been fixed, but you need to trigger a clean rebuild
+- **SOLUTION**: See [CLOUDFLARE_PAGES_REBUILD_GUIDE.md](./CLOUDFLARE_PAGES_REBUILD_GUIDE.md) for step-by-step instructions to:
+  - Clear Cloudflare Pages build cache
+  - Purge CDN cache
+  - Force a fresh deployment with webpack
+- **Quick check**: Run `npm run verify:config` to verify your local configuration is correct
+- **Technical details**: See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md)
 
 **"Node.js middleware is not currently supported" error**
 - **Cause**: Incompatibility between Next.js 16's proxy.ts convention and @opennextjs/cloudflare
