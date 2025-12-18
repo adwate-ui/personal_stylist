@@ -314,12 +314,12 @@ export default function AddItemPage() {
                                         <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
                                     </div>
                                     <a
-                                        href={`https://www.google.com/search?q=${encodeURIComponent((preview.brand || "") + " " + (preview.item_name || preview.sub_category))}&btnI=1`}
+                                        href={`https://www.google.com/search?q=${encodeURIComponent((preview.brand || "") + " " + (preview.item_name || preview.sub_category))}&tbm=shop`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4"
                                     >
-                                        View Product Page (Best Match)
+                                        View Purchasing Options
                                     </a>
                                 </div>
 

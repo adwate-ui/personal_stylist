@@ -17,14 +17,21 @@ export async function POST(req: NextRequest) {
         // Security check: Ensure user is only saving their own images
         // Expected format: .../wardrobe_items/USER_ID/filename.jpg
         if (item?.image_url) {
-            const hasUserInPath = item.image_url.includes(`/${user.id}/`);
-            if (!hasUserInPath) {
-                console.error("Security Alert: User attempted to save image from another path", {
-                    attemptedUrl: item.image_url,
-                    userId: user.id
-                });
-                return NextResponse.json({ error: "Forbidden: Invalid image path" }, { status: 403 });
+            // Check if it's an internal storage path or an external URL
+            const isInternalStorage = item.image_url.includes(process.env.NEXT_PUBLIC_SUPABASE_URL) ||
+                item.image_url.includes('supabase.co/storage');
+
+            if (isInternalStorage) {
+                const hasUserInPath = item.image_url.includes(`/${user.id}/`);
+                if (!hasUserInPath) {
+                    console.error("Security Alert: User attempted to save image from another path", {
+                        attemptedUrl: item.image_url,
+                        userId: user.id
+                    });
+                    return NextResponse.json({ error: "Forbidden: Invalid image path" }, { status: 403 });
+                }
             }
+            // External URLs are allowed (e.g. from product pages)
         }
 
         if (!item || !item.image_url) {

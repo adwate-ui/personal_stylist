@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers } from "lucide-react";
 
 // Inline Skeleton Component
 const WardrobeSkeleton = () => (
@@ -15,16 +15,34 @@ const WardrobeSkeleton = () => (
                         <div className="h-6 w-24 bg-gray-800/50 rounded" />
                         <div className="h-5 w-12 bg-gray-800/50 rounded" />
                     </div>
-                    <div className="h-4 w-full bg-gray-800/50 rounded" />
-                    <div className="flex gap-2">
-                        <div className="h-6 w-16 bg-gray-800/50 rounded-full" />
-                        <div className="h-6 w-16 bg-gray-800/50 rounded-full" />
-                    </div>
                 </div>
             </div>
         ))}
     </>
 );
+
+const CATEGORY_GROUPS: Record<string, string[]> = {
+    'Men': ['Suits', 'Shirts', 'Pants', 'Jackets', 'T-Shirts', 'Shorts', 'Activewear'],
+    'Women': ['Dresses', 'Skirts', 'Blouses', 'Tops', 'Pants', 'Jackets', 'Activewear', 'Lingerie'],
+    'Shoes': ['Sneakers', 'Boots', 'Dress Shoes', 'Heels', 'Flats', 'Sandals'],
+    'Accessories': ['Bags', 'Belts', 'Hats', 'Jewelry', 'Scarves', 'Watches'],
+};
+
+const getMasterCategory = (itemCategory: string, itemGender?: string) => {
+    // Simple heuristic mapping
+    const cat = itemCategory || 'Uncategorized';
+
+    // Check specific lists first
+    for (const [group, list] of Object.entries(CATEGORY_GROUPS)) {
+        if (list.some(c => cat.toLowerCase().includes(c.toLowerCase()))) {
+            return group;
+        }
+    }
+
+    // Fallback based on gender if available, or just 'Other'
+    if (['Men', 'Women'].includes(itemGender || '')) return itemGender!;
+    return 'Wardrobe';
+};
 
 export default function WardrobePage() {
     const [items, setItems] = useState<any[]>([]);
@@ -33,6 +51,8 @@ export default function WardrobePage() {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [groupByCategory, setGroupByCategory] = useState(true);
 
     const fetchItems = async (pageNum = 1, isLoadMore = false) => {
         if (!isLoadMore) {
@@ -77,16 +97,58 @@ export default function WardrobePage() {
         fetchItems(page + 1, true);
     };
 
+    const groupedItems = items.reduce((acc, item) => {
+        const group = groupByCategory
+            ? getMasterCategory(item.category || item.sub_category, item.gender)
+            : 'All Items';
+
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(item);
+        return acc;
+    }, {} as Record<string, any[]>);
+
+    // Sort groups ensures consistent order
+    const sortedGroups = Object.keys(groupedItems).sort();
+
     return (
         <div className="min-h-screen p-8 pb-20">
-            <header className="flex justify-between items-center mb-10">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                 <div>
                     <h1 className="text-4xl font-bold mb-2 font-serif">My Wardrobe</h1>
                     <p className="text-gray-400">Digitize and organize your style.</p>
                 </div>
-                <Link href="/add-item" className="btn btn-primary">
-                    <Plus size={20} className="mr-2" /> Add Item
-                </Link>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                        <button
+                            onClick={() => setGroupByCategory(!groupByCategory)}
+                            className={`p-2 rounded-md transition-all flex items-center gap-2 text-sm ${groupByCategory ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            title="Group by Category"
+                        >
+                            <Layers size={18} />
+                            <span className="hidden sm:inline">Groups</span>
+                        </button>
+                    </div>
+
+                    <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <List size={18} />
+                        </button>
+                    </div>
+
+                    <Link href="/add-item" className="btn btn-primary">
+                        <Plus size={20} className="mr-2" /> <span className="hidden sm:inline">Add Item</span>
+                    </Link>
+                </div>
             </header>
 
             {error ? (
@@ -109,50 +171,94 @@ export default function WardrobePage() {
                             <p className="text-xl">Your wardrobe is empty. Start adding items!</p>
                         </div>
                     ) : (
-                        <div className="grid-gallery">
-                            {items.map((item) => (
-                                <div key={item.id} className="card group relative">
-                                    <div className="aspect-[3/4] overflow-hidden bg-gray-800">
-                                        <img
-                                            src={item.image_url || "/placeholder-garment.jpg"}
-                                            alt={item.name || item.sub_category}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        />
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-lg capitalize truncate pr-2">
-                                                {item.name || item.sub_category || item.category}
-                                            </h3>
-                                            {item.style_score && (
-                                                <span className="bg-white/10 text-xs px-2 py-1 rounded whitespace-nowrap">
-                                                    {item.style_score}/10
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-gray-400 mb-3 line-clamp-2">
-                                            {item.description || item.ai_analysis?.description || "No description available"}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {item.season && (
-                                                <span className="text-xs border border-white/20 px-2 py-1 rounded-full capitalize">
-                                                    {item.season}
-                                                </span>
-                                            )}
-                                            {item.color && (
-                                                <span className="text-xs border border-white/20 px-2 py-1 rounded-full capitalize">
-                                                    {item.color}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                        <div className="space-y-12">
+                            {sortedGroups.map(group => (
+                                <div key={group} className="animate-fade-in">
+                                    {groupByCategory && (
+                                        <h2 className="text-2xl font-serif font-bold mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
+                                            {group} <span className="text-xs font-sans font-normal text-gray-500 bg-white/5 px-2 py-1 rounded-full">{groupedItems[group].length}</span>
+                                        </h2>
+                                    )}
 
-                                    {/* Hover Overlay */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
-                                        <Sparkles size={24} className="text-[#d4af37] mb-2" />
-                                        <p className="text-sm font-medium">
-                                            {item.ai_analysis?.styling_tips?.[0] || item.critique || "View details for styling tips"}
-                                        </p>
+                                    <div className={viewMode === 'grid' ? "grid-gallery" : "space-y-4"}>
+                                        {groupedItems[group].map((item: any) => (
+                                            viewMode === 'grid' ? (
+                                                <div key={item.id} className="card group relative">
+                                                    <div className="aspect-[3/4] overflow-hidden bg-gray-800">
+                                                        <img
+                                                            src={item.image_url || "/placeholder-garment.jpg"}
+                                                            alt={item.name || item.sub_category}
+                                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                        />
+                                                    </div>
+                                                    <div className="p-4">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <h3 className="font-bold text-lg capitalize truncate pr-2">
+                                                                {item.name || item.sub_category || item.category}
+                                                            </h3>
+                                                            {item.style_score && (
+                                                                <span className="bg-white/10 text-xs px-2 py-1 rounded whitespace-nowrap">
+                                                                    {item.style_score}/10
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mb-3 line-clamp-2">
+                                                            {item.description || item.ai_analysis?.description || "No description available"}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {item.brand && (
+                                                                <span className="text-xs border border-white/20 px-2 py-1 rounded-full capitalize bg-white/5">
+                                                                    {item.brand}
+                                                                </span>
+                                                            )}
+                                                            {item.season && (
+                                                                <span className="text-xs border border-white/20 px-2 py-1 rounded-full capitalize">
+                                                                    {item.season}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Hover Overlay */}
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm pointer-events-none">
+                                                        <Sparkles size={24} className="text-[#d4af37] mb-2" />
+                                                        <p className="text-sm font-medium">
+                                                            {item.ai_analysis?.styling_tips?.[0] || item.critique || "View details for styling tips"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div key={item.id} className="card p-4 flex gap-6 items-center hover:bg-white/5 transition-colors group">
+                                                    <div className="w-24 h-32 shrink-0 bg-gray-800 rounded-lg overflow-hidden">
+                                                        <img
+                                                            src={item.image_url || "/placeholder-garment.jpg"}
+                                                            alt={item.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <h3 className="font-bold text-xl capitalize truncate">
+                                                                {item.name || item.sub_category || item.category}
+                                                            </h3>
+                                                            {item.style_score && (
+                                                                <span className={`text-sm font-bold px-3 py-1 rounded-full ${item.style_score > 80 ? 'bg-green-500/20 text-green-400' : 'bg-white/10'}`}>
+                                                                    {item.style_score}/10
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-400 mb-3 line-clamp-1">
+                                                            {item.description || item.ai_analysis?.description}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {item.brand && <span className="badge badge-outline">{item.brand}</span>}
+                                                            {item.category && <span className="badge badge-outline">{item.category}</span>}
+                                                            {item.color && <span className="badge badge-outline">{item.color}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        ))}
                                     </div>
                                 </div>
                             ))}

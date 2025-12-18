@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
+import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2, Image as ImageIcon } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { GlossaryText } from "@/components/GlossaryText";
+import { supabase } from "@/lib/supabase";
 
 export default function Onboarding() {
     const router = useRouter();
@@ -45,8 +46,27 @@ export default function Onboarding() {
         archetypes: [] as string[],
         brands: [] as string[],
         priceRange: "",
-        avatar: null as File | null,
+        avatar: "", // Stores string URL now
     });
+
+    const bodyShapeVisuals: Record<string, string> = {
+        'Inverted Triangle': 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80',
+        'Rectangle': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
+        'Triangle': 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80',
+        'Hourglass': 'https://images.unsplash.com/photo-1534030347209-7116631169c3?w=400&q=80',
+        'Oval': 'https://images.unsplash.com/photo-1605763240004-7e93b172d754?w=400&q=80'
+    };
+
+    const aestheticVisuals: Record<string, string> = {
+        'Old Money': 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?w=500&q=80',
+        'Minimalist': 'https://images.unsplash.com/photo-1603217039640-afa96f48d66e?w=500&q=80',
+        'High Street': 'https://images.unsplash.com/photo-1550614000-4b9519e020d9?w=500&q=80',
+        'Classic': 'https://images.unsplash.com/photo-1507680434567-5739c8a92405?w=500&q=80',
+        'Bohemian': 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=500&q=80',
+        'Avant-Garde': 'https://images.unsplash.com/photo-1529139574466-a302d2d46dfd?w=500&q=80',
+        'Ivy League': 'https://images.unsplash.com/photo-1617137968427-85924c809a10?w=500&q=80',
+        'Glamorous': 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=500&q=80'
+    };
 
     const totalSteps = 6;
 
@@ -126,6 +146,32 @@ export default function Onboarding() {
                 ? prev.archetypes.filter(s => s !== style)
                 : [...prev.archetypes, style]
         }));
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return;
+        setAnalyzing(true); // Reuse loading state
+        try {
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+            setFormData(prev => ({ ...prev, avatar: data.publicUrl }));
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            alert('Error uploading avatar!');
+        } finally {
+            setAnalyzing(false);
+        }
     };
 
     // If Style DNA is generated, show the Report View
@@ -324,11 +370,15 @@ export default function Onboarding() {
                                         {['Inverted Triangle', 'Rectangle', 'Triangle', 'Hourglass', 'Oval'].map(shape => (
                                             <button
                                                 key={shape}
-                                                className={`p-3 rounded-lg border text-sm transition-all ${formData.bodyShape === shape ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:border-white/30'
+                                                className={`p-3 rounded-lg border text-sm transition-all relative overflow-hidden group min-h-[140px] flex flex-col justify-end ${formData.bodyShape === shape ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'
                                                     }`}
                                                 onClick={() => setFormData({ ...formData, bodyShape: shape })}
                                             >
-                                                {shape}
+                                                <div className="absolute inset-0 z-0">
+                                                    <img src={bodyShapeVisuals[shape]} alt={shape} className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
+                                                    <div className={`absolute inset-0 bg-gradient-to-t from-black/90 to-transparent ${formData.bodyShape === shape ? 'opacity-90' : 'opacity-100'}`} />
+                                                </div>
+                                                <span className={`relative z-10 font-bold ${formData.bodyShape === shape ? 'text-primary' : 'text-white'}`}>{shape}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -363,16 +413,29 @@ export default function Onboarding() {
 
                                 <div className="space-y-4 pt-4">
                                     <div>
-                                        <label>Skin Tone & Undertone</label>
-                                        <select value={formData.skinTone} onChange={e => setFormData({ ...formData, skinTone: e.target.value })}>
-                                            <option value="">Select...</option>
-                                            <option value="fair_cool">Fair (Cool/Pink)</option>
-                                            <option value="fair_warm">Fair (Warm/Yellow)</option>
-                                            <option value="medium_cool">Medium (Cool/Olive)</option>
-                                            <option value="medium_warm">Medium (Warm/Golden)</option>
-                                            <option value="dark_cool">Dark (Cool/Blue)</option>
-                                            <option value="dark_warm">Dark (Warm/Red)</option>
-                                        </select>
+                                        <label className="block mb-3">Skin Tone & Undertone</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {[
+                                                { id: "fair_cool", label: "Fair (Cool/Pink)", color: "#ffe0d9" },
+                                                { id: "fair_warm", label: "Fair (Warm/Yellow)", color: "#fcecd5" },
+                                                { id: "medium_cool", label: "Medium (Cool/Olive)", color: "#e3c4a8" },
+                                                { id: "medium_warm", label: "Medium (Warm/Golden)", color: "#dcb690" },
+                                                { id: "dark_cool", label: "Dark (Cool/Blue)", color: "#8d5e3f" },
+                                                { id: "dark_warm", label: "Dark (Warm/Red)", color: "#744627" }
+                                            ].map(tone => (
+                                                <button
+                                                    key={tone.id}
+                                                    onClick={() => setFormData({ ...formData, skinTone: tone.id })}
+                                                    className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${formData.skinTone === tone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <div className="w-8 h-8 rounded-full border border-white/20 shadow-sm shrink-0" style={{ backgroundColor: tone.color }} />
+                                                    <span className={`text-sm text-left ${formData.skinTone === tone.id ? 'text-primary font-medium' : 'text-gray-300'}`}>
+                                                        {tone.label}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -445,15 +508,21 @@ export default function Onboarding() {
                                         <button
                                             key={archetype.name}
                                             onClick={() => toggleArchetype(archetype.name)}
-                                            className={`p-4 rounded-xl border text-left transition-all ${formData.archetypes.includes(archetype.name)
-                                                ? 'border-primary bg-primary/10'
-                                                : 'border-white/10 hover:bg-white/5'
+                                            className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[160px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name)
+                                                ? 'border-primary ring-2 ring-primary/50'
+                                                : 'border-white/10 hover:border-white/30'
                                                 }`}
                                         >
-                                            <div className={`font-bold mb-1 ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>
-                                                {archetype.name}
+                                            <div className="absolute inset-0 z-0">
+                                                <img src={aestheticVisuals[archetype.name]} alt={archetype.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                                                <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'}`} />
                                             </div>
-                                            <div className="text-xs text-gray-400 leading-relaxed">{archetype.desc}</div>
+                                            <div className="relative z-10 p-4">
+                                                <div className={`font-bold mb-1 ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>
+                                                    {archetype.name}
+                                                </div>
+                                                <div className="text-xs text-gray-300 leading-relaxed font-medium">{archetype.desc}</div>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -496,10 +565,33 @@ export default function Onboarding() {
                                 <h1 className="text-4xl font-serif font-bold">Visual Reference</h1>
                                 <p className="text-gray-400">Upload a photo to give our AI the clearest picture of you. (Optional)</p>
 
-                                <div className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-white/5 relative group mt-8">
-                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                                    <Upload size={48} className="text-gray-500 mb-4 group-hover:text-primary transition-colors z-10" />
-                                    <span className="text-gray-400 z-10">Click to upload photo</span>
+                                <div
+                                    className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-white/5 relative group mt-8 overflow-hidden"
+                                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                                >
+                                    {formData.avatar ? (
+                                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 group-hover:bg-black/30 transition-colors">
+                                            <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover opacity-50" />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                <Check size={48} className="text-primary mb-2 shadow-black drop-shadow-lg" />
+                                                <span className="text-white font-bold drop-shadow-md">Photo Uploaded</span>
+                                                <span className="text-xs text-gray-300 mt-2">Click to change</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                                            <Upload size={48} className="text-gray-500 mb-4 group-hover:text-primary transition-colors z-10" />
+                                            <span className="text-gray-400 z-10">Click to upload photo</span>
+                                        </>
+                                    )}
+                                    <input
+                                        id="avatar-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                    />
                                 </div>
                             </div>
                         )}
