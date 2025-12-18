@@ -8,7 +8,6 @@ import { AddItemSkeleton } from "@/components/Skeleton";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
-import { createClient } from "@supabase/supabase-js";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -18,11 +17,6 @@ export default function AddItemPage() {
     const [progress, setProgress] = useState(0);
     const [url, setUrl] = useState("");
     const [preview, setPreview] = useState<any>(null);
-
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
 
     const simulateProgress = () => {
         setProgress(0);
