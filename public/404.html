@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - Page Not Found | Personal Stylist</title>
     <style>
+        :root {
+            --background: #0a0a0a;
+            --foreground: #ededed;
+            --primary: #d4af37;
+            --primary-hover: #e5c158;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,8 +18,8 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: #0a0a0a;
-            color: #ffffff;
+            background-color: var(--background);
+            color: var(--foreground);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -27,7 +33,7 @@
         h1 {
             font-size: 6rem;
             font-weight: bold;
-            color: #d4af37;
+            color: var(--primary);
             margin-bottom: 1rem;
         }
         h2 {
@@ -42,8 +48,8 @@
         }
         .btn {
             display: inline-block;
-            background-color: #d4af37;
-            color: #0a0a0a;
+            background-color: var(--primary);
+            color: var(--background);
             padding: 12px 32px;
             border-radius: 8px;
             text-decoration: none;
@@ -51,7 +57,7 @@
             transition: all 0.2s;
         }
         .btn:hover {
-            background-color: #e5c158;
+            background-color: var(--primary-hover);
             transform: translateY(-2px);
         }
     </style>
