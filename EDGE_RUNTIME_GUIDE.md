@@ -4,6 +4,8 @@
 
 This application is architected to run on Cloudflare Pages using the **Edge Runtime**. This guide explains the technical requirements and architecture decisions that ensure robust compatibility.
 
+**⚠️ Important: Next.js 16 Update** - This application uses Next.js 16, which renamed "middleware" to "proxy" and changed how runtime configuration works. Proxy files (proxy.ts) now always run on Node.js runtime and cannot have route segment config like `export const runtime = 'edge'`. See the [proxy section](#1-proxy-middleware---srcproxyts) for details.
+
 ## Critical: Why Edge Runtime?
 
 **Cloudflare Pages ONLY supports Edge Runtime for Next.js server-side code.**
@@ -38,10 +40,14 @@ Edge Runtime is a lightweight JavaScript runtime that:
 
 **Purpose**: Request interception, authentication checks, redirects
 
+**IMPORTANT - Next.js 16 Change**: 
+In Next.js 16, middleware has been renamed to "proxy" and **proxy files cannot have route segment config**. The proxy always runs on Node.js runtime by design, and you cannot specify `export const runtime = 'edge';` in the proxy file.
+
 **Key Requirements**:
 ```typescript
-// REQUIRED: Edge runtime declaration
-export const runtime = 'edge';
+// NOTE: In Next.js 16, DO NOT add 'export const runtime = edge' here
+// Proxy files cannot have route segment config
+// See: https://nextjs.org/docs/messages/middleware-to-proxy
 
 // MUST use NextRequest/NextResponse (Edge-compatible)
 import { NextRequest, NextResponse } from "next/server";
@@ -51,11 +57,11 @@ export async function proxy(req: NextRequest) {
 }
 ```
 
-**Why Edge Runtime?**
-- Runs on every request before page rendering
-- Needs to be fast and globally distributed
-- Perfect for auth checks and redirects
-- Cloudflare Pages requires it
+**Why Proxy Uses Node.js Runtime in Next.js 16:**
+- Next.js 16 enforces Node.js runtime for proxy to improve security and consistency
+- Proxy still runs efficiently as a backend request interceptor
+- API routes can still use Edge runtime if needed
+- This is a deliberate design decision by the Next.js team
 
 ### 2. API Routes - `src/app/api/**/route.ts`
 
@@ -129,16 +135,23 @@ export async function createClient() {
 
 ## Common Pitfalls and Solutions
 
-### ❌ Problem: Missing Runtime Declaration
+### ❌ Problem: Route Segment Config in Proxy File (Next.js 16)
+
+**Error**: `Route segment config is not allowed in Proxy file at "./src/proxy.ts". Proxy always runs on Node.js runtime.`
+
+**Cause**: Trying to use `export const runtime = 'edge';` in a proxy.ts file
+
+**Solution**: Remove the runtime declaration from proxy.ts. In Next.js 16, proxy files cannot have route segment config. The proxy automatically runs on Node.js runtime.
+
+### ❌ Problem: Missing Runtime Declaration (API Routes)
 
 **Error**: `Node.js middleware is not currently supported`
 
-**Cause**: File is missing `export const runtime = 'edge';`
+**Cause**: An API route file is missing `export const runtime = 'edge';`
 
-**Solution**: Add to ANY file that:
-- Intercepts requests (proxy.ts, middleware.ts)
-- Is an API route handler (route.ts)
-- Needs to run on Cloudflare Pages
+**Solution**: Add to API route handlers (route.ts files) that need to run on Cloudflare Pages:
+- API route handlers in `src/app/api/**/route.ts`
+- Note: DO NOT add to proxy.ts files (see above)
 
 ### ❌ Problem: Using Node.js APIs in Edge Runtime
 

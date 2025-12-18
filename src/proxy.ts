@@ -2,9 +2,9 @@ import { createMiddlewareClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// CRITICAL: This proxy MUST run on Edge runtime for Cloudflare Pages compatibility
-// Cloudflare Pages does NOT support Node.js runtime for middleware/proxy
-export const runtime = 'edge';
+// NOTE: In Next.js 16, proxy always runs on Node.js runtime by design.
+// Route segment config (like 'export const runtime = edge') is not allowed in proxy files.
+// See: https://nextjs.org/docs/messages/middleware-to-proxy
 
 export async function proxy(req: NextRequest) {
     // Skip middleware for RSC (React Server Components) requests
