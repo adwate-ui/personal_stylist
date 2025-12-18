@@ -146,10 +146,10 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 
 ### Common Issues
 
-**"Route segment config is not allowed in Proxy file" error**
-- **Cause**: Trying to use `export const runtime = 'edge';` in proxy.ts (Next.js 16)
-- **Fix**: Remove the runtime declaration from proxy.ts. Proxy always runs on Node.js runtime in Next.js 16.
-- **Details**: See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md)
+**"Node.js middleware is not currently supported" error**
+- **Cause**: Incompatibility between Next.js 16's proxy.ts convention and @opennextjs/cloudflare
+- **Fix**: Use `middleware.ts` (in project root) with `export const runtime = 'edge';` instead of proxy.ts
+- **Details**: See [NEXTJS_16_CLOUDFLARE_FIX.md](./NEXTJS_16_CLOUDFLARE_FIX.md) for the complete solution
 
 **"Missing Supabase environment variables" in browser console**
 - **Cause**: Build ran without environment variables set
