@@ -27,6 +27,9 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Personal Stylist - Gemini 3",
   description: "AI-Powered Personal Stylist",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
