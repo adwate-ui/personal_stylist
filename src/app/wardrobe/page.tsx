@@ -270,6 +270,22 @@ export default function WardrobePage() {
                                         </ul>
                                     </div>
                                 )}
+
+                                {selectedItem.ai_analysis?.complementary_items && selectedItem.ai_analysis.complementary_items.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <span className="text-primary">✨</span> Pairs Well With
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {selectedItem.ai_analysis.complementary_items.map((item: string, i: number) => (
+                                                <div key={i} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300 hover:bg-white/10 hover:border-primary/30 transition-all cursor-default flex items-center gap-2">
+                                                    <span className="text-primary text-lg">+</span>
+                                                    <span>{item}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-8 border-t border-white/10 flex justify-between items-center">

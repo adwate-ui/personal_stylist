@@ -16,6 +16,7 @@ export interface WardrobeItemAnalysis {
     styling_tips?: string[];
     error?: string;
     message?: string;
+    complementary_items?: string[]; // Suggested items to wear with this piece
 }
 
 export interface WardrobeItem {

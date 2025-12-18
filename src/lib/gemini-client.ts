@@ -19,8 +19,9 @@ export async function analyzeImageWithGemini(file: File, apiKey: string): Promis
     - description: string (short, engaging description)
     - price_estimate: string (e.g., "$$", "$$$", "$")
     - style_score: number (1-100, purely objective style rating based on versatility and trend)
-    - branding: string (brand name if visible, else empty)
-    - styling_tips: string[] (3 short tips)
+    - brand: string (brand name if visible, else empty)
+    - styling_tips: string[] (3 short tips on how to style this item)
+    - complementary_items: string[] (5 specific items that would pair well with this piece, e.g., "Navy chinos", "White sneakers", "Denim jacket")
     `;
 
         const result = await model.generateContent([
