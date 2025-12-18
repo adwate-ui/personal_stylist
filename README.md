@@ -95,11 +95,15 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Cloudflare Pages Deployment
 
+This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare) for deployment, which replaces the deprecated `@cloudflare/next-on-pages` package.
+
 ### 1. Configure Build Settings
 
+In the Cloudflare Pages dashboard, set:
+
 - **Framework Preset**: Next.js
-- **Build Command**: `npm run build`
-- **Build Output Directory**: `.vercel/output/static` (or `.next` if using standard adapter)
+- **Build Command**: `npm run build:cloudflare` (or `npx opennextjs-cloudflare build`)
+- **Build Output Directory**: `.open-next/assets`
 - **Node Version**: Set to `18` or higher in **Settings → Environment Variables** (`NODE_VERSION`).
 
 ### 2. Set Production Environment Variables
