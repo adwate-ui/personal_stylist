@@ -37,7 +37,9 @@ export async function createClient() {
     );
 }
 
-// Utility for Middleware
+// Utility for Middleware - Edge Runtime Compatible
+// This implementation uses NextRequest/NextResponse cookies which work in Edge runtime
+// Unlike cookies() from next/headers, this approach is compatible with Cloudflare Pages
 export function createMiddlewareClient(request: NextRequest, response: NextResponse) {
     return createServerClient(
         supabaseUrl,
