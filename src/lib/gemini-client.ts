@@ -2,13 +2,37 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { WardrobeItemAnalysis } from "@/types/wardrobe";
 import { ShopAnalysis } from "@/types/shop";
 
+// Latest Gemini models as of December 2024
+// Source: https://ai.google.dev/gemini-api/docs/models/gemini
+const MODELS = {
+    primary: "gemini-3-pro-preview", // Latest - most intelligent model with thinking
+    secondary: "gemini-2.5-flash", // Stable - best price-performance with thinking
+    fallback: "gemini-1.5-pro-latest" // Stable fallback
+};
+
+async function createModelWithFallback(genAI: GoogleGenerativeAI) {
+    // Try Gemini 3 Pro Preview (most intelligent)
+    try {
+        return genAI.getGenerativeModel({ model: MODELS.primary });
+    } catch (e) {
+        console.warn(`Primary model ${MODELS.primary} unavailable, trying secondary`);
+    }
+
+    // Try Gemini 2.5 Flash (best price-performance)
+    try {
+        return genAI.getGenerativeModel({ model: MODELS.secondary });
+    } catch (e) {
+        console.warn(`Secondary model ${MODELS.secondary} unavailable, using fallback`);
+    }
+
+    // Use Gemini 1.5 Pro as last resort
+    return genAI.getGenerativeModel({ model: MODELS.fallback });
+}
+
 export async function analyzeImageWithGemini(file: File, apiKey: string): Promise<WardrobeItemAnalysis> {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Use gemini-1.5-flash-latest or gemini-1.5-flash which is stable
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        // Convert file to base64
+        const model = await createModelWithFallback(genAI);
         const base64Data = await fileToBase64(file);
 
         const prompt = `Analyze this clothing item for a personal stylist app. Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
@@ -47,7 +71,7 @@ export async function analyzeImageWithGemini(file: File, apiKey: string): Promis
 export async function rateImageWithGemini(file: File, apiKey: string): Promise<ShopAnalysis> {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = await createModelWithFallback(genAI);
         const base64Data = await fileToBase64(file);
 
         const prompt = `Act as a world-class fashion stylist. Rate this item/outfit on a scale of 1-10.
@@ -97,8 +121,12 @@ function handleGeminiError(error: any): Error {
     console.error("Gemini Error:", error);
     let message = "Failed to analyze image. Please check your API key.";
     if (error instanceof Error) {
-        if (error.message.includes("404")) message = "Gemini Model not found. Please check model name.";
-        if (error.message.includes("API key")) message = "Invalid API Key. Please check your settings.";
+        if (error.message.includes("404") || error.message.includes("not found")) {
+            message = "Gemini model unavailable. The app uses Gemini 3 Pro Preview. Please ensure your API key has access to the latest models.";
+        }
+        if (error.message.includes("API key") || error.message.includes("API_KEY")) {
+            message = "Invalid API Key. Please check your settings.";
+        }
     }
     return new Error(message);
 }

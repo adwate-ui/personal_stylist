@@ -85,30 +85,41 @@ export default function AddItemPage() {
         setPreview(null);
 
         try {
-            // Client-side Link Analysis using CORS Proxy and Gemini
-            // 1. Fetch HTML via CORS Proxy
-            const proxyUrl = "https://corsproxy.io/?";
-            const targetUrl = encodeURIComponent(url);
-            const htmlRes = await fetch(proxyUrl + targetUrl);
-            if (!htmlRes.ok) throw new Error("Failed to fetch URL content");
-            const html = await htmlRes.text();
+            // Use Cloudflare Worker for server-side scraping
+            const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
+            const response = await fetch(`${workerUrl}?url=${encodeURIComponent(url)}`);
 
-            // 2. Parse OG Tags
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content');
-            const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
-            const ogDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content');
+            if (!response.ok) {
+                throw new Error("Failed to fetch product data from URL");
+            }
 
-            if (!ogImage) throw new Error("No image found in link metadata");
+            const data = await response.json();
 
-            // 3. Fetch Image Blob via Proxy
-            const imgRes = await fetch(proxyUrl + encodeURIComponent(ogImage));
-            if (!imgRes.ok) throw new Error("Failed to fetch product image");
-            const imgBlob = await imgRes.blob();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            if (!data.imageBase64 && !data.image) {
+                throw new Error("No product image found at this URL");
+            }
+
+            // Convert base64 to blob for Gemini analysis
+            let imgBlob: Blob;
+            if (data.imageBase64) {
+                // Convert data URL to blob
+                const base64Response = await fetch(data.imageBase64);
+                imgBlob = await base64Response.blob();
+            } else if (data.image) {
+                // Fallback: fetch image directly (may fail due to CORS)
+                const imgResponse = await fetch(data.image);
+                imgBlob = await imgResponse.blob();
+            } else {
+                throw new Error("Could not load product image");
+            }
+
             const imgFile = new File([imgBlob], "product.jpg", { type: imgBlob.type });
 
-            // 4. Analyze with Gemini
+            // Analyze with Gemini
             const apiKey = profile.gemini_api_key || localStorage.getItem("gemini_api_key");
             if (!apiKey) {
                 if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
@@ -119,12 +130,14 @@ export default function AddItemPage() {
 
             const analysis = await analyzeImageWithGemini(imgFile, apiKey);
 
-            // 5. Merge Data
+            // Merge scraped data with AI analysis
             const previewData: WardrobeItemAnalysis = {
                 ...analysis,
-                image_url: URL.createObjectURL(imgBlob), // Local preview
-                item_name: ogTitle || analysis.item_name,
-                description: ogDesc || analysis.description,
+                image_url: URL.createObjectURL(imgBlob),
+                item_name: data.title || analysis.item_name,
+                description: data.description || analysis.description,
+                brand: data.brand || analysis.brand,
+                price: data.price || analysis.price,
             };
 
             clearInterval(interval);
@@ -133,7 +146,10 @@ export default function AddItemPage() {
             setPreview(previewData);
         } catch (err) {
             console.error(err);
-            toast.error("Link Analysis Failed", { description: (err as Error).message || "Please check the URL or try uploading a photo.", duration: 5000 });
+            toast.error("Link Analysis Failed", {
+                description: (err as Error).message || "Please check the URL or try uploading a photo.",
+                duration: 5000
+            });
             clearInterval(interval);
         } finally {
             setLoading(false);

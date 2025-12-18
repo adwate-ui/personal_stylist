@@ -123,14 +123,18 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-red-400 mb-2">
+                {/* Account Actions */}
+                <div className="space-y-6 pt-8 border-t border-border/20">
+                    <button onClick={handleSignOut} className="w-full p-4 rounded-lg border border-border/20 bg-card/50 flex items-center justify-center gap-2 text-muted-foreground hover:bg-card hover:text-foreground transition-all">
+                        <LogOut size={18} /> Sign Out
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-3 text-red-400 mb-2 pt-6">
                     <Settings size={24} />
                     <span className="uppercase tracking-widest text-xs font-bold">Danger Zone</span>
                 </div>
                 <div className="space-y-4">
-                    <button onClick={handleSignOut} className="w-full p-4 rounded-lg border border-border/20 bg-card/50 flex items-center justify-center gap-2 text-muted-foreground hover:bg-card hover:text-foreground transition-all">
-                        <LogOut size={18} /> Sign Out
-                    </button>
                     <button onClick={handleDeleteAccount} className="w-full p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
                         <Trash2 size={18} /> Delete Account
                     </button>

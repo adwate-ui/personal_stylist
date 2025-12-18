@@ -1,0 +1,13 @@
+{
+    "name": "link-scraper-worker",
+    "version": "1.0.0",
+    "description": "Cloudflare Worker for scraping product links",
+    "main": "link-scraper.js",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy"
+    },
+    "devDependencies": {
+        "wrangler": "^3.0.0"
+    }
+}

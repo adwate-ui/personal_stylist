@@ -98,6 +98,7 @@ alter table profiles add column if not exists fit_preference text;
 
 alter table profiles add column if not exists location text;
 alter table profiles add column if not exists gemini_api_key text;
+alter table profiles add column if not exists style_report jsonb;
 
 
 -- B. WARDROBE ITEMS TABLE
