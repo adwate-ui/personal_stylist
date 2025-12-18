@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true}); if(fs.existsSync('out')) fs.renameSync('out','dist')\"",
     "build:cloudflare": "next build --webpack && opennextjs-cloudflare build --skipNextBuild",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",

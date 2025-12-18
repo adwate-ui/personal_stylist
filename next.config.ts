@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   // Required for OpenNext Cloudflare deployment
   // This creates a standalone build with all dependencies bundled
   // Required for Cloudflare Pages deployment with "Framework preset: None"
-  distDir: 'dist',
+  // Using 'export' to generate static HTML/CSS/JS only (no cache files)
+  output: 'export',
   // output: 'standalone',
 
   // Image optimization for Cloudflare (since default Next.js Image Optimization is not supported on Pages without paid worker)
