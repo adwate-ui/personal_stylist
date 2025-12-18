@@ -101,7 +101,7 @@ This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/clou
 > **Environment variables MUST be set in Cloudflare Pages BEFORE building.** If you see warnings about "Missing Supabase environment variables" in the browser console, your build was done without proper configuration.
 
 > [!IMPORTANT]
-> **This application runs on Edge Runtime for Cloudflare Pages compatibility.** All server-side code (proxy, API routes) uses Edge runtime, NOT Node.js runtime. See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md) for technical details.
+> **This application is built for Cloudflare Pages compatibility using Next.js 16.** API routes use Edge runtime when possible. Note: In Next.js 16, the proxy (formerly middleware) always runs on Node.js runtime. See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md) for technical details.
 
 ### Quick Start
 
@@ -146,9 +146,9 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 
 ### Common Issues
 
-**"Node.js middleware is not currently supported" error**
-- **Cause**: Server-side code is missing Edge runtime declaration
-- **Fix**: Ensure all proxy and API routes have `export const runtime = 'edge';`
+**"Route segment config is not allowed in Proxy file" error**
+- **Cause**: Trying to use `export const runtime = 'edge';` in proxy.ts (Next.js 16)
+- **Fix**: Remove the runtime declaration from proxy.ts. Proxy always runs on Node.js runtime in Next.js 16.
 - **Details**: See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md)
 
 **"Missing Supabase environment variables" in browser console**
