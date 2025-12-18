@@ -9,7 +9,8 @@
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:config": "node scripts/verify_build_config.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
