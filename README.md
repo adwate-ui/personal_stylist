@@ -132,6 +132,9 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 | Build command | `npm run build:cloudflare` |
 | Build output directory | `.open-next` |
 
+> [!NOTE]
+> The `build:cloudflare` command uses Webpack instead of Turbopack. This is required because `@opennextjs/cloudflare` currently only supports Webpack builds. See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md) for details.
+
 ### Post-Deployment Verification
 
 - [ ] No "Missing Supabase environment variables" warnings in browser console
@@ -145,6 +148,11 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 ## Troubleshooting
 
 ### Common Issues
+
+**404 errors for static assets (CSS, JS, fonts)**
+- **Cause**: Next.js 16 defaulted to Turbopack, which is incompatible with `@opennextjs/cloudflare`
+- **Fix**: Fixed in current build configuration using `--webpack` flag
+- **Details**: See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md) for technical details
 
 **"Node.js middleware is not currently supported" error**
 - **Cause**: Incompatibility between Next.js 16's proxy.ts convention and @opennextjs/cloudflare

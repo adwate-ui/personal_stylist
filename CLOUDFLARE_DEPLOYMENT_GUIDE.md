@@ -63,6 +63,8 @@ After adding variables:
 | **Build output directory** | `.open-next` |
 | **Root directory** | (leave empty unless your Next.js app is in a subdirectory) |
 
+**Important:** The `build:cloudflare` command uses Webpack instead of Turbopack. This is required because `@opennextjs/cloudflare` currently only supports Webpack builds. See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md) for details.
+
 ### 2.2 Verify Node.js Version
 
 Ensure `NODE_VERSION` environment variable is set to `18` or higher (recommended: `20`)
@@ -142,6 +144,24 @@ After deployment succeeds, verify the following:
 1. Go to Settings → Environment variables
 2. Add/verify all required `NEXT_PUBLIC_*` variables
 3. Trigger a new deployment (the app must be rebuilt)
+
+### Issue: 404 Errors for Static Assets (CSS, JS, Fonts)
+
+**Error Messages:**
+```
+GET /_next/static/chunks/*.css 404 (Not Found)
+GET /_next/static/chunks/turbopack-*.js 404 (Not Found)
+GET /_next/static/media/*.woff2 404 (Not Found)
+```
+
+**Cause**: Next.js 16 defaulted to Turbopack, which is incompatible with `@opennextjs/cloudflare`.
+
+**Solution**: This has been fixed in the current build configuration. The build now uses Webpack via the `--webpack` flag. See [NEXTJS_16_WEBPACK_FIX.md](./NEXTJS_16_WEBPACK_FIX.md) for technical details.
+
+If you still see these errors:
+1. Ensure you're using the latest code with the webpack fix
+2. Trigger a fresh deployment to rebuild with webpack
+3. Clear Cloudflare cache (Dashboard → Caching → Purge Everything)
 
 ### Issue: 404 Errors for /auth/login or Other Pages
 
