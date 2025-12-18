@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      // Fix for Supabase wrapper.mjs import issue with webpack
+      // Fix for Supabase wrapper.mjs import issue with webpack in Next.js 16
+      // This resolves ESM import errors by pointing directly to the module entry point
+      // Path is part of the @supabase/supabase-js package structure (v2.x)
       '@supabase/supabase-js': '@supabase/supabase-js/dist/module/index.js',
     };
     return config;
