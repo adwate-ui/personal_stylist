@@ -3,8 +3,6 @@ import { identifyWardrobeItem } from "@/lib/gemini";
 import { createErrorResponse } from "@/lib/errorMessages";
 import { createClient } from "@/lib/supabase-server";
 
-export const runtime = 'edge';
-
 export async function POST(req: NextRequest) {
     try {
         // Environment Check

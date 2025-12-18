@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateStyleDNA } from "@/lib/gemini";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = 'edge';
-
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();

@@ -3,8 +3,6 @@ import { analyzeProductLink } from "@/lib/gemini";
 import { createClient } from "@/lib/supabase-server";
 import { createErrorResponse } from "@/lib/errorMessages";
 
-export const runtime = 'edge';
-
 export async function POST(req: NextRequest) {
     try {
         const supabase = await createClient();
