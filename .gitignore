@@ -39,7 +39,16 @@ wrangler.toml.local
 # vercel
 .vercel
 
+# opennext cloudflare
+.open-next/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs and test outputs
+*.log
 build_output.log
+verify_output*.txt
+available_models.txt
+models.log
