@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Shirt, PlusCircle, Settings, LogOut, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function Navigation() {
     const pathname = usePathname();
@@ -25,7 +25,9 @@ export default function Navigation() {
 
     const handleSignOut = async () => {
         if (confirm("Are you sure you want to sign out?")) {
-            await supabase.auth.signOut();
+            if (isSupabaseConfigured) {
+                await supabase.auth.signOut();
+            }
             clearProfile();
             router.push("/");
             router.refresh(); // Refresh to update middleware state

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2, Image as ImageIcon } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { GlossaryText } from "@/components/GlossaryText";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function Onboarding() {
     const router = useRouter();
@@ -150,6 +150,12 @@ export default function Onboarding() {
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
+        
+        if (!isSupabaseConfigured) {
+            alert('Avatar upload is not available at this time. Please skip this step and continue with onboarding.');
+            return;
+        }
+        
         setAnalyzing(true); // Reuse loading state
         try {
             const file = e.target.files[0];
