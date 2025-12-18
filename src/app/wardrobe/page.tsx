@@ -30,7 +30,9 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
     'Jackets': ['jacket', 'coat', 'outerwear', 'parka', 'bomber'],
     'Coats': ['coat', 'overcoat', 'trench'],
     'Shoes': ['shoe', 'sneaker', 'boot', 'loafer', 'oxford', 'heel', 'flat', 'sandal'],
-    'Accessories': ['belt', 'tie', 'bow tie', 'pocket square', 'scarf', 'hat', 'cap', 'glove'],
+    'Accessories': ['accessory', 'pocket square', 'scarf', 'hat', 'cap', 'glove'],
+    'Ties': ['tie', 'bow tie', 'necktie'],
+    'Belts': ['belt'],
     'Watches': ['watch', 'timepiece'],
     'Socks': ['sock', 'hosiery'],
     'Dresses': ['dress', 'gown'],
@@ -51,7 +53,7 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
 
     for (const group of orderedGroups) {
         const keywords = CATEGORY_GROUPS[group];
-        if (keywords.some(keyword => searchText.includes(keyword))) {
+        if (keywords && keywords.some(keyword => searchText.includes(keyword))) {
             return group;
         }
     }
