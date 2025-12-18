@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Required for OpenNext Cloudflare deployment
   // This creates a standalone build with all dependencies bundled
-  output: 'standalone',
+  // Required for Cloudflare Pages deployment with "Framework preset: None"
+  distDir: 'dist',
+  // output: 'standalone',
 
   // Image optimization for Cloudflare (since default Next.js Image Optimization is not supported on Pages without paid worker)
   images: {
@@ -16,17 +18,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 
-  // Webpack configuration to handle Supabase imports correctly
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      // Fix for Supabase wrapper.mjs import issue with webpack in Next.js 16
-      // This resolves ESM import errors by pointing directly to the module entry point
-      // Path is part of the @supabase/supabase-js package structure (v2.x)
-      '@supabase/supabase-js': '@supabase/supabase-js/dist/module/index.js',
-    };
-    return config;
-  },
+
 };
 
 export default nextConfig;

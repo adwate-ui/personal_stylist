@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 // Inline Skeleton Component
 const WardrobeSkeleton = () => (
@@ -46,8 +47,8 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
 
     // Check specific lists first - order matters for specificity
     const orderedGroups = [
-        'Watches', 'Socks', 'Ties', 'Belts', 'Suits', 'Jeans', 
-        'Trousers', 'Shirts', 'Dresses', 'Skirts', 'Coats', 
+        'Watches', 'Socks', 'Ties', 'Belts', 'Suits', 'Jeans',
+        'Trousers', 'Shirts', 'Dresses', 'Skirts', 'Coats',
         'Jackets', 'Shoes', 'Accessories', 'Activewear'
     ];
 
@@ -82,21 +83,46 @@ export default function WardrobePage() {
         }
 
         try {
-            const res = await fetch(`/api/wardrobe/list?page=${pageNum}&limit=20`);
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || data.error || "Failed to fetch wardrobe items");
+            // Check authentication first
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                // Not authenticated - potentially redirect or show empty
+                // For now, let's just throw or return empty
+                if (isLoadMore) {
+                    setHasMore(false);
+                    return;
+                }
+                setItems([]);
+                setLoading(false);
+                return;
+            }
+
+            const limit = 20;
+            const from = (pageNum - 1) * limit;
+            const to = from + limit - 1;
+
+            const { data, error: dbError, count } = await supabase
+                .from('wardrobe_items')
+                .select('*', { count: 'exact' })
+                .eq('user_id', user.id) // Explicitly filter, though RLS handles it
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (dbError) throw new Error(dbError.message);
+
+            const fetchedItems = data || [];
 
             if (isLoadMore) {
-                setItems(prev => [...prev, ...data.items]);
+                setItems(prev => [...prev, ...fetchedItems]);
             } else {
-                setItems(data.items);
+                setItems(fetchedItems);
                 // Subtle success toast only on initial load if items exist
-                if (data.items.length > 0) {
+                if (fetchedItems.length > 0) {
                     toast.success("Wardrobe updated");
                 }
             }
 
-            setHasMore(data.hasMore);
+            setHasMore((count || 0) > to + 1);
             setPage(pageNum);
         } catch (err: any) {
             console.error(err);

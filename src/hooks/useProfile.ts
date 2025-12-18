@@ -131,43 +131,25 @@ export function useProfile() {
                 if (user) {
                     let loadedFromApi = false;
 
-                    // Attempt 1: Fetch from API
-                    try {
-                        const res = await fetch('/api/profile');
-                        if (res.ok) {
-                            const dbProfile = await res.json();
-                            // Check if profile exists (not empty)
-                            if (dbProfile && (dbProfile.id || Object.keys(dbProfile).length > 0)) {
-                                const loadedProfile = databaseToProfile(dbProfile);
-                                setProfile(loadedProfile);
-                                localStorage.setItem('stylist_profile', JSON.stringify(loadedProfile));
-                                loadedFromApi = true;
-                            }
-                        }
-                    } catch (apiErr) {
-                        console.warn("Profile API fetch failed, falling back to direct DB:", apiErr);
+                    // Direct Supabase Fetch (Static Deployment Optimization)
+                    const { data: dbProfile, error: dbError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (dbError && dbError.code !== 'PGRST116') { // PGRST116 is 'Row not found'
+                        console.error("Error fetching profile from DB:", dbError);
+                    } else if (dbProfile) {
+                        const loadedProfile = databaseToProfile(dbProfile);
+                        setProfile(loadedProfile);
+                        localStorage.setItem('stylist_profile', JSON.stringify(loadedProfile));
+                    } else {
+                        // Profile doesn't exist in DB, fallback to localStorage
+                        loadProfileFromStorage();
                     }
 
-                    // Attempt 2: Fallback to Direct Supabase if API didn't yield results
-                    if (!loadedFromApi) {
-                        const { data: dbProfile, error: dbError } = await supabase
-                            .from('profiles')
-                            .select('*')
-                            .eq('id', user.id)
-                            .single();
 
-                        if (dbError && dbError.code !== 'PGRST116') { // PGRST116 is 'Row not found'
-                            console.error("Error fetching profile from DB:", dbError);
-                            // Not throwing here to allow fallback to localStorage
-                        } else if (dbProfile) {
-                            const loadedProfile = databaseToProfile(dbProfile);
-                            setProfile(loadedProfile);
-                            localStorage.setItem('stylist_profile', JSON.stringify(loadedProfile));
-                        } else {
-                            // Profile doesn't exist in DB, fallback to localStorage
-                            loadProfileFromStorage();
-                        }
-                    }
                 } else {
                     // Not authenticated, use localStorage
                     loadProfileFromStorage();
@@ -201,27 +183,8 @@ export function useProfile() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return; // Fallback to localStorage only
 
-        // Attempt 1: POST to API
-        try {
-            const res = await fetch('/api/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updated)
-            });
-
-            if (!res.ok) {
-                throw new Error("API Save failed");
-            }
-            setError(null);
-            return; // Success
-        } catch (apiErr) {
-            console.warn("Profile API save failed, falling back to direct DB:", apiErr);
-        }
-
-        // Attempt 2: Fallback to Direct Supabase
+        // Direct Supabase Save (Static Deployment Optimization)
         const toSave = profileToDatabase(updated);
-
-        // Add ID to data object
         const dataWithId = { ...toSave, id: user.id };
 
         try {
@@ -239,6 +202,8 @@ export function useProfile() {
             console.error("Exception saving profile:", err);
             setError(err.message);
         }
+
+
     };
 
     const clearProfile = async () => {

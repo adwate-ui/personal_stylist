@@ -1,0 +1,22 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/add-item/page": "/add-item",
+  "/api/health/route": "/api/health",
+  "/api/profile/route": "/api/profile",
+  "/api/shop/rate/route": "/api/shop/rate",
+  "/api/style-dna/generate/route": "/api/style-dna/generate",
+  "/api/wardrobe/add/route": "/api/wardrobe/add",
+  "/api/wardrobe/analyze/route": "/api/wardrobe/analyze",
+  "/api/wardrobe/link/route": "/api/wardrobe/link",
+  "/api/wardrobe/list/route": "/api/wardrobe/list",
+  "/auth/callback/route": "/auth/callback",
+  "/auth/login/page": "/auth/login",
+  "/favicon.ico/route": "/favicon.ico",
+  "/onboarding/page": "/onboarding",
+  "/page": "/",
+  "/preferences/page": "/preferences",
+  "/shop/page": "/shop",
+  "/style-dna/page": "/style-dna",
+  "/wardrobe/page": "/wardrobe"
+}
