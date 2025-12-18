@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeProductLink } from "@/lib/gemini";
 import { createClient } from "@/lib/supabase-server";
+import { createErrorResponse } from "@/lib/errorMessages";
 
 export const runtime = 'edge';
 
@@ -10,13 +11,13 @@ export async function POST(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return createErrorResponse("UNAUTHORIZED", undefined, 401);
         }
 
         const { url } = await req.json();
 
         if (!url) {
-            return NextResponse.json({ error: "No URL provided" }, { status: 400 });
+            return createErrorResponse("VALIDATION_ERROR", "No URL provided", 400);
         }
 
         console.log("Analyzing URL:", url);
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
         const analysis = await analyzeProductLink(url, imageBuffer, { title, description, image: imageUrl });
 
         if (analysis.error) {
-            return NextResponse.json({ error: analysis.error }, { status: 500 });
+            return createErrorResponse("GEMINI_ERROR", analysis.error, 500);
         }
 
         return NextResponse.json({
@@ -73,6 +74,6 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         console.error("API Error:", error);
-        return NextResponse.json({ error: "Link analysis failed", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+        return createErrorResponse("UNKNOWN_ERROR", error instanceof Error ? error.message : String(error), 500);
     }
 }

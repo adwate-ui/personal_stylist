@@ -20,6 +20,9 @@ export interface ProfileData {
     brands: string[];
     priceRange: string;
     styleDNA?: any;
+    styleReport?: any;
+    avatar_url?: string;
+    avatar?: string; // Legacy field for backward compatibility
 }
 
 export interface DatabaseProfile {
@@ -40,5 +43,7 @@ export interface DatabaseProfile {
     brands: string[];
     price_range: string;
     style_dna: any;
+    style_report: any;
     created_at: string;
+    avatar_url: string | null;
 }

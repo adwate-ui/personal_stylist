@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+import { ShopAnalysisSkeleton } from "@/components/Skeleton";
 import { Upload, Star, ThumbsUp, AlertCircle, ShoppingBag } from "lucide-react";
 
 export default function ShopPage() {
@@ -15,6 +17,7 @@ export default function ShopPage() {
         setAnalyzing(true);
         setAnalysis(null);
 
+        const loadingToast = toast.loading("Analyzing...");
         try {
             const formData = new FormData();
             formData.append("file", file);
@@ -25,9 +28,16 @@ export default function ShopPage() {
             });
 
             const data = await res.json();
+            toast.dismiss(loadingToast);
+
+            if (data.error) throw new Error(data.message || data.error);
+
             setAnalysis(data);
-        } catch (err) {
+            toast.success("Analysis Complete!");
+        } catch (err: any) {
             console.error(err);
+            toast.dismiss(loadingToast);
+            toast.error("Analysis Failed", { description: err.message || "Please try again" });
         } finally {
             setAnalyzing(false);
         }
@@ -67,9 +77,9 @@ export default function ShopPage() {
                 {/* Results Section */}
                 <div className="space-y-6">
                     {analyzing ? (
-                        <div className="h-full flex flex-col items-center justify-center text-[#d4af37]">
-                            <div className="animate-spin mb-4"><Star /></div>
-                            <p>Consulting with AI Stylist...</p>
+                        <div className="h-full flex flex-col items-center justify-center">
+                            <ShopAnalysisSkeleton />
+                            <p className="text-[#d4af37] mt-4 animate-pulse">Consulting with AI Stylist...</p>
                         </div>
                     ) : analysis ? (
                         <div className="animate-fade-in space-y-6">

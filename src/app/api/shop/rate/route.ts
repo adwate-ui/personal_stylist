@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ratePurchase } from "@/lib/gemini";
+import { createErrorResponse } from "@/lib/errorMessages";
 import { createClient } from "@/lib/supabase-server";
 
 export const runtime = 'edge';
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return NextResponse.json({ error: "Authentication required. Please log in." }, { status: 401 });
+            return createErrorResponse("UNAUTHORIZED", "Authentication required.", 401);
         }
 
         // Fetch user's Style DNA
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
         const file = formData.get("file") as File;
 
         if (!file) {
-            return NextResponse.json({ error: "No image file provided in request." }, { status: 400 });
+            return createErrorResponse("VALIDATION_ERROR", "No image file provided in request.", 400);
         }
 
         const bytes = await file.arrayBuffer();
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
         const result = await ratePurchase(bytes, wardrobeContext, styleDNA);
         return NextResponse.json(result);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("API Error:", error);
-        return NextResponse.json({ error: "Failed to analyze item. Please try again." }, { status: 500 });
+        return createErrorResponse("GEMINI_ERROR", error.message || "Failed to analyze item", 500);
     }
 }

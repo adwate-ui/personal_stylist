@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         const { data, error, count } = await supabase
             .from('wardrobe_items')
             .select('*', { count: 'exact' })
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .range(from, to);
 

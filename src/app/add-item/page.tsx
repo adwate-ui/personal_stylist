@@ -1,7 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useState } from "react";
 import { GlossaryText } from "@/components/GlossaryText";
+import { AddItemSkeleton } from "@/components/Skeleton";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
@@ -55,12 +58,12 @@ export default function AddItemPage() {
             clearInterval(interval);
             setProgress(100);
 
-            if (data.error) throw new Error(data.error);
+            if (data.error) throw new Error(data.message || data.error);
             setPreview(data);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert("Analysis failed. Please try again.");
+            toast.error("Analysis Failed", { description: err.message || "Please try again.", duration: 5000 });
             clearInterval(interval);
         } finally {
             setLoading(false);
@@ -87,11 +90,11 @@ export default function AddItemPage() {
             clearInterval(interval);
             setProgress(100);
 
-            if (data.error) throw new Error(data.error);
+            if (data.error) throw new Error(data.message || data.error);
             setPreview(data);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert("Link analysis failed. Please try again.");
+            toast.error("Link Analysis Failed", { description: err.message || "Please try again.", duration: 5000 });
             clearInterval(interval);
         } finally {
             setLoading(false);
@@ -120,13 +123,14 @@ export default function AddItemPage() {
                 return;
             }
 
-            if (!res.ok) throw new Error(data.error || "Failed");
+            if (!res.ok) throw new Error(data.message || data.error || "Failed");
 
             // Success
+            toast.success("Item added to wardrobe!");
             router.push("/wardrobe");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Save Error:", error);
-            alert("Failed to save item. Please try again.");
+            toast.error("Save Failed", { description: error.message || "Failed to save item. Please try again.", duration: 5000 });
         } finally {
             setSaving(false);
         }
@@ -160,23 +164,26 @@ export default function AddItemPage() {
             </div>
 
             <div className={`card glass p-8 min-h-[400px] flex flex-col items-center justify-center relative shadow-2xl overflow-hidden transition-all duration-500 ${preview ? 'items-stretch justify-start' : ''}`}>
-                {/* Progress Overlay */}
+                {/* Loading Skeleton & Progress */}
                 {loading && (
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-                        <div className="w-full max-w-sm mb-4">
-                            <div className="flex justify-between text-xs text-primary mb-2 font-mono uppercase tracking-widest">
-                                <span>Analyzing Style DNA</span>
-                                <span>{progress}%</span>
+                    <div className="w-full relative">
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center bg-black/50 backdrop-blur-sm rounded-xl">
+                            <div className="w-full max-w-sm mb-4">
+                                <div className="flex justify-between text-xs text-primary mb-2 font-mono uppercase tracking-widest">
+                                    <span>Analyzing Style DNA</span>
+                                    <span>{progress}%</span>
+                                </div>
+                                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all duration-300 ease-out shadow-[0_0_15px_#d4af37]"
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
                             </div>
-                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-primary transition-all duration-300 ease-out shadow-[0_0_15px_#d4af37]"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
+                            <h3 className="text-xl font-bold mb-2 text-white">Gemini 3 Pro is analyzing...</h3>
+                            <p className="text-gray-400 text-sm animate-pulse">Identifying brand, SKU, and calculating style score.</p>
                         </div>
-                        <h3 className="text-xl font-bold mb-2 text-white">Gemini 3 Pro is analyzing...</h3>
-                        <p className="text-gray-400 text-sm animate-pulse">Identifying brand, SKU, and calculating style score.</p>
+                        <AddItemSkeleton />
                     </div>
                 )}
 
@@ -188,8 +195,8 @@ export default function AddItemPage() {
                     </div>
                 )}
 
-                {/* Input Modes (Hidden when preview is active) */}
-                {!preview && activeTab === 'upload' && (
+                {/* Input Modes (Hidden when preview is active or loading) */}
+                {!preview && !loading && activeTab === 'upload' && (
                     <div className="w-full text-center max-w-md animate-fade-in">
                         <div
                             className="border-2 border-dashed border-white/20 rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden"
@@ -206,7 +213,7 @@ export default function AddItemPage() {
                     </div>
                 )}
 
-                {!preview && activeTab === 'link' && (
+                {!preview && !loading && activeTab === 'link' && (
                     <form onSubmit={handleLinkSubmit} className="w-full max-w-md space-y-6 animate-fade-in">
                         <div className="text-center mb-8">
                             <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">

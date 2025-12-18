@@ -76,7 +76,9 @@ export async function POST(request: NextRequest) {
             archetypes: body.archetypes,
             brands: body.brands,
             price_range: body.priceRange,
-            style_dna: body.styleDNA
+            style_dna: body.styleDNA,
+            style_report: body.styleReport,
+            avatar_url: body.avatar_url || body.avatar
         };
 
         const { data, error } = await supabase

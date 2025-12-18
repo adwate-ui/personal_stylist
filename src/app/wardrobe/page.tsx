@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers } from "lucide-react";
 
 // Inline Skeleton Component
@@ -64,14 +65,17 @@ export default function WardrobePage() {
 
         try {
             const res = await fetch(`/api/wardrobe/list?page=${pageNum}&limit=20`);
-            if (!res.ok) throw new Error("Failed to fetch wardrobe items");
-
             const data = await res.json();
+            if (!res.ok) throw new Error(data.message || data.error || "Failed to fetch wardrobe items");
 
             if (isLoadMore) {
                 setItems(prev => [...prev, ...data.items]);
             } else {
                 setItems(data.items);
+                // Subtle success toast only on initial load if items exist
+                if (data.items.length > 0) {
+                    toast.success("Wardrobe updated");
+                }
             }
 
             setHasMore(data.hasMore);
@@ -80,6 +84,8 @@ export default function WardrobePage() {
             console.error(err);
             if (!isLoadMore) {
                 setError(err.message || "Failed to load wardrobe items");
+            } else {
+                toast.error("Failed to load more items", { description: err.message });
             }
         } finally {
             setLoading(false);

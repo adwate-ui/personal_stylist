@@ -19,6 +19,39 @@ const generationConfig = {
     responseMimeType: "application/json",
 };
 
+async function retryWithExponentialBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000,
+    timeoutMs: number = 30000
+): Promise<T> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const timeoutPromise = new Promise<T>((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out")), timeoutMs)
+            );
+            return await Promise.race([fn(), timeoutPromise]);
+        } catch (error: any) {
+            const isLastAttempt = attempt === maxRetries;
+            const msg = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+            const isRetryable =
+                msg === "request timed out" ||
+                msg.includes("429") ||
+                msg.includes("503") ||
+                msg.includes("network") ||
+                msg.includes("fetch failed");
+
+            if (isLastAttempt || !isRetryable) throw error;
+
+            const delay = baseDelay * Math.pow(2, attempt);
+            const jitter = delay * (0.5 + Math.random() * 0.5);
+            console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(jitter)}ms due to: ${error.message}`);
+            await new Promise(resolve => setTimeout(resolve, jitter));
+        }
+    }
+    throw new Error("Max retries exceeded");
+}
+
 async function generateWithFallback(promptParts: any[]) {
     const preferredModel = process.env.GEMINI_MODEL;
     // Removed legacy 1.5-flash to avoid 404s, prioritized 2.5 and 3.0
@@ -34,8 +67,13 @@ async function generateWithFallback(promptParts: any[]) {
             console.log(`Using model: ${modelName}`);
             if (!genAI) throw new Error("Gemini Client not initialized (Missing API Key)");
             const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
-            const result = await model.generateContent(promptParts);
-            const response = await result.response;
+
+            // Wrap generation with retry logic
+            const response = await retryWithExponentialBackoff(async () => {
+                const result = await model.generateContent(promptParts);
+                return await result.response;
+            });
+
             return JSON.parse(response.text());
         } catch (error: any) {
             console.warn(`Model ${modelName} failed:`, error.message);

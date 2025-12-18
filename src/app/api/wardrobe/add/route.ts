@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { createErrorResponse } from "@/lib/errorMessages";
 
 export const runtime = 'edge';
 
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return createErrorResponse("UNAUTHORIZED", "Unauthorized", 401);
         }
 
         const item = await req.json();
@@ -28,14 +29,14 @@ export async function POST(req: NextRequest) {
                         attemptedUrl: item.image_url,
                         userId: user.id
                     });
-                    return NextResponse.json({ error: "Forbidden: Invalid image path" }, { status: 403 });
+                    return createErrorResponse("UNAUTHORIZED", "Forbidden: Invalid image path", 403);
                 }
             }
             // External URLs are allowed (e.g. from product pages)
         }
 
         if (!item || !item.image_url) {
-            return NextResponse.json({ error: "Invalid item data" }, { status: 400 });
+            return createErrorResponse("VALIDATION_ERROR", "Invalid item data", 400);
         }
 
         // Save to Database
@@ -59,13 +60,13 @@ export async function POST(req: NextRequest) {
 
         if (dbError) {
             console.error("DB Insert Error:", dbError);
-            return NextResponse.json({ error: "Database save failed", details: dbError.message }, { status: 500 });
+            return createErrorResponse("DATABASE_ERROR", dbError.message, 500);
         }
 
         return NextResponse.json({ success: true, item: data });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("API Add Error:", error);
-        return NextResponse.json({ error: "Add Item failed", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+        return createErrorResponse("UNKNOWN_ERROR", error.message || String(error), 500);
     }
 }

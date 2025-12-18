@@ -56,7 +56,8 @@ export function useProfile() {
             archetypes: profileData.archetypes,
             brands: profileData.brands,
             price_range: profileData.priceRange,
-            style_dna: profileData.styleDNA
+            style_dna: profileData.styleDNA,
+            style_report: profileData.styleReport
         };
     };
 
@@ -79,7 +80,8 @@ export function useProfile() {
             archetypes: dbProfile.archetypes || [],
             brands: dbProfile.brands || [],
             priceRange: dbProfile.price_range || "",
-            styleDNA: dbProfile.style_dna || null
+            styleDNA: dbProfile.style_dna || null,
+            styleReport: dbProfile.style_report || null
         };
     };
 

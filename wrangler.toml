@@ -3,6 +3,8 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
-[vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://cumlbufsdynpoarkaxaz.supabase.co" # Replace with valid placeholder or user instruction
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1bWxidWZzZHlucG9hcmtheGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4ODc2MDMsImV4cCI6MjA4MTQ2MzYwM30.mM0Q9FgKWzI9Xnk8Ssm_7ZqR80jEqzWRgkcx2meRY_s" # Replace with valid placeholder or user instruction
+# Environment variables should be set in Cloudflare Pages dashboard:
+# - NEXT_PUBLIC_SUPABASE_URL
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+# - GEMINI_API_KEY (as Secret)
+# - SUPABASE_SERVICE_ROLE_KEY (as Secret, optional)

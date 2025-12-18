@@ -46,7 +46,7 @@ export default function Onboarding() {
         archetypes: [] as string[],
         brands: [] as string[],
         priceRange: "",
-        avatar: "", // Stores string URL now
+        avatar_url: "", // Stores string URL now
     });
 
     const bodyShapeVisuals: Record<string, string> = {
@@ -165,7 +165,7 @@ export default function Onboarding() {
 
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
-            setFormData(prev => ({ ...prev, avatar: data.publicUrl }));
+            setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
         } catch (error) {
             console.error('Error uploading avatar:', error);
             alert('Error uploading avatar!');
@@ -569,9 +569,9 @@ export default function Onboarding() {
                                     className="border-2 border-dashed border-white/20 rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-white/5 relative group mt-8 overflow-hidden"
                                     onClick={() => document.getElementById('avatar-upload')?.click()}
                                 >
-                                    {formData.avatar ? (
+                                    {formData.avatar_url ? (
                                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 group-hover:bg-black/30 transition-colors">
-                                            <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover opacity-50" />
+                                            <img src={formData.avatar_url} alt="Avatar" className="w-full h-full object-cover opacity-50" />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                                 <Check size={48} className="text-primary mb-2 shadow-black drop-shadow-lg" />
                                                 <span className="text-white font-bold drop-shadow-md">Photo Uploaded</span>

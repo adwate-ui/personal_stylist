@@ -60,6 +60,9 @@ begin
   if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'style_dna') then
     alter table profiles add column style_dna jsonb;
   end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'style_report') then
+    alter table profiles add column style_report jsonb;
+  end if;
   if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'lifestyle') then
     alter table profiles add column lifestyle jsonb;
   end if;
@@ -84,11 +87,14 @@ end $$;
 alter table profiles enable row level security;
 drop policy if exists "Users view own profile" on profiles;
 drop policy if exists "Users update own profile" on profiles;
+drop policy if exists "Users update own profile" on profiles;
 drop policy if exists "Users insert own profile" on profiles;
+drop policy if exists "Users delete own profile" on profiles;
 
 create policy "Users view own profile" on profiles for select using (auth.uid() = id);
 create policy "Users update own profile" on profiles for update using (auth.uid() = id);
 create policy "Users insert own profile" on profiles for insert with check (auth.uid() = id);
+create policy "Users delete own profile" on profiles for delete using (auth.uid() = id);
 
 
 -- ==========================================
