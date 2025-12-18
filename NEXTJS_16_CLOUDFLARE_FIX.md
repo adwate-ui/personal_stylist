@@ -124,24 +124,29 @@ OpenNext build complete.
 
 **Note on Local Testing**: If you encounter Google Fonts fetch errors during local builds (due to network restrictions), these won't occur on Cloudflare Pages which has internet access. The build will succeed in the Cloudflare Pages environment.
 
-## API Routes Still Use Edge Runtime
+## API Routes Use Node.js Runtime (Updated)
 
-All API routes should continue to declare Edge runtime explicitly:
+**IMPORTANT UPDATE**: API routes should **NOT** declare edge runtime with OpenNext Cloudflare:
 
 ```typescript
-// In API route files (src/app/api/**/route.ts)
-export const runtime = 'edge';
+// ❌ DO NOT do this (causes build errors with OpenNext Cloudflare):
+// export const runtime = 'edge';
+
+// ✅ Correct - no runtime declaration (uses Node.js by default)
+export async function GET(request: Request) {
+  // Your handler code
+}
 ```
 
-This is still required and works correctly in Next.js 16.
+OpenNext Cloudflare uses Node.js runtime (via `nodejs_compat` flag in wrangler.toml) for full Next.js compatibility.
 
 ## Summary
 
 - ✅ Use `middleware.ts` in project root
-- ✅ Add `export const runtime = 'edge';`
+- ✅ Add `export const runtime = 'edge';` to middleware.ts
 - ✅ Use `middleware` function name
 - ✅ Ignore deprecation warning about middleware → proxy
-- ✅ API routes continue using Edge runtime normally
+- ✅ **API routes should NOT declare runtime** (use Node.js default)
 - ⏳ Wait for @opennextjs/cloudflare to support proxy.ts before migrating
 
 ## Related Files
