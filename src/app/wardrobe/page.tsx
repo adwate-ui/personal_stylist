@@ -327,28 +327,34 @@ export default function WardrobePage() {
                                     Similar Items from {getBrandTier(selectedItem.brand || '')} Brands
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {getSimilarBrands(selectedItem.brand || '', getBrandTier(selectedItem.brand || '')).slice(0, 6).map((brand, idx) => {
-                                        const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
-                                            `${brand} ${selectedItem.sub_category || selectedItem.category} ${selectedItem.color || ''}`
-                                        )}`;
-                                        return (
-                                            <a
-                                                key={idx}
-                                                href={searchUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-medium text-sm">{brand}</span>
-                                                    <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
-                                                </div>
-                                                <div className="text-xs text-gray-400 capitalize">
-                                                    {selectedItem.sub_category || selectedItem.category}
-                                                </div>
-                                            </a>
-                                        );
-                                    })}
+                                    {(() => {
+                                        const tier = getBrandTier(selectedItem.brand || '');
+                                        const similarBrands = getSimilarBrands(selectedItem.brand || '', tier);
+                                        const brands = Array.isArray(similarBrands) ? similarBrands : [];
+
+                                        return brands.slice(0, 6).map((brand, idx) => {
+                                            const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+                                                `${brand} ${selectedItem.sub_category || selectedItem.category} ${selectedItem.color || ''}`
+                                            )}`;
+                                            return (
+                                                <a
+                                                    key={idx}
+                                                    href={searchUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-medium text-sm">{brand}</span>
+                                                        <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 capitalize">
+                                                        {selectedItem.sub_category || selectedItem.category}
+                                                    </div>
+                                                </a>
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
 
