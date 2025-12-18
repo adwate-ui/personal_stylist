@@ -2,13 +2,9 @@ name = "personal-stylist"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# For OpenNext Cloudflare adapter
-main = ".open-next/worker.js"
-
-# Static assets configuration
-[assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
+# For Cloudflare Pages deployment
+# This tells Cloudflare Pages where to find the build output
+pages_build_output_dir = ".open-next"
 
 # Environment variables should be set in Cloudflare Pages dashboard or using wrangler secrets:
 # - NEXT_PUBLIC_SUPABASE_URL

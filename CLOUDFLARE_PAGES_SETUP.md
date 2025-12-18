@@ -32,7 +32,7 @@ Change the following settings:
 | Setting | Old Value | New Value |
 |---------|-----------|-----------|
 | **Build command** | `npx @cloudflare/next-on-pages@1` | `npm run build:cloudflare` |
-| **Build output directory** | `.vercel/output/static` | `.open-next/assets` |
+| **Build output directory** | `.vercel/output/static` | `.open-next` |
 | **Root directory** | (no change) | (no change) |
 
 ### Step 3: Verify Environment Variables

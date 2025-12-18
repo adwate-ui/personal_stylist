@@ -103,7 +103,7 @@ In the Cloudflare Pages dashboard, set:
 
 - **Framework Preset**: Next.js
 - **Build Command**: `npm run build:cloudflare` (or `npx opennextjs-cloudflare build`)
-- **Build Output Directory**: `.open-next/assets`
+- **Build Output Directory**: `.open-next`
 - **Node Version**: Set to `18` or higher in **Settings → Environment Variables** (`NODE_VERSION`).
 
 ### 2. Set Production Environment Variables
