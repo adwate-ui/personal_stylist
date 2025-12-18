@@ -1,38 +1,36 @@
-# Fix Summary: Node.js Middleware Not Supported Error
+# Fix Summary: Proxy Runtime Configuration Issues
 
-## Problem
+> **⚠️ Important Update for Next.js 16**: This document describes a previous fix that is **NO LONGER VALID** with Next.js 16. The application has been updated to Next.js 16, which changed how proxy (middleware) runtime works.
 
-Your deployment was failing with this error:
+## Historical Problem (Before Next.js 16)
+
+Deployment was failing with this error:
 ```
 ERROR Node.js middleware is not currently supported. Consider switching to Edge Middleware.
-13:22:08.647 Failed: Error while executing user command. Exited with error code: 1
 ```
 
-## Root Cause
+The fix was to add `export const runtime = 'edge';` to proxy.ts.
 
-**The `src/proxy.ts` file was missing a single critical line of code:**
+## Current Status (Next.js 16)
+
+**In Next.js 16, proxy files CANNOT have runtime declarations.**
+
+If you see this error:
+```
+Error: Route segment config is not allowed in Proxy file at "./src/proxy.ts". Proxy always runs on Node.js runtime.
+```
+
+**The fix is to REMOVE the runtime declaration:**
 
 ```typescript
+// ❌ DO NOT do this in Next.js 16:
 export const runtime = 'edge';
+
+// ✅ Proxy files in Next.js 16 should NOT have runtime config
+// The proxy automatically runs on Node.js runtime
 ```
 
-Without this declaration, Next.js defaulted to Node.js runtime, which **Cloudflare Pages does NOT support** for middleware/proxy files.
-
-## The Fix
-
-### What Was Changed
-
-**File: `src/proxy.ts`**
-
-Added this line at the top of the file (after imports):
-
-```typescript
-// CRITICAL: This proxy MUST run on Edge runtime for Cloudflare Pages compatibility
-// Cloudflare Pages does NOT support Node.js runtime for middleware/proxy
-export const runtime = 'edge';
-```
-
-That's it. **One line of code fixed the deployment error.**
+See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md) for current best practices.
 
 ### Why This Fixes It
 

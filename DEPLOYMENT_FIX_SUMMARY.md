@@ -1,5 +1,7 @@
 # Deployment Issue Fixes - Summary
 
+> **⚠️ Note**: This document describes fixes made for an earlier version. With the upgrade to Next.js 16, the Edge runtime declaration in proxy.ts has been **removed** as it's no longer allowed. See the latest [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md) for current requirements.
+
 ## Problem Statement
 
 The application was experiencing runtime errors when deployed to Cloudflare Pages:

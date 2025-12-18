@@ -33,11 +33,11 @@ This is a **serverless, edge-first Next.js application** optimized for deploymen
 
 ## Core Components
 
-### 1. Proxy (Edge Middleware) - `src/proxy.ts`
+### 1. Proxy (Middleware) - `src/proxy.ts`
 
 **Purpose**: Request interception, authentication, and routing protection
 
-**Runtime**: Edge (REQUIRED for Cloudflare Pages)
+**Runtime**: Node.js (enforced by Next.js 16 - proxy files cannot specify runtime config)
 
 **Key Features**:
 - Checks user authentication state before page access
