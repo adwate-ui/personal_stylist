@@ -6,14 +6,17 @@ Your codebase is **correctly configured** with the webpack fix for Next.js 16 an
 
 ## What You're Seeing
 
-Browser console shows errors like:
-```
-GET /_next/static/chunks/turbopack-*.js 404 (Not Found)
-GET /_next/static/chunks/*.css 404 (Not Found)
-GET /_next/static/media/*.woff2 404 (Not Found)
-```
+You may be experiencing one or both of these issues:
 
-The word "**turbopack**" in the file names confirms this is an old cached build.
+1. **Root URL returns 404**: `ERR_HTTP_RESPONSE_CODE_FAILURE 404` when accessing https://personal-stylist.pages.dev/
+2. **Static assets return 404**: Browser console shows errors like:
+   ```
+   GET /_next/static/chunks/turbopack-*.js 404 (Not Found)
+   GET /_next/static/chunks/*.css 404 (Not Found)
+   GET /_next/static/media/*.woff2 404 (Not Found)
+   ```
+
+The word "**turbopack**" in file names confirms this is an old cached build.
 
 ## What You Need to Do
 
@@ -21,12 +24,20 @@ You need to force Cloudflare Pages to rebuild your site from scratch with the ne
 
 ### 🎯 Choose Your Path:
 
-#### Option 1: Quick Fix (Recommended - 5 minutes)
-Follow the step-by-step guide in:
+#### Option 1: Complete Deployment Guide (Recommended - 12 minutes)
+Follow the comprehensive step-by-step deployment guide:
+👉 **[DEPLOY_TO_CLOUDFLARE_PAGES.md](./DEPLOY_TO_CLOUDFLARE_PAGES.md)**
+
+#### Option 2: Root URL 404 Fix (If site loads but shows 404)
+If static assets load but root URL returns 404:
+👉 **[ROOT_URL_404_FIX.md](./ROOT_URL_404_FIX.md)**
+
+#### Option 3: Quick Fix for Static Assets (5 minutes)
+If you just need to fix static asset 404s:
 👉 **[QUICK_FIX_404_ERRORS.md](./QUICK_FIX_404_ERRORS.md)**
 
-#### Option 2: Detailed Instructions (Complete guide)
-Follow the comprehensive guide in:
+#### Option 4: Detailed Rebuild Instructions
+For the most detailed guide:
 👉 **[CLOUDFLARE_PAGES_REBUILD_GUIDE.md](./CLOUDFLARE_PAGES_REBUILD_GUIDE.md)**
 
 ### ✅ Before You Start: Verify Local Configuration
