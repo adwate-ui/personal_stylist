@@ -38,7 +38,7 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
     'Activewear': ['activewear', 'sportswear', 'athletic', 'gym', 'workout'],
 };
 
-const getMasterCategory = (itemCategory: string, itemSubCategory?: string, itemGender?: string) => {
+const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
     // Combine category and sub-category for better matching
     const searchText = `${itemCategory || ''} ${itemSubCategory || ''}`.toLowerCase();
 
@@ -121,7 +121,7 @@ export default function WardrobePage() {
 
     const groupedItems = items.reduce((acc, item) => {
         const group = groupByCategory
-            ? getMasterCategory(item.category, item.sub_category, item.gender)
+            ? getMasterCategory(item.category, item.sub_category)
             : 'All Items';
 
         if (!acc[group]) acc[group] = [];

@@ -24,7 +24,7 @@ export default function StyleDNAPage() {
                     <AlertCircle className="mx-auto mb-4 text-yellow-400" size={48} />
                     <h3 className="text-xl font-bold mb-2">Style DNA Not Generated</h3>
                     <p className="text-gray-400 mb-6">
-                        Your Style DNA hasn't been created yet. Complete your onboarding to generate your unique style profile.
+                        Your Style DNA hasn&apos;t been created yet. Complete your onboarding to generate your unique style profile.
                     </p>
                     <a href="/onboarding" className="btn btn-primary">
                         Complete Onboarding
@@ -118,7 +118,7 @@ export default function StyleDNAPage() {
                                 <Shirt className="text-primary" /> Wardrobe Essentials
                             </h3>
                             <ul className="space-y-4">
-                                {styleDNA.must_have_staples.map((item: any, i: number) => (
+                                {styleDNA.must_have_staples.map((item: { item: string; why?: string }, i: number) => (
                                     <li key={i} className="flex gap-3 items-start">
                                         <Check size={18} className="text-primary mt-1 shrink-0" />
                                         <div>
@@ -140,7 +140,7 @@ export default function StyleDNAPage() {
                                 <Briefcase className="text-primary" /> Recommended Brands
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {styleDNA.brand_recommendations.map((brand: any, i: number) => (
+                                {styleDNA.brand_recommendations.map((brand: { name: string; tier: string; why?: string }, i: number) => (
                                     <div
                                         key={i}
                                         className="bg-white/5 p-4 rounded-xl border border-white/5"
@@ -170,7 +170,7 @@ export default function StyleDNAPage() {
                                         key={i}
                                         className="text-gray-300 italic border-l-2 border-primary/30 pl-4 py-1"
                                     >
-                                        "{tip}"
+                                        &quot;{tip}&quot;
                                     </li>
                                 ))}
                             </ul>
