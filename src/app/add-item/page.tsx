@@ -133,7 +133,7 @@ export default function AddItemPage() {
                 throw new Error("API Key required");
             }
 
-            const analysis = await analyzeImageWithGemini(imgFile, apiKey);
+            const analysis = await analyzeImageWithGemini(imgFile, apiKey, profile.location);
 
             // Merge scraped data with AI analysis
             const previewData: WardrobeItemAnalysis = {

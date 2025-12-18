@@ -2,101 +2,177 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { WardrobeItemAnalysis } from "@/types/wardrobe";
 import { ShopAnalysis } from "@/types/shop";
 
-// Latest Gemini models as of December 2024
-// Source: https://ai.google.dev/gemini-api/docs/models/gemini
+// Model priority: Premium models first, free tier as fallback
 const MODELS = {
-    primary: "gemini-3-pro-preview", // Latest - most intelligent model with thinking
-    secondary: "gemini-2.5-flash", // Stable - best price-performance with thinking
-    fallback: "gemini-1.5-pro-latest" // Stable fallback
+    premium_primary: "gemini-3-pro-preview", // Best, requires quota
+    premium_secondary: "gemini-2.5-flash", // Good balance, paid
+    free_primary: "gemini-1.5-pro-latest", // Free tier - most capable
+    free_secondary: "gemini-1.5-flash-latest" // Free tier - fastest
 };
 
 async function createModelWithFallback(genAI: GoogleGenerativeAI) {
-    // Try Gemini 3 Pro Preview (most intelligent)
-    try {
-        return genAI.getGenerativeModel({ model: MODELS.primary });
-    } catch (e) {
-        console.warn(`Primary model ${MODELS.primary} unavailable, trying secondary`);
+    const modelsToTry = [
+        MODELS.premium_primary,
+        MODELS.premium_secondary,
+        MODELS.free_primary,
+        MODELS.free_secondary
+    ];
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+        const modelName = modelsToTry[i];
+        const isLastModel = i === modelsToTry.length - 1;
+
+        try {
+            return genAI.getGenerativeModel({ model: modelName });
+        } catch (e: any) {
+            // Check if it's a quota error (429)
+            const isQuotaError = e?.message?.includes("429") || e?.message?.includes("quota");
+
+            if (isQuotaError) {
+                console.warn(`Model ${modelName} quota exceeded, trying next model...`);
+                if (!isLastModel) continue;
+            }
+
+            // For other errors, try next model
+            console.warn(`Model ${modelName} unavailable: ${e?.message}`);
+            if (!isLastModel) continue;
+
+            // If it's the last model, throw the error
+            throw e;
+        }
     }
 
-    // Try Gemini 2.5 Flash (best price-performance)
-    try {
-        return genAI.getGenerativeModel({ model: MODELS.secondary });
-    } catch (e) {
-        console.warn(`Secondary model ${MODELS.secondary} unavailable, using fallback`);
-    }
-
-    // Use Gemini 1.5 Pro as last resort
-    return genAI.getGenerativeModel({ model: MODELS.fallback });
+    // Fallback (should never reach here, but TypeScript needs it)
+    return genAI.getGenerativeModel({ model: MODELS.free_secondary });
 }
 
-export async function analyzeImageWithGemini(file: File, apiKey: string): Promise<WardrobeItemAnalysis> {
-    try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = await createModelWithFallback(genAI);
-        const base64Data = await fileToBase64(file);
+export async function analyzeImageWithGemini(file: File, apiKey: string, userLocation?: string): Promise<WardrobeItemAnalysis> {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const base64Data = await fileToBase64(file);
 
-        const prompt = `Analyze this clothing item for a personal stylist app. Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
+    // Import currency utility inline to avoid circular deps
+    const currencySymbol = userLocation && userLocation.toLowerCase().includes('india') ? '₹' : '$';
+
+    const prompt = `Analyze this clothing item for a personal stylist app. Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
     - category: string (Top, Bottom, Outerwear, Shoes, Accessory, Dress, Bag, Other)
     - sub_category: string (e.g., T-Shirt, Jeans, Blazer, Sneakers)
     - primary_color: string (generic color name)
     - style_tags: string[] (e.g., ["casual", "streetwear", "minimalist", "vintage"])
     - description: string (short, engaging description)
-    - price_estimate: string (e.g., "$$", "$$$", "$")
+    - price_estimate: string (e.g., "${currencySymbol}${currencySymbol}", "${currencySymbol}${currencySymbol}${currencySymbol}", "${currencySymbol}") - use ${currencySymbol} symbol
     - style_score: number (1-100, purely objective style rating based on versatility and trend)
     - brand: string (brand name if visible, else empty)
     - styling_tips: string[] (3 short tips on how to style this item)
     - complementary_items: string[] (5 specific items that would pair well with this piece, e.g., "Navy chinos", "White sneakers", "Denim jacket")
     `;
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: file.type,
+    const modelsToTry = [
+        MODELS.premium_primary,
+        MODELS.premium_secondary,
+        MODELS.free_primary,
+        MODELS.free_secondary
+    ];
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+        const modelName = modelsToTry[i];
+        const isLastModel = i === modelsToTry.length - 1;
+
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            const result = await model.generateContent([
+                prompt,
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: file.type,
+                    },
                 },
-            },
-        ]);
+            ]);
 
-        const response = await result.response;
-        const text = response.text();
-        const cleanJson = cleanJsonString(text);
+            const response = await result.response;
+            const text = response.text();
+            const cleanJson = cleanJsonString(text);
 
-        return JSON.parse(cleanJson);
-    } catch (error) {
-        throw handleGeminiError(error);
+            return JSON.parse(cleanJson);
+        } catch (error: any) {
+            const isQuotaError = error?.message?.includes("429") || error?.message?.includes("quota");
+
+            if (isQuotaError && !isLastModel) {
+                console.warn(`Model ${modelName} quota exceeded, trying next model...`);
+                continue; // Try next model
+            }
+
+            // If it's the last model or not a quota error, throw
+            if (isLastModel) {
+                throw handleGeminiError(error);
+            }
+
+            // For other errors on non-last models, try next
+            console.warn(`Model ${modelName} failed: ${error?.message}`);
+            continue;
+        }
     }
+
+    throw new Error("All models failed");
 }
 
 export async function rateImageWithGemini(file: File, apiKey: string): Promise<ShopAnalysis> {
-    try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = await createModelWithFallback(genAI);
-        const base64Data = await fileToBase64(file);
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const base64Data = await fileToBase64(file);
 
-        const prompt = `Act as a world-class fashion stylist. Rate this item/outfit on a scale of 1-10.
+    const prompt = `Act as a world-class fashion stylist. Rate this item/outfit on a scale of 1-10.
         Return ONLY a valid JSON object (no markdown) with:
         - score: number (1-10)
         - critique: string (honest, constructive feedback, max 2 sentences)
         - alternatives: string[] (3 better alternative item names or styles)
         `;
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: file.type,
-                },
-            },
-        ]);
+    const modelsToTry = [
+        MODELS.premium_primary,
+        MODELS.premium_secondary,
+        MODELS.free_primary,
+        MODELS.free_secondary
+    ];
 
-        const response = await result.response;
-        const cleanJson = cleanJsonString(response.text());
-        return JSON.parse(cleanJson);
-    } catch (error) {
-        throw handleGeminiError(error);
+    for (let i = 0; i < modelsToTry.length; i++) {
+        const modelName = modelsToTry[i];
+        const isLastModel = i === modelsToTry.length - 1;
+
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            const result = await model.generateContent([
+                prompt,
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: file.type,
+                    },
+                },
+            ]);
+
+            const response = await result.response;
+            const cleanJson = cleanJsonString(response.text());
+            return JSON.parse(cleanJson);
+        } catch (error: any) {
+            const isQuotaError = error?.message?.includes("429") || error?.message?.includes("quota");
+
+            if (isQuotaError && !isLastModel) {
+                console.warn(`Model ${modelName} quota exceeded, trying next model...`);
+                continue;
+            }
+
+            if (isLastModel) {
+                throw handleGeminiError(error);
+            }
+
+            console.warn(`Model ${modelName} failed: ${error?.message}`);
+            continue;
+        }
     }
+
+    throw new Error("All models failed");
 }
 
 // Helpers
@@ -121,10 +197,11 @@ function handleGeminiError(error: any): Error {
     console.error("Gemini Error:", error);
     let message = "Failed to analyze image. Please check your API key.";
     if (error instanceof Error) {
-        if (error.message.includes("404") || error.message.includes("not found")) {
-            message = "Gemini model unavailable. The app uses Gemini 3 Pro Preview. Please ensure your API key has access to the latest models.";
-        }
-        if (error.message.includes("API key") || error.message.includes("API_KEY")) {
+        if (error.message.includes("429") || error.message.includes("quota")) {
+            message = "All Gemini models exhausted quota limits. Free tier has daily limits. Please wait or upgrade at https://ai.google.dev/pricing";
+        } else if (error.message.includes("404") || error.message.includes("not found")) {
+            message = "Gemini model unavailable. Please check your API key has access to the latest models.";
+        } else if (error.message.includes("API key") || error.message.includes("API_KEY")) {
             message = "Invalid API Key. Please check your settings.";
         }
     }

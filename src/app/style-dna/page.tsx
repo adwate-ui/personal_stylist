@@ -3,6 +3,7 @@
 import { useProfile } from "@/hooks/useProfile";
 import { Sparkles, Palette, Shirt, Briefcase, Loader2, AlertCircle } from "lucide-react";
 import { Check } from "lucide-react";
+import { getBrandSearchUrl, getProductImagePlaceholder } from "@/lib/product-links";
 
 export default function StyleDNAPage() {
     const { profile, loading } = useProfile();
@@ -118,39 +119,43 @@ export default function StyleDNAPage() {
                                 <Shirt className="text-primary" /> Wardrobe Essentials
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {styleDNA.must_have_staples.map((item: { item: string; why?: string }, i: number) => {
-                                    // Generate Google Shopping search URL for each item
-                                    const searchQuery = encodeURIComponent(item.item);
-                                    const shoppingUrl = `https://www.google.com/search?tbm=shop&q=${searchQuery}`;
+                                {styleDNA.must_have_staples.map((item: { item: string; brand?: string; why?: string }, i: number) => {
+                                    // Use brand-specific search or fallback to Google Shopping
+                                    const brand = item.brand || profile.brands?.[0] || '';
+                                    const searchUrl = getBrandSearchUrl(brand, item.item);
+                                    const icon = getProductImagePlaceholder(item.item);
 
                                     return (
                                         <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all group">
-                                            {/* Placeholder image with link */}
+                                            {/* Product placeholder with link */}
                                             <a
-                                                href={shoppingUrl}
+                                                href={searchUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="block mb-3 relative overflow-hidden rounded-lg bg-white/10 aspect-square"
                                             >
-                                                <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                                                    👔
+                                                <div className="absolute inset-0 flex items-center justify-center text-5xl">
+                                                    {icon}
                                                 </div>
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-xs text-white font-medium">Shop Now →</span>
+                                                    <span className="text-xs text-white font-medium">Shop {brand || 'Now'} →</span>
                                                 </div>
                                             </a>
 
                                             <div className="font-bold text-sm mb-1">{item.item}</div>
+                                            {brand && (
+                                                <div className="text-xs text-primary mb-1">@ {brand}</div>
+                                            )}
                                             {item.why && (
                                                 <div className="text-xs text-gray-400 mb-2">{item.why}</div>
                                             )}
                                             <a
-                                                href={shoppingUrl}
+                                                href={searchUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-xs text-primary hover:underline flex items-center gap-1"
                                             >
-                                                Find this item →
+                                                Shop at {brand || 'stores'} →
                                             </a>
                                         </div>
                                     );

@@ -304,7 +304,7 @@ export async function generateStyleDNA(profile: any) {
             "avoid": ["Color name"]
         },
         "must_have_staples": [
-            { "item": "Name", "why": "Reason based on body/lifestyle" }
+            { "item": "Specific Item Name", "brand": "Preferred brand from user's list", "why": "Reason based on body/lifestyle" }
         ],
         "brand_recommendations": [
             { "name": "Brand", "tier": "Budget/Mid/Luxury", "why": "Reason" }

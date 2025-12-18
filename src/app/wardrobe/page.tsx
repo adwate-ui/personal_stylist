@@ -247,6 +247,29 @@ export default function WardrobePage() {
                                         <span className="text-[#d4af37] font-bold">{selectedItem.style_score}/10 Match</span>
                                     </div>
                                 )}
+                                
+                                {/* Price and Link Section */}
+                                <div className="flex items-center gap-4 pb-4 border-b border-white/10">
+                                    {selectedItem.price && (
+                                        <div className="text-2xl font-bold text-primary">
+                                            {formatPrice(selectedItem.price, profile.location)}
+                                        </div>
+                                    )}
+                                    {(selectedItem.brand || selectedItem.name) && (
+                                        <a
+                                            href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn btn-primary px-6 py-2 text-sm flex items-center gap-2"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="9" cy="9" r="7"/>
+                                                <path d="m21 21-4.35-4.35"/>
+                                            </svg>
+                                            Find Similar Items
+                                        </a>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4">
@@ -285,6 +308,29 @@ export default function WardrobePage() {
                                             ))}
                                         </div>
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Price and Shop Link */}
+                            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-white/10">
+                                {selectedItem.price && (
+                                    <div className="text-2xl font-bold text-primary">
+                                        {formatPrice(selectedItem.price, profile.location)}
+                                    </div>
+                                )}
+                                {(selectedItem.brand || selectedItem.name) && (
+                                    <a
+                                        href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="9" cy="9" r="7"/>
+                                            <path d="m21 21-4.35-4.35"/>
+                                        </svg>
+                                        Shop {selectedItem.brand || 'Similar'}
+                                    </a>
                                 )}
                             </div>
 
