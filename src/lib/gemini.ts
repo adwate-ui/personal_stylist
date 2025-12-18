@@ -299,13 +299,46 @@ export async function generateStyleDNA(profile: any) {
         "power_words": ["Adjective", "Adjective", "Adjective"],
         "summary": "2-3 sentences describing their core aesthetic.",
         "color_palette": {
-            "neutrals": ["#hex", "#hex"],
-            "accents": ["#hex", "#hex", "#hex"],
-            "avoid": ["Color name"]
+            "neutrals": ["#hexcode"],
+            "accents": ["#hexcode"],
+            "seasonal_variations": {
+                "spring_summer": ["#hexcode", "#hexcode"],
+                "fall_winter": ["#hexcode", "#hexcode"]
+            },
+            "avoid": [
+                { "color": "Color Name", "reason": "Brief why to avoid based on skin tone" }
+            ],
+            "color_theory": {
+                "skin_undertone": "warm/cool/neutral",
+                "best_metal": "gold/silver/rose gold",
+                "complementary_colors": ["#hexcode"],
+                "analogous_colors": ["#hexcode", "#hexcode"]
+            }
         },
-        "must_have_staples": [
-            { "item": "Specific Item Name", "brand": "Preferred brand from user's list", "why": "Reason based on body/lifestyle" }
-        ],
+        "must_have_staples": {
+            "tops": {
+                "shirts": [{ "item": "White Oxford Shirt", "brand": "Specific brand from user preferences", "why": "Versatility reason", "search_query": "Brand Name White Oxford Shirt Men/Women" }],
+                "t_shirts": [{ "item": "Plain White Tee", "brand": "...", "why": "...", "search_query": "..." }],
+                "polos": [{ "item": "Navy Polo", "brand": "...", "why": "...", "search_query":  "..." }]
+            },
+            "bottoms": {
+                "jeans": [{ "item": "Dark Wash Jeans", "brand": "...", "why": "...", "search_query": "..." }],
+                "chinos": [{ "item": "Beige Chinos", "brand": "...", "why": "...", "search_query": "..." }],
+                "trousers": [{ "item": "Black Dress Pants", "brand": "...", "why": "...", "search_query": "..." }]
+            },
+            "outerwear": {
+                "jackets": [{ "item": "Denim Jacket", "brand": "...", "why": "...", "search_query": "..." }],
+                "blazers": [{ "item": "Navy Blazer", "brand": "...", "why": "...", "search_query": "..." }]
+            },
+            "shoes": {
+                "sneakers": [{ "item": "White Sneakers", "brand": "...", "why": "...", "search_query": "..." }],
+                "dress_shoes": [{ "item": "Black Oxford Shoes", "brand": "...", "why": "...", "search_query": "..." }]
+            },
+            "accessories": {
+                "bags": [{ "item": "Leather Tote", "brand": "...", "why": "...", "search_query": "..." }],
+                "watches": [{ "item": "Minimal Watch", "brand": "...", "why": "...", "search_query": "..." }]
+            }
+        },
         "brand_recommendations": [
             { "name": "Brand", "tier": "Budget/Mid/Luxury", "why": "Reason" }
         ],

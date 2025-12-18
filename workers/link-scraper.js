@@ -19,6 +19,31 @@ export default {
 
         try {
             const url = new URL(request.url);
+
+            // NEW: Image extraction endpoint for wardrobe essentials
+            if (url.pathname === '/extract-image') {
+                if (request.method !== 'POST') {
+                    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+                }
+
+                const { url: targetUrl } = await request.json();
+
+                if (!targetUrl) {
+                    return new Response(
+                        JSON.stringify({ error: 'URL required' }),
+                        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    );
+                }
+
+                const imageUrl = await extractProductImage(targetUrl);
+
+                return new Response(
+                    JSON.stringify({ imageUrl: imageUrl || '' }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+            }
+
+            // EXISTING: Link scraper functionality
             const targetUrl = url.searchParams.get('url');
 
             if (!targetUrl) {
@@ -103,6 +128,48 @@ export default {
         }
     },
 };
+
+/**
+ * Extract product image URL from a webpage
+ */
+async function extractProductImage(url) {
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)'
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const html = await response.text();
+
+        // Extract Open Graph image (most reliable for products)
+        const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+        if (ogImageMatch) {
+            return ogImageMatch[1];
+        }
+
+        // Fallback: Try Twitter card image
+        const twitterImageMatch = html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
+        if (twitterImageMatch) {
+            return twitterImageMatch[1];
+        }
+
+        // Fallback: Try to find first large image
+        const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+        if (imgMatch) {
+            return imgMatch[1];
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Image extraction error:', error);
+        return null;
+    }
+}
 
 /**
  * Parse HTML for Open Graph and meta tags

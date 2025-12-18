@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers, X } from "lucide-react";
+import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers, X, ShoppingBag, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { WardrobeItem } from "@/types/wardrobe";
 import { useProfile } from "@/hooks/useProfile";
 import { getBrandSearchUrl } from "@/lib/product-links";
 import { formatPrice } from "@/lib/currency";
+import { getBrandTier, getSimilarBrands } from "@/lib/brand-tiers";
 
 // Inline Skeleton Component
 const WardrobeSkeleton = () => (
@@ -80,8 +82,10 @@ export default function WardrobePage() {
 
     const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [wardrobeNames, setWardrobeNames] = useState<string[]>([]);
 
     const { profile } = useProfile();
+    const router = useRouter();
 
     // Initial load of preferences
     useEffect(() => {
@@ -316,27 +320,36 @@ export default function WardrobePage() {
                                 )}
                             </div>
 
-                            {/* Price and Shop Link */}
-                            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-white/10">
-                                {selectedItem.price && (
-                                    <div className="text-2xl font-bold text-primary">
-                                        {formatPrice(selectedItem.price, profile.location)}
-                                    </div>
-                                )}
-                                {(selectedItem.brand || selectedItem.name) && (
-                                    <a
-                                        href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name || '')}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="9" cy="9" r="7" />
-                                            <path d="m21 21-4.35-4.35" />
-                                        </svg>
-                                        Shop {selectedItem.brand || 'Similar'}
-                                    </a>
-                                )}
+                            {/* Similar Products Section */}
+                            <div className="pb-4 border-b border-white/10">
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                    <ShoppingBag size={16} className="text-primary" />
+                                    Similar Items from {getBrandTier(selectedItem.brand || '')} Brands
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {getSimilarBrands(selectedItem.brand || '', getBrandTier(selectedItem.brand || '')).slice(0, 6).map((brand, idx) => {
+                                        const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+                                            `${brand} ${selectedItem.sub_category || selectedItem.category} ${selectedItem.color || ''}`
+                                        )}`;
+                                        return (
+                                            <a
+                                                key={idx}
+                                                href={searchUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-medium text-sm">{brand}</span>
+                                                    <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
+                                                </div>
+                                                <div className="text-xs text-gray-400 capitalize">
+                                                    {selectedItem.sub_category || selectedItem.category}
+                                                </div>
+                                            </a>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             <div className="pt-8 border-t border-white/10 flex justify-between items-center">
@@ -356,61 +369,63 @@ export default function WardrobePage() {
                 </div>
             )}
 
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                    <h1 className="text-4xl font-bold mb-2 font-serif">My Wardrobe</h1>
-                    <p className="text-gray-400">Digitize and organize your style.</p>
-                </div>
+            <header className="mb-12 flex justify-between items-center flex-wrap gap-4">
+                <h1 className="text-4xl font-bold">Wardrobe</h1>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
-                        <button
-                            onClick={() => setGroupByCategory(!groupByCategory)}
-                            className={`p - 2 rounded - md transition - all flex items - center gap - 2 text - sm ${groupByCategory ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'} `}
-                            title="Group by Category"
-                        >
-                            <Layers size={18} />
-                            <span className="hidden sm:inline">Groups</span>
-                        </button>
-                    </div>
-
-                    <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* View Mode - Modern Segmented Control */}
+                    <div className="inline-flex bg-white/5 rounded-lg p-1 border border-white/10">
                         <button
                             onClick={() => handleSetViewMode('grid')}
-                            className={`p - 2 rounded - md transition - all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${viewMode === 'grid'
+                                ? 'bg-primary text-black shadow-lg'
+                                : 'text-gray-400 hover:text-white'
+                                }`}
                         >
-                            <LayoutGrid size={18} />
+                            <LayoutGrid size={16} />
+                            <span className="hidden sm:inline">Grid</span>
                         </button>
                         <button
                             onClick={() => handleSetViewMode('list')}
-                            className={`p - 2 rounded - md transition - all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${viewMode === 'list'
+                                ? 'bg-primary text-black shadow-lg'
+                                : 'text-gray-400 hover:text-white'
+                                }`}
                         >
-                            <List size={18} />
+                            <List size={16} />
+                            <span className="hidden sm:inline">List</span>
                         </button>
                     </div>
 
+                    {/* Grid Size - Only in grid mode */}
                     {viewMode === 'grid' && (
-                        <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
-                            <button
-                                onClick={() => handleSetGridSize('4x4')}
-                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '4x4' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
-                            >
-                                4×4
-                            </button>
-                            <button
-                                onClick={() => handleSetGridSize('5x5')}
-                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '5x5' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
-                            >
-                                5×5
-                            </button>
-                            <button
-                                onClick={() => handleSetGridSize('6x6')}
-                                className={`px - 3 py - 2 rounded - md transition - all text - xs font - medium ${gridSize === '6x6' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'} `}
-                            >
-                                6×6
-                            </button>
+                        <div className="inline-flex bg-white/5 rounded-lg p-1 border border-white/10">
+                            {(['4x4', '5x5', '6x6'] as const).map((size) => (
+                                <button
+                                    key={size}
+                                    onClick={() => handleSetGridSize(size)}
+                                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${gridSize === size
+                                        ? 'bg-white/10 text-white'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    {size}
+                                </button>
+                            ))}
                         </div>
                     )}
+
+                    {/* Group Toggle - Modern Switch */}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={groupByCategory}
+                            onChange={(e) => setGroupByCategory(e.target.checked)}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-white/10 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-400 hidden md:inline">Group</span>
+                    </label>
 
                     <Link href="/add-item" className="btn btn-primary">
                         <Plus size={20} className="mr-2" /> <span className="hidden sm:inline">Add Item</span>
