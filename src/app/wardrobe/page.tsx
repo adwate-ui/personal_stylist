@@ -74,6 +74,23 @@ export default function WardrobePage() {
     const [groupByCategory, setGroupByCategory] = useState(true);
     const [gridSize, setGridSize] = useState<'4x4' | '5x5' | '6x6'>('4x4');
 
+    const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    // Initial load of preferences
+    useEffect(() => {
+        const savedView = localStorage.getItem('wardrobe_view_mode');
+        if (savedView === 'grid' || savedView === 'list') {
+            setViewMode(savedView);
+        }
+    }, []);
+
+    // Save preference when changed
+    const handleSetViewMode = (mode: 'grid' | 'list') => {
+        setViewMode(mode);
+        localStorage.setItem('wardrobe_view_mode', mode);
+    }
+
     const fetchItems = async (pageNum = 1, isLoadMore = false) => {
         if (!isLoadMore) {
             setLoading(true);
@@ -86,8 +103,6 @@ export default function WardrobePage() {
             // Check authentication first
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                // Not authenticated - potentially redirect or show empty
-                // For now, let's just throw or return empty
                 if (isLoadMore) {
                     setHasMore(false);
                     return;
@@ -104,7 +119,7 @@ export default function WardrobePage() {
             const { data, error: dbError, count } = await supabase
                 .from('wardrobe_items')
                 .select('*', { count: 'exact' })
-                .eq('user_id', user.id) // Explicitly filter, though RLS handles it
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
                 .range(from, to);
 
@@ -116,9 +131,8 @@ export default function WardrobePage() {
                 setItems(prev => [...prev, ...fetchedItems]);
             } else {
                 setItems(fetchedItems);
-                // Subtle success toast only on initial load if items exist
-                if (fetchedItems.length > 0) {
-                    toast.success("Wardrobe updated");
+                if (fetchedItems.length > 0 && !isLoadMore && pageNum === 1) {
+                    // toast.success("Wardrobe updated"); // Optional: removed to reduce noise
                 }
             }
 
@@ -138,6 +152,7 @@ export default function WardrobePage() {
     };
 
     useEffect(() => {
+        // Separate effect for initial fetch to avoid double-firing if we were using StrictMode (though we are likely not)
         fetchItems();
     }, []);
 
@@ -145,6 +160,24 @@ export default function WardrobePage() {
 
     const handleLoadMore = () => {
         fetchItems(page + 1, true);
+    };
+
+    const handleDeleteItem = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this item?")) return;
+        setDeleting(true);
+        try {
+            const { error } = await supabase.from('wardrobe_items').delete().eq('id', id);
+            if (error) throw error;
+
+            setItems(prev => prev.filter(i => i.id !== id));
+            setSelectedItem(null); // Close modal
+            toast.success("Item deleted");
+        } catch (err: any) {
+            console.error(err);
+            toast.error("Failed to delete item", { description: err.message });
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const groupedItems = items.reduce((acc, item) => {
@@ -161,7 +194,91 @@ export default function WardrobePage() {
     const sortedGroups = Object.keys(groupedItems).sort();
 
     return (
-        <div className="min-h-screen p-8 pb-20">
+        <div className="min-h-screen p-8 pb-20 relative">
+            {/* Detail Modal */}
+            {selectedItem && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedItem(null)}>
+                    <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col md:flex-row shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedItem(null); }}
+                            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors z-10"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                        </button>
+
+                        <div className="w-full md:w-1/2 bg-[#050505] relative min-h-[300px] md:min-h-full">
+                            <img
+                                src={selectedItem.image_url || "/placeholder-garment.jpg"}
+                                alt={selectedItem.name}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+
+                        <div className="w-full md:w-1/2 p-8 space-y-6">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    {selectedItem.brand && (
+                                        <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium tracking-wider text-gray-400 uppercase">
+                                            {selectedItem.brand}
+                                        </span>
+                                    )}
+                                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium tracking-wider text-gray-400 uppercase">
+                                        {selectedItem.category}
+                                    </span>
+                                </div>
+                                <h2 className="text-3xl font-serif font-bold text-white mb-2">{selectedItem.name}</h2>
+                                {selectedItem.style_score && (
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="flex bg-white/5 rounded-lg p-1">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Sparkles key={i} size={14} className={i < Math.round(selectedItem.style_score / 2) ? "text-[#d4af37]" : "text-gray-700"} />
+                                            ))}
+                                        </div>
+                                        <span className="text-[#d4af37] font-bold">{selectedItem.style_score}/10 Match</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Analysis</h3>
+                                    <p className="text-gray-400 leading-relaxed text-sm">
+                                        {selectedItem.ai_analysis?.description || selectedItem.description || "No specific analysis available."}
+                                    </p>
+                                </div>
+
+                                {selectedItem.ai_analysis?.styling_tips && selectedItem.ai_analysis.styling_tips.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Styling Tips</h3>
+                                        <ul className="space-y-2">
+                                            {selectedItem.ai_analysis.styling_tips.map((tip: string, i: number) => (
+                                                <li key={i} className="flex gap-3 text-sm text-gray-300">
+                                                    <span className="text-primary mt-1">•</span>
+                                                    <span>{tip}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-8 border-t border-white/10 flex justify-between items-center">
+                                <div className="text-xs text-gray-500">
+                                    Added {new Date(selectedItem.created_at).toLocaleDateString()}
+                                </div>
+                                <button
+                                    onClick={() => handleDeleteItem(selectedItem.id)}
+                                    disabled={deleting}
+                                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                >
+                                    {deleting ? <Loader2 className="animate-spin" size={16} /> : <><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg> Delete Item</>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                 <div>
                     <h1 className="text-4xl font-bold mb-2 font-serif">My Wardrobe</h1>
@@ -182,13 +299,13 @@ export default function WardrobePage() {
 
                     <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                         <button
-                            onClick={() => setViewMode('grid')}
+                            onClick={() => handleSetViewMode('grid')}
                             className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             <LayoutGrid size={18} />
                         </button>
                         <button
-                            onClick={() => setViewMode('list')}
+                            onClick={() => handleSetViewMode('list')}
                             className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             <List size={18} />
@@ -256,7 +373,11 @@ export default function WardrobePage() {
                                     <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
                                         {groupedItems[group].map((item: any) => (
                                             viewMode === 'grid' ? (
-                                                <div key={item.id} className="card group relative">
+                                                <div
+                                                    key={item.id}
+                                                    className="card group relative cursor-pointer active:scale-95 transition-transform"
+                                                    onClick={() => setSelectedItem(item)}
+                                                >
                                                     <div className="aspect-[3/4] overflow-hidden bg-gray-800">
                                                         <img
                                                             src={item.image_url || "/placeholder-garment.jpg"}
@@ -301,7 +422,11 @@ export default function WardrobePage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.id} className="card p-4 flex gap-6 items-center hover:bg-white/5 transition-colors group">
+                                                <div
+                                                    key={item.id}
+                                                    className="card p-4 flex gap-6 items-center hover:bg-white/5 transition-colors group cursor-pointer"
+                                                    onClick={() => setSelectedItem(item)}
+                                                >
                                                     <div className="w-24 h-32 shrink-0 bg-gray-800 rounded-lg overflow-hidden">
                                                         <img
                                                             src={item.image_url || "/placeholder-garment.jpg"}

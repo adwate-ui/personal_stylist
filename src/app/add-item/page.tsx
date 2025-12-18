@@ -8,6 +8,7 @@ import { AddItemSkeleton } from "@/components/Skeleton";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
+import { analyzeImageWithGemini } from "@/lib/gemini-client";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -32,27 +33,37 @@ export default function AddItemPage() {
         return interval;
     };
 
+
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
         setLoading(true);
         const interval = simulateProgress();
         setPreview(null);
+        const file = e.target.files[0];
 
         try {
-            const formData = new FormData();
-            formData.append("file", e.target.files[0]);
-            // Pass Style DNA for scoring
-            if (profile) {
-                formData.append("style_profile", JSON.stringify(profile));
+            const apiKey = localStorage.getItem("gemini_api_key");
+            if (!apiKey) {
+                // Prompt for key if missing
+                if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
+                    router.push("/profile");
+                } else {
+                    throw new Error("API Key required for AI analysis.");
+                }
+                clearInterval(interval);
+                return;
             }
 
-            const res = await fetch("/api/wardrobe/analyze", { method: "POST", body: formData });
-            const data = await res.json();
+            // Client-side analysis
+            const data = await analyzeImageWithGemini(file, apiKey);
 
             clearInterval(interval);
             setProgress(100);
 
             if (data.error) throw new Error(data.message || data.error);
+            // Append the uploaded image as a blob URL for preview
+            data.image_url = URL.createObjectURL(file);
             setPreview(data);
 
         } catch (err: any) {
