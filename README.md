@@ -100,6 +100,9 @@ This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/clou
 > [!IMPORTANT]
 > **Environment variables MUST be set in Cloudflare Pages BEFORE building.** If you see warnings about "Missing Supabase environment variables" in the browser console, your build was done without proper configuration.
 
+> [!IMPORTANT]
+> **This application runs on Edge Runtime for Cloudflare Pages compatibility.** All server-side code (proxy, API routes) uses Edge runtime, NOT Node.js runtime. See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md) for technical details.
+
 ### Quick Start
 
 1. Set environment variables in Cloudflare Pages (see below)
@@ -142,6 +145,11 @@ Set these in **Cloudflare Pages → Settings → Environment Variables** (both P
 ## Troubleshooting
 
 ### Common Issues
+
+**"Node.js middleware is not currently supported" error**
+- **Cause**: Server-side code is missing Edge runtime declaration
+- **Fix**: Ensure all proxy and API routes have `export const runtime = 'edge';`
+- **Details**: See [EDGE_RUNTIME_GUIDE.md](./EDGE_RUNTIME_GUIDE.md)
 
 **"Missing Supabase environment variables" in browser console**
 - **Cause**: Build ran without environment variables set
