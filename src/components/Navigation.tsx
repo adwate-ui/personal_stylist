@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shirt, PlusCircle, Settings, LogOut, Sparkles } from "lucide-react";
+import { Shirt, PlusCircle, Settings, LogOut, Sparkles, Dna } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +20,7 @@ export default function Navigation() {
     const navItems = [
         { name: "Wardrobe", href: "/wardrobe", icon: Shirt },
         { name: "Add Item", href: "/add-item", icon: PlusCircle },
+        { name: "Style DNA", href: "/style-dna", icon: Dna },
         { name: "Preferences", href: "/preferences", icon: Settings },
     ];
 
