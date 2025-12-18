@@ -262,7 +262,7 @@ export default function WardrobePage() {
                                     )}
                                     {(selectedItem.brand || selectedItem.name) && (
                                         <a
-                                            href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name)}
+                                            href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name || '')}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="btn btn-primary px-6 py-2 text-sm flex items-center gap-2"
@@ -325,7 +325,7 @@ export default function WardrobePage() {
                                 )}
                                 {(selectedItem.brand || selectedItem.name) && (
                                     <a
-                                        href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name)}
+                                        href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name || '')}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
