@@ -3,10 +3,17 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ShopAnalysisSkeleton } from "@/components/Skeleton";
-import { Upload, Star, ThumbsUp, AlertCircle, ShoppingBag } from "lucide-react";
+import { Upload, ThumbsUp, AlertCircle, ShoppingBag } from "lucide-react"; // Removed unused imports
+import { ShopAnalysis } from "@/types/shop";
+import { useProfile } from "@/hooks/useProfile";
+import { rateImageWithGemini } from "@/lib/gemini-client";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function ShopPage() {
-    const [analysis, setAnalysis] = useState<any>(null);
+    const { profile } = useProfile();
+    const router = useRouter();
+    const [analysis, setAnalysis] = useState<ShopAnalysis | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -19,25 +26,27 @@ export default function ShopPage() {
 
         const loadingToast = toast.loading("Analyzing...");
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            const apiKey = profile.gemini_api_key || localStorage.getItem("gemini_api_key");
 
-            const res = await fetch("/api/shop/rate", {
-                method: "POST",
-                body: formData,
-            });
+            if (!apiKey) {
+                if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
+                    router.push("/profile");
+                }
+                throw new Error("API Key required");
+            }
 
-            const data = await res.json();
+            const data = await rateImageWithGemini(file, apiKey);
+
             toast.dismiss(loadingToast);
 
             if (data.error) throw new Error(data.message || data.error);
 
             setAnalysis(data);
             toast.success("Analysis Complete!");
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
             toast.dismiss(loadingToast);
-            toast.error("Analysis Failed", { description: err.message || "Please try again" });
+            toast.error("Analysis Failed", { description: (err as Error).message || "Please try again" });
         } finally {
             setAnalyzing(false);
         }
@@ -56,7 +65,14 @@ export default function ShopPage() {
                         onClick={() => document.getElementById('shop-upload')?.click()}>
 
                         {imagePreview ? (
-                            <img src={imagePreview} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
+                            <div className="absolute inset-0 w-full h-full relative">
+                                <Image
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
                         ) : (
                             <>
                                 <Upload size={48} className="text-gray-500 mb-4" />

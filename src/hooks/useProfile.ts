@@ -29,7 +29,8 @@ const DEFAULT_PROFILE = {
     brands: [] as string[],
     priceRange: "",
     styleReport: null as any,
-    styleDNA: null as any
+    styleDNA: null as any,
+    gemini_api_key: ""
 };
 
 export function useProfile() {
@@ -68,7 +69,8 @@ export function useProfile() {
             brands: profileData.brands,
             price_range: profileData.priceRange,
             style_dna: profileData.styleDNA,
-            style_report: profileData.styleReport
+            style_report: profileData.styleReport,
+            gemini_api_key: profileData.gemini_api_key
         };
     };
 
@@ -92,7 +94,8 @@ export function useProfile() {
             brands: dbProfile.brands || [],
             priceRange: dbProfile.price_range || "",
             styleDNA: dbProfile.style_dna || null,
-            styleReport: dbProfile.style_report || null
+            styleReport: dbProfile.style_report || null,
+            gemini_api_key: dbProfile.gemini_api_key || ""
         };
     };
 

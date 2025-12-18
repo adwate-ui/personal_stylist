@@ -7,8 +7,11 @@ import { GlossaryText } from "@/components/GlossaryText";
 import { AddItemSkeleton } from "@/components/Skeleton";
 import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, TrendingUp, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useProfile } from "@/hooks/useProfile";
 import { analyzeImageWithGemini } from "@/lib/gemini-client";
+import { WardrobeItemAnalysis } from "@/types/wardrobe";
+import { supabase } from "@/lib/supabase";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -17,7 +20,7 @@ export default function AddItemPage() {
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [url, setUrl] = useState("");
-    const [preview, setPreview] = useState<any>(null);
+    const [preview, setPreview] = useState<WardrobeItemAnalysis | null>(null);
 
     const simulateProgress = () => {
         setProgress(0);
@@ -66,9 +69,9 @@ export default function AddItemPage() {
             data.image_url = URL.createObjectURL(file);
             setPreview(data);
 
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            toast.error("Analysis Failed", { description: err.message || "Please try again.", duration: 5000 });
+            toast.error("Analysis Failed", { description: (err as Error).message || "Please try again.", duration: 5000 });
             clearInterval(interval);
         } finally {
             setLoading(false);
@@ -82,24 +85,55 @@ export default function AddItemPage() {
         setPreview(null);
 
         try {
-            const res = await fetch("/api/wardrobe/link", {
-                method: "POST",
-                body: JSON.stringify({
-                    url,
-                    style_profile: profile
-                }),
-                headers: { "Content-Type": "application/json" }
-            });
-            const data = await res.json();
+            // Client-side Link Analysis using CORS Proxy and Gemini
+            // 1. Fetch HTML via CORS Proxy
+            const proxyUrl = "https://corsproxy.io/?";
+            const targetUrl = encodeURIComponent(url);
+            const htmlRes = await fetch(proxyUrl + targetUrl);
+            if (!htmlRes.ok) throw new Error("Failed to fetch URL content");
+            const html = await htmlRes.text();
+
+            // 2. Parse OG Tags
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content');
+            const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
+            const ogDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content');
+
+            if (!ogImage) throw new Error("No image found in link metadata");
+
+            // 3. Fetch Image Blob via Proxy
+            const imgRes = await fetch(proxyUrl + encodeURIComponent(ogImage));
+            if (!imgRes.ok) throw new Error("Failed to fetch product image");
+            const imgBlob = await imgRes.blob();
+            const imgFile = new File([imgBlob], "product.jpg", { type: imgBlob.type });
+
+            // 4. Analyze with Gemini
+            const apiKey = profile.gemini_api_key || localStorage.getItem("gemini_api_key");
+            if (!apiKey) {
+                if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
+                    router.push("/profile");
+                }
+                throw new Error("API Key required");
+            }
+
+            const analysis = await analyzeImageWithGemini(imgFile, apiKey);
+
+            // 5. Merge Data
+            const previewData: WardrobeItemAnalysis = {
+                ...analysis,
+                image_url: URL.createObjectURL(imgBlob), // Local preview
+                item_name: ogTitle || analysis.item_name,
+                description: ogDesc || analysis.description,
+            };
 
             clearInterval(interval);
             setProgress(100);
 
-            if (data.error) throw new Error(data.message || data.error);
-            setPreview(data);
-        } catch (err: any) {
+            setPreview(previewData);
+        } catch (err) {
             console.error(err);
-            toast.error("Link Analysis Failed", { description: err.message || "Please try again.", duration: 5000 });
+            toast.error("Link Analysis Failed", { description: (err as Error).message || "Please check the URL or try uploading a photo.", duration: 5000 });
             clearInterval(interval);
         } finally {
             setLoading(false);
@@ -114,28 +148,54 @@ export default function AddItemPage() {
         if (!preview) return;
         setSaving(true);
         try {
-            const res = await fetch("/api/wardrobe/add", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...preview })
-            });
-
-            const data = await res.json();
-
-            if (res.status === 401) {
-                // Should have been caught by middleware, but just in case
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
                 router.push("/auth/login");
                 return;
             }
 
-            if (!res.ok) throw new Error(data.message || data.error || "Failed");
+            // Upload Image to Storage if it's a blob
+            let finalImageUrl = preview.image_url;
+            if (preview.image_url?.startsWith('blob:')) {
+                const blob = await fetch(preview.image_url).then(r => r.blob());
+                const fileName = `${user.id}/${Date.now()}.jpg`;
+                const { error: uploadError } = await supabase.storage
+                    .from('wardrobe_items')
+                    .upload(fileName, blob);
+
+                if (uploadError) throw uploadError;
+
+                // Get Public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('wardrobe_items')
+                    .getPublicUrl(fileName);
+
+                finalImageUrl = publicUrl;
+            }
+
+            // Save to Database
+            const { error: dbError } = await supabase.from('wardrobe_items').insert({
+                user_id: user.id,
+                image_url: finalImageUrl,
+                category: preview.category,
+                sub_category: preview.sub_category,
+                brand: preview.brand,
+                primary_color: preview.primary_color,
+                price_estimate: preview.price_estimate,
+                description: preview.description,
+                style_tags: preview.style_tags,
+                style_score: preview.style_score,
+                ai_analysis: preview // Store full analysis json
+            });
+
+            if (dbError) throw dbError;
 
             // Success
             toast.success("Item added to wardrobe!");
             router.push("/wardrobe");
-        } catch (error: any) {
+        } catch (error) {
             console.error("Save Error:", error);
-            toast.error("Save Failed", { description: error.message || "Failed to save item. Please try again.", duration: 5000 });
+            toast.error("Save Failed", { description: (error as Error).message || "Failed to save item. Please try again.", duration: 5000 });
         } finally {
             setSaving(false);
         }
@@ -259,7 +319,12 @@ export default function AddItemPage() {
                         <div className="space-y-6">
                             <div className="aspect-[3/4] bg-gray-900 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group">
                                 {preview.image_url ? (
-                                    <img src={preview.image_url} alt="Product" className="w-full h-full object-cover" />
+                                    <Image
+                                        src={preview.image_url}
+                                        alt="Product"
+                                        fill
+                                        className="object-cover"
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 bg-white/5">
                                         <AlertCircle size={32} className="mb-2 opacity-50" />
@@ -300,7 +365,7 @@ export default function AddItemPage() {
                                     </div>
                                     <h2 className="text-3xl font-serif font-bold leading-tight mb-4">{preview.item_name || preview.sub_category || "Identified Item"}</h2>
                                     <p className="text-gray-300 leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1">
-                                        "<GlossaryText text={preview.description} />"
+                                        &quot;<GlossaryText text={preview.description} />&quot;
                                     </p>
                                 </div>
 

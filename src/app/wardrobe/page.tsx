@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { WardrobeItem } from "@/types/wardrobe";
 
 // Inline Skeleton Component
 const WardrobeSkeleton = () => (
@@ -64,7 +65,7 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
 };
 
 export default function WardrobePage() {
-    const [items, setItems] = useState<any[]>([]);
+    const [items, setItems] = useState<WardrobeItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
@@ -74,14 +75,18 @@ export default function WardrobePage() {
     const [groupByCategory, setGroupByCategory] = useState(true);
     const [gridSize, setGridSize] = useState<'4x4' | '5x5' | '6x6'>('4x4');
 
-    const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     // Initial load of preferences
     useEffect(() => {
         const savedView = localStorage.getItem('wardrobe_view_mode');
+        const savedGrid = localStorage.getItem('wardrobe_grid_size');
         if (savedView === 'grid' || savedView === 'list') {
             setViewMode(savedView);
+        }
+        if (savedGrid === '4x4' || savedGrid === '5x5' || savedGrid === '6x6') {
+            setGridSize(savedGrid as '4x4' | '5x5' | '6x6');
         }
     }, []);
 
@@ -89,6 +94,11 @@ export default function WardrobePage() {
     const handleSetViewMode = (mode: 'grid' | 'list') => {
         setViewMode(mode);
         localStorage.setItem('wardrobe_view_mode', mode);
+    }
+
+    const handleSetGridSize = (size: '4x4' | '5x5' | '6x6') => {
+        setGridSize(size);
+        localStorage.setItem('wardrobe_grid_size', size);
     }
 
     const fetchItems = async (pageNum = 1, isLoadMore = false) => {
@@ -138,12 +148,12 @@ export default function WardrobePage() {
 
             setHasMore((count || 0) > to + 1);
             setPage(pageNum);
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
             if (!isLoadMore) {
-                setError(err.message || "Failed to load wardrobe items");
+                setError((err as Error).message || "Failed to load wardrobe items");
             } else {
-                toast.error("Failed to load more items", { description: err.message });
+                toast.error("Failed to load more items", { description: (err as Error).message });
             }
         } finally {
             setLoading(false);
@@ -172,9 +182,9 @@ export default function WardrobePage() {
             setItems(prev => prev.filter(i => i.id !== id));
             setSelectedItem(null); // Close modal
             toast.success("Item deleted");
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            toast.error("Failed to delete item", { description: err.message });
+            toast.error("Failed to delete item", { description: (err as Error).message });
         } finally {
             setDeleting(false);
         }
@@ -188,7 +198,7 @@ export default function WardrobePage() {
         if (!acc[group]) acc[group] = [];
         acc[group].push(item);
         return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, WardrobeItem[]>);
 
     // Sort groups ensures consistent order
     const sortedGroups = Object.keys(groupedItems).sort();
@@ -231,7 +241,7 @@ export default function WardrobePage() {
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="flex bg-white/5 rounded-lg p-1">
                                             {[...Array(5)].map((_, i) => (
-                                                <Sparkles key={i} size={14} className={i < Math.round(selectedItem.style_score / 2) ? "text-[#d4af37]" : "text-gray-700"} />
+                                                <Sparkles key={i} size={14} className={i < Math.round((selectedItem.style_score || 0) / 2) ? "text-[#d4af37]" : "text-gray-700"} />
                                             ))}
                                         </div>
                                         <span className="text-[#d4af37] font-bold">{selectedItem.style_score}/10 Match</span>
@@ -315,19 +325,19 @@ export default function WardrobePage() {
                     {viewMode === 'grid' && (
                         <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                             <button
-                                onClick={() => setGridSize('4x4')}
+                                onClick={() => handleSetGridSize('4x4')}
                                 className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '4x4' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 4×4
                             </button>
                             <button
-                                onClick={() => setGridSize('5x5')}
+                                onClick={() => handleSetGridSize('5x5')}
                                 className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '5x5' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 5×5
                             </button>
                             <button
-                                onClick={() => setGridSize('6x6')}
+                                onClick={() => handleSetGridSize('6x6')}
                                 className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '6x6' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 6×6
@@ -371,7 +381,7 @@ export default function WardrobePage() {
                                     )}
 
                                     <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
-                                        {groupedItems[group].map((item: any) => (
+                                        {groupedItems[group].map((item) => (
                                             viewMode === 'grid' ? (
                                                 <div
                                                     key={item.id}

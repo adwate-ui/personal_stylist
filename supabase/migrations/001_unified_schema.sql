@@ -95,7 +95,9 @@ alter table profiles add column if not exists archetypes text[];
 alter table profiles add column if not exists brands text[];
 alter table profiles add column if not exists price_range text;
 alter table profiles add column if not exists fit_preference text;
+
 alter table profiles add column if not exists location text;
+alter table profiles add column if not exists gemini_api_key text;
 
 
 -- B. WARDROBE ITEMS TABLE

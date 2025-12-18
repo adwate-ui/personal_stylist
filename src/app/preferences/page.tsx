@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, User, Ruler, Palette, Shirt, RefreshCw, Sparkles } from "lucide-react";
+import { Save, User, Ruler, Shirt, RefreshCw, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
 
@@ -12,6 +12,7 @@ export default function PreferencesPage() {
 
     useEffect(() => {
         if (!loading) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFormData(profile);
         }
     }, [profile, loading]);

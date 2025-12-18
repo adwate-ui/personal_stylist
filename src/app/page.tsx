@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
@@ -22,7 +22,7 @@ export default function Home() {
         </h1>
 
         <p className="text-xl text-gray-400 mb-10 leading-relaxed max-w-lg mx-auto">
-          The world's most advanced stylist, powered by Gemini 3.
+          The world&apos;s most advanced stylist, powered by Gemini 3.
           Curate your wardrobe, get personalized scores, and shop with confidence.
         </p>
 

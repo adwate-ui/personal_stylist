@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
-import { GlossaryText } from "@/components/GlossaryText";
+// import { GlossaryText } from "@/components/GlossaryText"; // Unused
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { generateStyleDNA } from "@/lib/style-generator";
+import { generateStyleDNA, StyleDNA } from "@/lib/style-generator";
 
 export default function Onboarding() {
     const router = useRouter();
     const { saveProfile } = useProfile();
     const [step, setStep] = useState(1);
     const [analyzing, setAnalyzing] = useState(false);
-    const [styleDNA, setStyleDNA] = useState<any>(null);
+    const [styleDNA, setStyleDNA] = useState<StyleDNA | null>(null);
     const [saving, setSaving] = useState(false);
 
     // Initialize with local state, we'll save to global state at the end
@@ -97,9 +97,12 @@ export default function Onboarding() {
             console.error("DNA Generation Error:", error);
             // Fallback
             setStyleDNA({
-                archetype: "Modern Essentialist",
-                colorPalette: "Neutral & Versatile",
-                description: "You appreciate clean lines and functionality."
+                archetype_name: "Modern Essentialist",
+                summary: "You appreciate clean lines and functionality.",
+                color_palette: { neutrals: [], accents: [], avoid: [] },
+                must_have_staples: [],
+                brand_recommendations: [],
+                styling_tips: []
             });
         } finally {
             setAnalyzing(false);
@@ -210,7 +213,7 @@ export default function Onboarding() {
                         <div className="card glass p-8">
                             <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Shirt className="text-primary" /> Wardrobe Essentials</h3>
                             <ul className="space-y-4">
-                                {styleDNA.must_have_staples.map((item: any, i: number) => (
+                                {styleDNA.must_have_staples.map((item, i) => (
                                     <li key={i} className="flex gap-3 items-start">
                                         <Check size={18} className="text-primary mt-1 shrink-0" />
                                         <div>
@@ -226,7 +229,7 @@ export default function Onboarding() {
                         <div className="card glass p-8">
                             <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Briefcase className="text-primary" /> Recommended Brands</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {styleDNA.brand_recommendations.map((brand: any, i: number) => (
+                                {styleDNA.brand_recommendations.map((brand, i) => (
                                     <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
                                         <div className="font-bold text-lg mb-1">{brand.name}</div>
                                         <div className="text-xs text-primary mb-2 uppercase tracking-wider">{brand.tier}</div>
@@ -242,7 +245,7 @@ export default function Onboarding() {
                             <ul className="space-y-3">
                                 {styleDNA.styling_tips.map((tip: string, i: number) => (
                                     <li key={i} className="text-gray-300 italic border-l-2 border-primary/30 pl-4 py-1">
-                                        "{tip}"
+                                        &quot;{tip}&quot;
                                     </li>
                                 ))}
                             </ul>
@@ -301,7 +304,7 @@ export default function Onboarding() {
                                     <span className="uppercase tracking-widest text-xs font-bold">The Basics</span>
                                 </div>
                                 <h1 className="text-4xl font-serif font-bold">Introduction</h1>
-                                <p className="text-gray-400">Let's start with the essentials to address you properly and understand your environment.</p>
+                                <p className="text-gray-400">Let&apos;s start with the essentials to address you properly and understand your environment.</p>
 
                                 <div className="space-y-4 pt-4">
                                     <div>
