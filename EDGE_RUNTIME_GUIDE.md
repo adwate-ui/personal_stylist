@@ -1,40 +1,36 @@
-# Edge Runtime Guide for Cloudflare Pages
+# Runtime Guide for Cloudflare Pages with OpenNext
 
 ## Overview
 
-This application is architected to run on Cloudflare Pages using the **Edge Runtime**. This guide explains the technical requirements and architecture decisions that ensure robust compatibility.
+This application is deployed to Cloudflare Pages using the **@opennextjs/cloudflare** adapter, which uses **Node.js runtime** (via `nodejs_compat` compatibility flag), NOT Edge runtime. This guide explains the technical requirements and architecture decisions.
 
-**⚠️ Important: Next.js 16 Update** - This application uses Next.js 16, which renamed "middleware" to "proxy" and changed how runtime configuration works. Proxy files (proxy.ts) now always run on Node.js runtime and cannot have route segment config like `export const runtime = 'edge'`. See the [proxy section](#1-proxy-middleware---srcproxyts) for details.
+**⚠️ CRITICAL: Do NOT Use Edge Runtime with OpenNext Cloudflare**
 
-## Critical: Why Edge Runtime?
+## Why Node.js Runtime?
 
-**Cloudflare Pages ONLY supports Edge Runtime for Next.js server-side code.**
+**OpenNext Cloudflare adapter requires Node.js runtime for full Next.js compatibility.**
+
+When using `@opennextjs/cloudflare`, API routes should **NOT** have `export const runtime = 'edge'` declarations.
 
 If you see this error:
 ```
-ERROR Node.js middleware is not currently supported. Consider switching to Edge Middleware.
+app/api/*/route cannot use the edge runtime.
+OpenNext requires edge runtime function to be defined in a separate function.
 ```
 
-This means a server-side file is missing the Edge runtime declaration.
+This means you need to **remove** `export const runtime = 'edge'` from your API routes.
 
-## What is Edge Runtime?
+## Node.js vs Edge Runtime
 
-Edge Runtime is a lightweight JavaScript runtime that:
-- ✅ Runs on Cloudflare's global network (low latency)
-- ✅ Supports Web Standard APIs (fetch, Request, Response, etc.)
-- ✅ Does NOT support Node.js APIs (fs, path, process, etc.)
-- ✅ Perfect for middleware, proxies, and API routes
+| Feature | Node.js Runtime (OpenNext) | Edge Runtime (next-on-pages) |
+|---------|----------------------------|------------------------------|
+| **Adapter** | @opennextjs/cloudflare | @cloudflare/next-on-pages |
+| **Node.js APIs** | ✅ Full Support | ❌ Limited |
+| **Next.js Features** | ✅ SSR, ISR, Middleware, etc. | ⚠️ Reduced feature set |
+| **API Routes** | ✅ All features | ⚠️ Limited APIs |
+| **Configuration** | wrangler.toml with nodejs_compat | Different setup |
 
-### Edge vs Node.js Runtime
-
-| Feature | Edge Runtime | Node.js Runtime |
-|---------|--------------|-----------------|
-| **Cloudflare Pages** | ✅ Supported | ❌ Not Supported |
-| **Speed** | Faster (lightweight) | Slower (full runtime) |
-| **APIs** | Web Standards only | Full Node.js APIs |
-| **Use Cases** | Middleware, API routes, SSR | Build tools, scripts |
-
-## Architecture: Edge-First Design
+## Architecture: Node.js Runtime Design
 
 ### 1. Proxy (Middleware) - `src/proxy.ts`
 
@@ -65,27 +61,33 @@ export async function proxy(req: NextRequest) {
 
 ### 2. API Routes - `src/app/api/**/route.ts`
 
-**All API routes in this project declare Edge runtime:**
+**IMPORTANT: API routes DO NOT declare runtime (defaults to Node.js):**
 
 ```typescript
-export const runtime = 'edge';
+// ❌ DO NOT DO THIS with OpenNext Cloudflare:
+// export const runtime = 'edge';
+
+// ✅ Correct - no runtime declaration (uses Node.js by default)
+export async function GET(request: Request) {
+  // Your handler code
+}
 ```
 
 **Examples**:
-- ✅ `src/app/api/health/route.ts`
-- ✅ `src/app/api/profile/route.ts`
-- ✅ `src/app/api/wardrobe/*/route.ts`
-- ✅ `src/app/api/style-dna/generate/route.ts`
-- ✅ `src/app/api/shop/rate/route.ts`
-- ✅ `src/app/auth/callback/route.ts`
+- ✅ `src/app/api/health/route.ts` - No runtime declaration
+- ✅ `src/app/api/profile/route.ts` - No runtime declaration
+- ✅ `src/app/api/wardrobe/*/route.ts` - No runtime declaration
+- ✅ `src/app/api/style-dna/generate/route.ts` - No runtime declaration
+- ✅ `src/app/api/shop/rate/route.ts` - No runtime declaration
+- ✅ `src/app/auth/callback/route.ts` - No runtime declaration
 
-### 3. Supabase Client - Edge Compatible
+### 3. Supabase Client - Node.js Compatible
 
 **Implementation**: `src/lib/supabase-server.ts`
 
 We use two different Supabase client creation patterns:
 
-#### For Middleware (Edge Runtime)
+#### For Middleware (Uses NextRequest/NextResponse)
 ```typescript
 import { NextRequest, NextResponse } from "next/server";
 
@@ -93,7 +95,7 @@ export function createMiddlewareClient(request: NextRequest, response: NextRespo
     return createServerClient(supabaseUrl, supabaseKey, {
         cookies: {
             getAll() {
-                return request.cookies.getAll(); // Edge-compatible
+                return request.cookies.getAll();
             },
             setAll(cookiesToSet) {
                 cookiesToSet.forEach(({ name, value, options }) => {
@@ -106,7 +108,7 @@ export function createMiddlewareClient(request: NextRequest, response: NextRespo
 }
 ```
 
-#### For Server Components/Actions (Can use Node.js)
+#### For Server Components/Actions and API Routes
 ```typescript
 import { cookies } from "next/headers";
 
@@ -131,9 +133,26 @@ export async function createClient() {
 }
 ```
 
-**Key Difference**: Middleware client uses `NextRequest/NextResponse` cookies (Edge-compatible), while Server Component client uses `cookies()` from `next/headers` (may use Node.js runtime).
+**Key Difference**: Middleware client uses `NextRequest/NextResponse` cookies for request interception, while Server Component/API client uses `cookies()` from `next/headers`.
 
 ## Common Pitfalls and Solutions
+
+### ❌ Problem: Using Edge Runtime with OpenNext Cloudflare
+
+**Error**: `app/api/*/route cannot use the edge runtime. OpenNext requires edge runtime function to be defined in a separate function.`
+
+**Cause**: API routes have `export const runtime = 'edge';` declaration
+
+**Solution**: **Remove** all `export const runtime = 'edge';` declarations from API routes. OpenNext Cloudflare uses Node.js runtime by default.
+
+```typescript
+// ❌ WRONG - Do NOT do this with OpenNext Cloudflare:
+export const runtime = 'edge';
+export async function GET(request: Request) { ... }
+
+// ✅ CORRECT - No runtime declaration:
+export async function GET(request: Request) { ... }
+```
 
 ### ❌ Problem: Route Segment Config in Proxy File (Next.js 16)
 
@@ -143,43 +162,27 @@ export async function createClient() {
 
 **Solution**: Remove the runtime declaration from proxy.ts. In Next.js 16, proxy files cannot have route segment config. The proxy automatically runs on Node.js runtime.
 
-### ❌ Problem: Missing Runtime Declaration (API Routes)
+### ✅ Node.js APIs Available with OpenNext Cloudflare
 
-**Error**: `Node.js middleware is not currently supported`
+With Node.js runtime (nodejs_compat), you have access to many Node.js APIs:
 
-**Cause**: An API route file is missing `export const runtime = 'edge';`
-
-**Solution**: Add to API route handlers (route.ts files) that need to run on Cloudflare Pages:
-- API route handlers in `src/app/api/**/route.ts`
-- Note: DO NOT add to proxy.ts files (see above)
-
-### ❌ Problem: Using Node.js APIs in Edge Runtime
-
-**Error**: `ReferenceError: fs is not defined` or similar
-
-**Cause**: Trying to use Node.js modules in Edge runtime
-
-**Forbidden in Edge Runtime**:
 ```typescript
-import fs from 'fs';              // ❌ No filesystem access
-import path from 'path';          // ❌ No path module
-import { exec } from 'child_process'; // ❌ No child processes
-const buffer = Buffer.from('...');    // ❌ No Buffer (use Uint8Array)
-```
-
-**Allowed in Edge Runtime**:
-```typescript
+// ✅ Available in Node.js runtime:
+import { Buffer } from 'buffer';              // ✅ Buffer available
+import crypto from 'crypto';                  // ✅ Crypto available
 import { NextRequest, NextResponse } from "next/server"; // ✅
 const response = await fetch('https://api.example.com'); // ✅
-const text = await response.text();                      // ✅
-const data = JSON.parse(text);                           // ✅
+const text = await response.text();           // ✅
+const data = JSON.parse(text);                // ✅
 ```
+
+**Note**: Some Node.js APIs like `fs` and `child_process` are still not available in Workers environment.
 
 ### ❌ Problem: Using cookies() from next/headers in Middleware
 
 **Error**: Empty or undefined cookies
 
-**Cause**: `cookies()` from `next/headers` is not reliable in Edge runtime
+**Cause**: Middleware should use request/response cookies directly
 
 **Solution**: Use `request.cookies` and `response.cookies` directly in middleware/proxy
 
@@ -201,15 +204,15 @@ export async function proxy(req: NextRequest) {
 
 When adding new features, ensure:
 
-- [ ] **New API routes** declare `export const runtime = 'edge';`
+- [ ] **New API routes** DO NOT declare `export const runtime = 'edge';` (use Node.js runtime by default)
 - [ ] **New middleware/proxy** uses NextRequest/NextResponse cookies
-- [ ] **No Node.js APIs** in server-side code (fs, path, child_process, etc.)
 - [ ] **Supabase clients** use appropriate creation pattern:
   - Middleware → `createMiddlewareClient(req, res)`
-  - Server Components → `createClient()`
+  - Server Components/API Routes → `createClient()`
   - Client Components → `supabase` from `@/lib/supabase`
 - [ ] **Environment variables** are set in Cloudflare Pages before build
 - [ ] **Test locally** with `npm run build:cloudflare` before deploying
+- [ ] **wrangler.toml** has `nodejs_compat` in compatibility_flags
 
 ## Testing Edge Compatibility
 
@@ -241,15 +244,15 @@ git push origin main
 
 ## Summary
 
-This application is **Edge-first** by design:
-- ✅ All server-side code runs on Edge Runtime
-- ✅ Supabase clients are Edge-compatible
-- ✅ No Node.js dependencies in runtime code
-- ✅ Optimized for Cloudflare Pages global network
-- ✅ Future features must follow Edge runtime constraints
+This application uses **OpenNext Cloudflare with Node.js runtime**:
+- ✅ All server-side code runs on Node.js runtime (via nodejs_compat)
+- ✅ No `export const runtime = 'edge'` declarations in API routes
+- ✅ Full Next.js feature support (SSR, ISR, middleware, etc.)
+- ✅ Optimized for Cloudflare Workers with Node.js compatibility
+- ✅ Future features must follow OpenNext Cloudflare conventions
 
 **The connection between Supabase and Cloudflare is robust because:**
-1. Edge runtime ensures fast, globally distributed auth checks
-2. Cookie handling uses Edge-compatible APIs
-3. All API routes explicitly declare Edge runtime
-4. No hidden Node.js dependencies that could break on deployment
+1. Node.js runtime ensures full API compatibility
+2. Cookie handling works reliably with Next.js patterns
+3. All API routes use default Node.js runtime
+4. OpenNext Cloudflare adapter handles the infrastructure
