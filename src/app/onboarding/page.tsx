@@ -6,6 +6,7 @@ import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Bri
 import { useProfile } from "@/hooks/useProfile";
 import { GlossaryText } from "@/components/GlossaryText";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { generateStyleDNA } from "@/lib/style-generator";
 
 export default function Onboarding() {
     const router = useRouter();
@@ -80,26 +81,26 @@ export default function Onboarding() {
 
     const handleBack = () => setStep(step - 1);
 
+
+
+    // ... inside component ...
+
     const generateDNA = async () => {
         setAnalyzing(true);
+        // Simulate "AI" thinking time for UX
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
         try {
-            // Call API
-            const res = await fetch("/api/style-dna/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
-            const data = await res.json();
-
-            if (data.error) throw new Error(data.error);
-
-            // Success
-            setStyleDNA(data);
-
+            const dna = generateStyleDNA(formData);
+            setStyleDNA(dna);
         } catch (error) {
             console.error("DNA Generation Error:", error);
-            alert("Failed to generate Style DNA. Proceeding to wardrobe.");
-            finishOnboarding();
+            // Fallback
+            setStyleDNA({
+                archetype: "Modern Essentialist",
+                colorPalette: "Neutral & Versatile",
+                description: "You appreciate clean lines and functionality."
+            });
         } finally {
             setAnalyzing(false);
         }
@@ -108,32 +109,13 @@ export default function Onboarding() {
     const finishOnboarding = async () => {
         setSaving(true);
         try {
-            // Priority: Try API first
-            const res = await fetch("/api/profile", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, styleDNA })
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || "Failed to save profile");
-            }
-
-            // Success
+            // Direct Supabase save (Client-Side)
+            // Note: server-side API is disabled in static build
+            await saveProfile({ ...formData, styleDNA });
             router.push("/wardrobe");
-
         } catch (error) {
             console.error("Profile Save Error:", error);
-
-            // Fallback to client-side hook
-            try {
-                await saveProfile({ ...formData, styleDNA });
-                // If fallback "succeeds" (it swallows errors mostly but let's assume it works locally)
-                router.push("/wardrobe");
-            } catch (fallbackErr) {
-                alert("Failed to save profile. Please check your connection and try again.");
-            }
+            alert("Failed to save profile. Please check your connection.");
         } finally {
             setSaving(false);
         }
@@ -150,12 +132,12 @@ export default function Onboarding() {
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
-        
+
         if (!isSupabaseConfigured) {
             alert('Avatar upload is not available at this time. Please skip this step and continue with onboarding.');
             return;
         }
-        
+
         setAnalyzing(true); // Reuse loading state
         try {
             const file = e.target.files[0];
@@ -362,29 +344,49 @@ export default function Onboarding() {
                                 <div className="grid grid-cols-2 gap-6 pt-4">
                                     <div>
                                         <label>Height (cm)</label>
-                                        <input type="number" placeholder="175" value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} />
+                                        <input
+                                            type="number"
+                                            placeholder="175"
+                                            value={formData.height}
+                                            onChange={e => setFormData({ ...formData, height: e.target.value })}
+                                            className="appearance-none" // Remove spinner
+                                        />
                                     </div>
                                     <div>
                                         <label>Weight (kg)</label>
-                                        <input type="number" placeholder="70" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
+                                        <input
+                                            type="number"
+                                            placeholder="70"
+                                            value={formData.weight}
+                                            onChange={e => setFormData({ ...formData, weight: e.target.value })}
+                                            className="appearance-none"
+                                        />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label>Body Shape Category</label>
-                                    <div className="grid grid-cols-3 gap-3 mt-2">
-                                        {['Inverted Triangle', 'Rectangle', 'Triangle', 'Hourglass', 'Oval'].map(shape => (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
+                                        {[
+                                            { name: 'Inverted Triangle', desc: 'Broader shoulders, narrower hips' },
+                                            { name: 'Rectangle', desc: 'Balanced shoulders and hips, undefined waist' },
+                                            { name: 'Triangle', desc: 'Hips wider than shoulders' },
+                                            { name: 'Hourglass', desc: 'Balanced shoulders/hips, defined waist' },
+                                            { name: 'Oval', desc: 'Fuller midsection, rounded frame' }
+                                        ].map(shape => (
                                             <button
-                                                key={shape}
-                                                className={`p-3 rounded-lg border text-sm transition-all relative overflow-hidden group min-h-[140px] flex flex-col justify-end ${formData.bodyShape === shape ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'
-                                                    }`}
-                                                onClick={() => setFormData({ ...formData, bodyShape: shape })}
+                                                key={shape.name}
+                                                className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[160px] flex flex-col justify-end ${formData.bodyShape === shape.name ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'}`}
+                                                onClick={() => setFormData({ ...formData, bodyShape: shape.name })}
                                             >
                                                 <div className="absolute inset-0 z-0">
-                                                    <img src={bodyShapeVisuals[shape]} alt={shape} className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
-                                                    <div className={`absolute inset-0 bg-gradient-to-t from-black/90 to-transparent ${formData.bodyShape === shape ? 'opacity-90' : 'opacity-100'}`} />
+                                                    <img src={bodyShapeVisuals[shape.name]} alt={shape.name} className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
+                                                    <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.bodyShape === shape.name ? 'opacity-90' : 'opacity-100'}`} />
                                                 </div>
-                                                <span className={`relative z-10 font-bold ${formData.bodyShape === shape ? 'text-primary' : 'text-white'}`}>{shape}</span>
+                                                <div className="relative z-10 p-3">
+                                                    <span className={`font-bold block ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'}`}>{shape.name}</span>
+                                                    <span className="text-xs text-gray-300 line-clamp-2">{shape.desc}</span>
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
@@ -417,40 +419,69 @@ export default function Onboarding() {
                                 <h1 className="text-4xl font-serif font-bold">Color Profile</h1>
                                 <p className="text-gray-400">We use this to determine your seasonal color palette.</p>
 
-                                <div className="space-y-4 pt-4">
+                                <div className="space-y-6 pt-4">
+                                    {/* Skin Tone Visuals */}
                                     <div>
                                         <label className="block mb-3">Skin Tone & Undertone</label>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                             {[
-                                                { id: "fair_cool", label: "Fair (Cool/Pink)", color: "#ffe0d9" },
-                                                { id: "fair_warm", label: "Fair (Warm/Yellow)", color: "#fcecd5" },
-                                                { id: "medium_cool", label: "Medium (Cool/Olive)", color: "#e3c4a8" },
-                                                { id: "medium_warm", label: "Medium (Warm/Golden)", color: "#dcb690" },
-                                                { id: "dark_cool", label: "Dark (Cool/Blue)", color: "#8d5e3f" },
-                                                { id: "dark_warm", label: "Dark (Warm/Red)", color: "#744627" }
+                                                { id: "fair_cool", label: "Fair (Cool)", color: "#ffe0d9", img: "https://images.unsplash.com/photo-1515688594390-b649af70d282?w=200&fit=crop" },
+                                                { id: "fair_warm", label: "Fair (Warm)", color: "#fcecd5", img: "https://images.unsplash.com/photo-1541257710737-06d667133a53?w=200&fit=crop" },
+                                                { id: "medium_cool", label: "Medium (Cool)", color: "#e3c4a8", img: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&fit=crop" },
+                                                { id: "medium_warm", label: "Medium (Warm)", color: "#dcb690", img: "https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=200&fit=crop" },
+                                                { id: "dark_cool", label: "Dark (Cool)", color: "#8d5e3f", img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&fit=crop" },
+                                                { id: "dark_warm", label: "Dark (Warm)", color: "#744627", img: "https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=200&fit=crop" }
                                             ].map(tone => (
                                                 <button
                                                     key={tone.id}
                                                     onClick={() => setFormData({ ...formData, skinTone: tone.id })}
-                                                    className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${formData.skinTone === tone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'
-                                                        }`}
+                                                    className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all overflow-hidden ${formData.skinTone === tone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'}`}
                                                 >
-                                                    <div className="w-8 h-8 rounded-full border border-white/20 shadow-sm shrink-0" style={{ backgroundColor: tone.color }} />
-                                                    <span className={`text-sm text-left ${formData.skinTone === tone.id ? 'text-primary font-medium' : 'text-gray-300'}`}>
+                                                    <div className="w-full h-24 rounded-lg overflow-hidden relative">
+                                                        <img src={tone.img} alt={tone.label} className="w-full h-full object-cover" />
+                                                        <div className="absolute bottom-0 right-0 w-6 h-6 rounded-tl-lg" style={{ backgroundColor: tone.color }}></div>
+                                                    </div>
+                                                    <span className={`text-sm font-medium ${formData.skinTone === tone.id ? 'text-primary' : 'text-gray-300'}`}>
                                                         {tone.label}
                                                     </span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label>Natural Hair Color</label>
-                                            <input type="text" placeholder="e.g. Dark Brown" value={formData.hairColor} onChange={e => setFormData({ ...formData, hairColor: e.target.value })} />
+                                            <label>Hair Color</label>
+                                            <select
+                                                value={formData.hairColor}
+                                                onChange={e => setFormData({ ...formData, hairColor: e.target.value })}
+                                                className="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option value="Black">Black</option>
+                                                <option value="Dark Brown">Dark Brown</option>
+                                                <option value="Light Brown">Light Brown</option>
+                                                <option value="Blonde">Blonde</option>
+                                                <option value="Red">Red</option>
+                                                <option value="Grey/White">Grey/White</option>
+                                                <option value="Other">Other</option>
+                                            </select>
                                         </div>
                                         <div>
                                             <label>Eye Color</label>
-                                            <input type="text" placeholder="e.g. Hazel" value={formData.eyeColor} onChange={e => setFormData({ ...formData, eyeColor: e.target.value })} />
+                                            <select
+                                                value={formData.eyeColor}
+                                                onChange={e => setFormData({ ...formData, eyeColor: e.target.value })}
+                                                className="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option value="Brown">Brown</option>
+                                                <option value="Hazel">Hazel</option>
+                                                <option value="Blue">Blue</option>
+                                                <option value="Green">Green</option>
+                                                <option value="Grey">Grey</option>
+                                                <option value="Other">Other</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -464,14 +495,16 @@ export default function Onboarding() {
                                     <span className="uppercase tracking-widest text-xs font-bold">Lifestyle</span>
                                 </div>
                                 <h1 className="text-4xl font-serif font-bold">Your Day-to-Day</h1>
-                                <p className="text-gray-400">A world-class wardrobe is one that is worn. Where do you spend your time?</p>
+                                <p className="text-gray-400">Select the environments that define your week.</p>
 
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     {[
-                                        { id: 'work', label: 'Corporate / Power' },
-                                        { id: 'casual', label: 'Leisure / Weekend' },
-                                        { id: 'event', label: 'Gala / High Society' },
-                                        { id: 'active', label: 'Movement / Wellness' }
+                                        { id: 'work', label: 'Corporate', img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&fit=crop' },
+                                        { id: 'casual', label: 'Casual / WFH', img: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&fit=crop' },
+                                        { id: 'event', label: 'Social / Evening', img: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=400&fit=crop' },
+                                        { id: 'active', label: 'Active', img: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&fit=crop' },
+                                        { id: 'creative', label: 'Creative', img: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&fit=crop' },
+                                        { id: 'travel', label: 'Travel', img: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&fit=crop' }
                                     ].map(item => (
                                         <button
                                             key={item.id}
@@ -479,12 +512,15 @@ export default function Onboarding() {
                                                 ...prev,
                                                 lifestyle: { ...prev.lifestyle, [item.id]: !prev.lifestyle[item.id as keyof typeof prev.lifestyle] }
                                             }))}
-                                            className={`p-6 rounded-xl border text-left transition-all h-32 flex flex-col justify-end ${formData.lifestyle[item.id as keyof typeof formData.lifestyle]
-                                                ? 'border-primary bg-primary/10 text-primary'
-                                                : 'border-white/10 hover:border-white/20 bg-surface'
-                                                }`}
+                                            className={`rounded-xl border text-left transition-all h-40 flex flex-col justify-end relative overflow-hidden group ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'}`}
                                         >
-                                            <span className="font-medium text-lg">{item.label}</span>
+                                            <div className="absolute inset-0">
+                                                <img src={item.img} alt={item.label} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                                <div className={`absolute inset-0 bg-black/60 transition-opacity ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'opacity-40' : 'opacity-60 group-hover:opacity-50'}`} />
+                                            </div>
+                                            <div className="relative z-10 p-4">
+                                                <span className={`font-bold text-lg ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'text-primary' : 'text-white'}`}>{item.label}</span>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -495,69 +531,95 @@ export default function Onboarding() {
                             <div className="space-y-6 animate-fade-in">
                                 <div className="flex items-center gap-3 text-primary mb-2">
                                     <Shirt size={24} />
-                                    <span className="uppercase tracking-widest text-xs font-bold">Aesthetic</span>
+                                    <span className="uppercase tracking-widest text-xs font-bold">Signature</span>
                                 </div>
-                                <h1 className="text-4xl font-serif font-bold">Your Signature</h1>
-                                <p className="text-gray-400">Select the archetypes/aesthetics that resonate with your vision.</p>
+                                <h1 className="text-4xl font-serif font-bold">Aesthetics & Investment</h1>
 
-                                <div className="grid grid-cols-2 gap-3 pt-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                                    {[
-                                        { name: "Old Money", desc: "Quiet luxury, heritage fabrics, understated elegance." },
-                                        { name: "Minimalist", desc: "Clean lines, neutral palette, intentional simplicity." },
-                                        { name: "High Street", desc: "Trend-driven, bold, urban edge." },
-                                        { name: "Classic", desc: "Timeless tailoring, structured silhouettes." },
-                                        { name: "Bohemian", desc: "Free-spirited, artisanal textures, earthy." },
-                                        { name: "Avant-Garde", desc: "Experimental, architectural, rule-breaking." },
-                                        { name: "Ivy League", desc: "Polished, collegiate, traditional patterns." },
-                                        { name: "Glamorous", desc: "Opulent materials, statement pieces, high impact." },
-                                    ].map(archetype => (
-                                        <button
-                                            key={archetype.name}
-                                            onClick={() => toggleArchetype(archetype.name)}
-                                            className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[160px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name)
-                                                ? 'border-primary ring-2 ring-primary/50'
-                                                : 'border-white/10 hover:border-white/30'
-                                                }`}
-                                        >
-                                            <div className="absolute inset-0 z-0">
-                                                <img src={aestheticVisuals[archetype.name]} alt={archetype.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
-                                                <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'}`} />
-                                            </div>
-                                            <div className="relative z-10 p-4">
-                                                <div className={`font-bold mb-1 ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>
-                                                    {archetype.name}
+                                {/* Reordered: Typical Investment FIRST */}
+                                <div className="bg-surface glass p-6 rounded-xl border border-white/5 mb-8">
+                                    <label className="block text-lg font-bold mb-4">Typical Investment per Item</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[
+                                            { id: "budget", label: "High Street", range: "Rs. 1.5k - 8k" },
+                                            { id: "mid", label: "Contemporary", range: "Rs. 8k - 40k" },
+                                            { id: "luxury", label: "Designer", range: "Rs. 40k - 1.5L" },
+                                            { id: "high_luxury", label: "Couture", range: "Rs. 1.5L+" }
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.id}
+                                                onClick={() => setFormData({ ...formData, priceRange: opt.id })}
+                                                className={`p-4 rounded-lg border text-left flex justify-between items-center ${formData.priceRange === opt.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:bg-white/5'}`}
+                                            >
+                                                <span className="font-medium">{opt.label}</span>
+                                                <span className="text-sm opacity-70">{opt.range}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Dynamic Brands based on selection */}
+                                {formData.priceRange && (
+                                    <div className="animate-fade-in mb-8">
+                                        <label className="block text-lg font-bold mb-3">Brands you admire (Select or type)</label>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {(formData.priceRange === 'budget' ? ['ZARA', 'H&M', 'Mango', 'Uniqlo', 'Massimo Dutti'] :
+                                                formData.priceRange === 'mid' ? ['Sandro', 'Reiss', 'Theory', 'Ted Baker', 'AllSaints'] :
+                                                    formData.priceRange === 'luxury' ? ['Gucci', 'Prada', 'YSL', 'Burberry', 'Ralph Lauren'] :
+                                                        ['Chanel', 'Hermès', 'Dior', 'Brunello Cucinelli', 'Loro Piana']
+                                            ).map(brand => (
+                                                <button
+                                                    key={brand}
+                                                    onClick={() => {
+                                                        const current = formData.brands || [];
+                                                        setFormData({
+                                                            ...formData,
+                                                            brands: current.includes(brand) ? current.filter(b => b !== brand) : [...current, brand]
+                                                        });
+                                                    }}
+                                                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${formData.brands?.includes(brand) ? 'bg-primary text-black border-primary' : 'border-white/20 hover:border-white/40'}`}
+                                                >
+                                                    {brand}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Other brands..."
+                                            className="w-full bg-transparent border-b border-white/20 py-2 focus:border-primary focus:outline-none"
+                                            value={Array.isArray(formData.brands) ? formData.brands.join(', ') : ''}
+                                            onChange={e => setFormData({ ...formData, brands: e.target.value.split(',').map(s => s.trim()) })}
+                                        />
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h3 className="text-xl font-bold mb-4">Aesthetic Vision</h3>
+                                    <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                        {[
+                                            { name: "Old Money", desc: "Quiet luxury, heritage fabrics." },
+                                            { name: "Minimalist", desc: "Clean lines, neutral palette." },
+                                            { name: "High Street", desc: "Trend-driven, urban edge." },
+                                            { name: "Classic", desc: "Timeless tailoring." },
+                                            { name: "Bohemian", desc: "Free-spirited, artisanal." },
+                                            { name: "Avant-Garde", desc: "Experimental, architectural." },
+                                            { name: "Ivy League", desc: "Polished, collegiate." },
+                                            { name: "Glamorous", desc: "Opulent materials, statement pieces." },
+                                        ].map(archetype => (
+                                            <button
+                                                key={archetype.name}
+                                                onClick={() => toggleArchetype(archetype.name)}
+                                                className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[140px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'}`}
+                                            >
+                                                <div className="absolute inset-0 z-0">
+                                                    <img src={aestheticVisuals[archetype.name]} alt={archetype.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                                                    <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'}`} />
                                                 </div>
-                                                <div className="text-xs text-gray-300 leading-relaxed font-medium">{archetype.desc}</div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="mt-6 border-t border-white/10 pt-6">
-                                    <label className="block text-sm font-medium mb-2">Which brands do you admire?</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Brunello Cucinelli, Ralph Lauren, ZARA"
-                                        className="w-full"
-                                        value={Array.isArray(formData.brands) ? formData.brands.join(', ') : ''}
-                                        onChange={e => setFormData({ ...formData, brands: e.target.value.split(',').map(s => s.trim()) })}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
-                                </div>
-
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium mb-2">Typical Investment per Item</label>
-                                    <select
-                                        className="w-full"
-                                        value={formData.priceRange}
-                                        onChange={e => setFormData({ ...formData, priceRange: e.target.value })}
-                                    >
-                                        <option value="">Select Range...</option>
-                                        <option value="budget">High Street (Rs. 1,500 - 8,000)</option>
-                                        <option value="mid">Contemporary (Rs. 8,000 - 40,000)</option>
-                                        <option value="luxury">Designer (Rs. 40,000 - 1,50,000)</option>
-                                        <option value="high_luxury">Couture / High Jewelry (Rs. 1,50,000+)</option>
-                                    </select>
+                                                <div className="relative z-10 p-3">
+                                                    <div className={`font-bold text-lg leading-tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>{archetype.name}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

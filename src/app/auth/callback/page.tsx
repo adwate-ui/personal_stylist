@@ -13,9 +13,20 @@ function CallbackContent() {
         const next = searchParams.get('next') || '/onboarding';
 
         if (code) {
-            supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-                if (!error) {
-                    router.push(next);
+            supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
+                if (!error && data.session) {
+                    // Check if profile exists
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('id', data.session.user.id)
+                        .single();
+
+                    if (profile) {
+                        router.push('/wardrobe');
+                    } else {
+                        router.push(next); // Defaults to /onboarding
+                    }
                 } else {
                     console.error('Auth error:', error);
                     router.push('/auth/login?error=auth_failed');
