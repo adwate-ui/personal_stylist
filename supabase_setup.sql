@@ -9,7 +9,8 @@
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values 
   ('wardrobe_items', 'wardrobe_items', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('user_uploads', 'user_uploads', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+  ('user_uploads', 'user_uploads', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
+  ('avatars', 'avatars', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do update set
   public = EXCLUDED.public,
   file_size_limit = EXCLUDED.file_size_limit,
@@ -31,6 +32,8 @@ drop policy if exists "Users upload to own folder" on storage.objects;
 drop policy if exists "Users view own temp uploads" on storage.objects;
 drop policy if exists "Users upload own temp uploads" on storage.objects;
 drop policy if exists "Users upload to own temp folder" on storage.objects;
+drop policy if exists "Public read avatars" on storage.objects;
+drop policy if exists "Authenticated users upload avatars" on storage.objects;
 
 -- Create User-Scoped Policies
 
@@ -52,6 +55,15 @@ create policy "Users view own temp uploads"
 create policy "Users upload to own temp folder" 
   on storage.objects for insert 
   with check (bucket_id = 'user_uploads' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Avatars Bucket (Public Read, Authenticated Upload)
+create policy "Public read avatars" 
+  on storage.objects for select 
+  using (bucket_id = 'avatars');
+
+create policy "Authenticated users upload avatars" 
+  on storage.objects for insert 
+  with check (bucket_id = 'avatars' and auth.role() = 'authenticated');
 
 
 -- ==========================================

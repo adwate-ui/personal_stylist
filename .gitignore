@@ -42,4 +42,4 @@ wrangler.toml.local
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-*.log
+build_output.log

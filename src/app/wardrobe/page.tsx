@@ -23,26 +23,41 @@ const WardrobeSkeleton = () => (
 );
 
 const CATEGORY_GROUPS: Record<string, string[]> = {
-    'Men': ['Suits', 'Shirts', 'Pants', 'Jackets', 'T-Shirts', 'Shorts', 'Activewear'],
-    'Women': ['Dresses', 'Skirts', 'Blouses', 'Tops', 'Pants', 'Jackets', 'Activewear', 'Lingerie'],
-    'Shoes': ['Sneakers', 'Boots', 'Dress Shoes', 'Heels', 'Flats', 'Sandals'],
-    'Accessories': ['Bags', 'Belts', 'Hats', 'Jewelry', 'Scarves', 'Watches'],
+    'Shirts': ['shirt', 'blouse', 'top', 'polo'],
+    'Suits': ['suit', 'blazer', 'sport coat'],
+    'Trousers': ['trouser', 'pant', 'slacks', 'chino'],
+    'Jeans': ['jean', 'denim'],
+    'Jackets': ['jacket', 'coat', 'outerwear', 'parka', 'bomber'],
+    'Coats': ['coat', 'overcoat', 'trench'],
+    'Shoes': ['shoe', 'sneaker', 'boot', 'loafer', 'oxford', 'heel', 'flat', 'sandal'],
+    'Accessories': ['belt', 'tie', 'bow tie', 'pocket square', 'scarf', 'hat', 'cap', 'glove'],
+    'Watches': ['watch', 'timepiece'],
+    'Socks': ['sock', 'hosiery'],
+    'Dresses': ['dress', 'gown'],
+    'Skirts': ['skirt'],
+    'Activewear': ['activewear', 'sportswear', 'athletic', 'gym', 'workout'],
 };
 
-const getMasterCategory = (itemCategory: string, itemGender?: string) => {
-    // Simple heuristic mapping
-    const cat = itemCategory || 'Uncategorized';
+const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
+    // Combine category and sub-category for better matching
+    const searchText = `${itemCategory || ''} ${itemSubCategory || ''}`.toLowerCase();
 
-    // Check specific lists first
-    for (const [group, list] of Object.entries(CATEGORY_GROUPS)) {
-        if (list.some(c => cat.toLowerCase().includes(c.toLowerCase()))) {
+    // Check specific lists first - order matters for specificity
+    const orderedGroups = [
+        'Watches', 'Socks', 'Ties', 'Belts', 'Suits', 'Jeans', 
+        'Trousers', 'Shirts', 'Dresses', 'Skirts', 'Coats', 
+        'Jackets', 'Shoes', 'Accessories', 'Activewear'
+    ];
+
+    for (const group of orderedGroups) {
+        const keywords = CATEGORY_GROUPS[group];
+        if (keywords.some(keyword => searchText.includes(keyword))) {
             return group;
         }
     }
 
-    // Fallback based on gender if available, or just 'Other'
-    if (['Men', 'Women'].includes(itemGender || '')) return itemGender!;
-    return 'Wardrobe';
+    // Fallback to 'Other'
+    return 'Other';
 };
 
 export default function WardrobePage() {
@@ -54,6 +69,7 @@ export default function WardrobePage() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [groupByCategory, setGroupByCategory] = useState(true);
+    const [gridSize, setGridSize] = useState<'4x4' | '5x5' | '6x6'>('4x4');
 
     const fetchItems = async (pageNum = 1, isLoadMore = false) => {
         if (!isLoadMore) {
@@ -105,7 +121,7 @@ export default function WardrobePage() {
 
     const groupedItems = items.reduce((acc, item) => {
         const group = groupByCategory
-            ? getMasterCategory(item.category || item.sub_category, item.gender)
+            ? getMasterCategory(item.category, item.sub_category)
             : 'All Items';
 
         if (!acc[group]) acc[group] = [];
@@ -151,6 +167,29 @@ export default function WardrobePage() {
                         </button>
                     </div>
 
+                    {viewMode === 'grid' && (
+                        <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                            <button
+                                onClick={() => setGridSize('4x4')}
+                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '4x4' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                4×4
+                            </button>
+                            <button
+                                onClick={() => setGridSize('5x5')}
+                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '5x5' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                5×5
+                            </button>
+                            <button
+                                onClick={() => setGridSize('6x6')}
+                                className={`px-3 py-2 rounded-md transition-all text-xs font-medium ${gridSize === '6x6' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                6×6
+                            </button>
+                        </div>
+                    )}
+
                     <Link href="/add-item" className="btn btn-primary">
                         <Plus size={20} className="mr-2" /> <span className="hidden sm:inline">Add Item</span>
                     </Link>
@@ -186,7 +225,7 @@ export default function WardrobePage() {
                                         </h2>
                                     )}
 
-                                    <div className={viewMode === 'grid' ? "grid-gallery" : "space-y-4"}>
+                                    <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
                                         {groupedItems[group].map((item: any) => (
                                             viewMode === 'grid' ? (
                                                 <div key={item.id} className="card group relative">

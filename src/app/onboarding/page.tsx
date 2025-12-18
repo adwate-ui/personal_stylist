@@ -50,22 +50,22 @@ export default function Onboarding() {
     });
 
     const bodyShapeVisuals: Record<string, string> = {
-        'Inverted Triangle': 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80',
-        'Rectangle': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
-        'Triangle': 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80',
-        'Hourglass': 'https://images.unsplash.com/photo-1534030347209-7116631169c3?w=400&q=80',
-        'Oval': 'https://images.unsplash.com/photo-1605763240004-7e93b172d754?w=400&q=80'
+        'Inverted Triangle': 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&auto=format&fit=crop',
+        'Rectangle': 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&auto=format&fit=crop',
+        'Triangle': 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop',
+        'Hourglass': 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&auto=format&fit=crop',
+        'Oval': 'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&auto=format&fit=crop'
     };
 
     const aestheticVisuals: Record<string, string> = {
-        'Old Money': 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?w=500&q=80',
-        'Minimalist': 'https://images.unsplash.com/photo-1603217039640-afa96f48d66e?w=500&q=80',
-        'High Street': 'https://images.unsplash.com/photo-1550614000-4b9519e020d9?w=500&q=80',
-        'Classic': 'https://images.unsplash.com/photo-1507680434567-5739c8a92405?w=500&q=80',
-        'Bohemian': 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=500&q=80',
-        'Avant-Garde': 'https://images.unsplash.com/photo-1529139574466-a302d2d46dfd?w=500&q=80',
-        'Ivy League': 'https://images.unsplash.com/photo-1617137968427-85924c809a10?w=500&q=80',
-        'Glamorous': 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=500&q=80'
+        'Old Money': 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=500&auto=format&fit=crop',
+        'Minimalist': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&auto=format&fit=crop',
+        'High Street': 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=500&auto=format&fit=crop',
+        'Classic': 'https://images.unsplash.com/photo-1507680434567-5739c8a92405?w=500&auto=format&fit=crop',
+        'Bohemian': 'https://images.unsplash.com/photo-1509319117443-ef63442d46ca?w=500&auto=format&fit=crop',
+        'Avant-Garde': 'https://images.unsplash.com/photo-1558769132-cb1aea00f2fe?w=500&auto=format&fit=crop',
+        'Ivy League': 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=500&auto=format&fit=crop',
+        'Glamorous': 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=500&auto=format&fit=crop'
     };
 
     const totalSteps = 6;
