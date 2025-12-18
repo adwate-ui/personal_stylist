@@ -96,15 +96,15 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ## Cloudflare Pages Deployment
 
 > [!WARNING]
-> **🚨 GETTING 404 ERRORS FOR STATIC ASSETS?**
+> **🚨 GETTING 404 ERRORS?**
 > 
-> If you see 404 errors for CSS, JS, or fonts with "turbopack" in the file names:
+> **Root URL returning 404?** See: [ROOT_URL_404_FIX.md](./ROOT_URL_404_FIX.md)
+> 
+> **Static assets (CSS, JS, fonts) returning 404?** See: [QUICK_FIX_404_ERRORS.md](./QUICK_FIX_404_ERRORS.md)
+> 
+> **TL;DR:** Your code is correct, but Cloudflare Pages needs to rebuild with cleared cache.
 > 
 > **👉 ACTION REQUIRED:** [ACTION_REQUIRED.md](./ACTION_REQUIRED.md)
-> 
-> **Quick Fix (5 min):** [QUICK_FIX_404_ERRORS.md](./QUICK_FIX_404_ERRORS.md)
->
-> Your code is correct, but Cloudflare Pages needs to rebuild with cleared cache.
 
 This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare) for deployment, which replaces the deprecated `@cloudflare/next-on-pages` package.
 
