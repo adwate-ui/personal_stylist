@@ -97,45 +97,70 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 This project uses the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare) for deployment, which replaces the deprecated `@cloudflare/next-on-pages` package.
 
-### 1. Configure Build Settings
+> [!IMPORTANT]
+> **Environment variables MUST be set in Cloudflare Pages BEFORE building.** If you see warnings about "Missing Supabase environment variables" in the browser console, your build was done without proper configuration.
 
-In the Cloudflare Pages dashboard, set:
+### Quick Start
 
-- **Framework Preset**: Next.js
-- **Build Command**: `npm run build:cloudflare` (or `npx opennextjs-cloudflare build`)
-- **Build Output Directory**: `.open-next`
-- **Node Version**: Set to `18` or higher in **Settings → Environment Variables** (`NODE_VERSION`).
+1. Set environment variables in Cloudflare Pages (see below)
+2. Configure build settings (Framework: Next.js, Build command: `npm run build:cloudflare`, Output: `.open-next`)
+3. Add your Cloudflare Pages URL to Supabase Auth redirect URLs
+4. Deploy!
 
-### 2. Set Production Environment Variables
+📖 **For detailed step-by-step instructions, see [CLOUDFLARE_DEPLOYMENT_GUIDE.md](./CLOUDFLARE_DEPLOYMENT_GUIDE.md)**
 
-Go to **Cloudflare Pages → Your Project → Settings → Environment Variables**.
+### Required Environment Variables
 
-Add the following (Production & Preview):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `GEMINI_API_KEY` (Mark as **Secret**)
-- `SUPABASE_SERVICE_ROLE_KEY` (Mark as **Secret**, Optional)
+Set these in **Cloudflare Pages → Settings → Environment Variables** (both Production and Preview):
 
-### 3. Deploy
+| Variable | Source | Required |
+|----------|--------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Dashboard → Settings → API | ✅ |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API | ✅ |
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) | ✅ |
+| `NODE_VERSION` | Set to `18` or `20` | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard (mark as Secret) | Optional |
 
-Push your changes to the `main` branch. Cloudflare will automatically trigger a deployment.
+### Build Configuration
 
-### 4. Post-Deployment Verification
+| Setting | Value |
+|---------|-------|
+| Framework preset | `Next.js` |
+| Build command | `npm run build:cloudflare` |
+| Build output directory | `.open-next` |
 
+### Post-Deployment Verification
+
+- [ ] No "Missing Supabase environment variables" warnings in browser console
 - [ ] Environment variables are set in Cloudflare
 - [ ] Supabase migrations applied
-- [ ] Storage buckets created and accessible
-- [ ] User authentication works (check Redirect URLs in Supabase Auth settings)
-- [ ] AI analysis works (Gemini key is valid)
+- [ ] User authentication works
+- [ ] AI analysis works
 
 ---
 
 ## Troubleshooting
 
-- **Gemini API Key missing**: Check `.env.local` or Cloudflare secrets. Ensure no extra spaces.
-- **Auth Redirects fail**: Add your Cloudflare URL (e.g., `https://your-project.pages.dev/auth/callback`) to **Supabase Auth → URL Configuration**.
-- **Image Uploads fail**: Check Supabase Storage policies and CORS settings.
-- **Build fails**: Ensure `nodejs_compat` is set in compatibility flags if using Edge features.
+### Common Issues
+
+**"Missing Supabase environment variables" in browser console**
+- **Cause**: Build ran without environment variables set
+- **Fix**: Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Cloudflare Pages, then trigger a new deployment
+
+**404 errors for `/auth/login` or other pages**
+- **Cause**: Incorrect build output directory or build failure
+- **Fix**: Verify build output directory is `.open-next` and check build logs for errors
+
+**Auth Redirects fail**
+- **Fix**: Add your Cloudflare URL (e.g., `https://your-project.pages.dev/auth/callback`) to **Supabase Auth → URL Configuration**
+
+**Image Uploads fail**
+- **Fix**: Check Supabase Storage policies and CORS settings
+
+**AI features don't work**
+- **Fix**: Verify `GEMINI_API_KEY` is set and valid in Cloudflare environment variables
+
+For more detailed troubleshooting, see [CLOUDFLARE_DEPLOYMENT_GUIDE.md](./CLOUDFLARE_DEPLOYMENT_GUIDE.md).
 
 ---
 
