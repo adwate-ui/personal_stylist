@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import ToastProvider from "@/components/ToastProvider";
+import LayoutContent from "@/components/LayoutContent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,8 +29,6 @@ export const metadata: Metadata = {
   description: "AI-Powered Personal Stylist",
 };
 
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,11 +37,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} font-sans`}>
-        <Navigation />
-        <main className="md:pl-64 min-h-screen transition-all duration-300">
+        <LayoutContent>
           {children}
-        </main>
-        <ToastProvider />
+        </LayoutContent>
       </body>
     </html>
   );
