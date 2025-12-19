@@ -720,7 +720,15 @@ function OnboardingContent() {
                                                 onClick={() => setFormData({ ...formData, bodyShape: shape.name })}
                                             >
                                                 <div className="text-center mb-2">
-                                                    <div className="text-3xl mb-1">{shape.icon || '👤'}</div>
+                                                    {bodyShapeVisuals[shape.name] ? (
+                                                        <img
+                                                            src={bodyShapeVisuals[shape.name]}
+                                                            alt={shape.name}
+                                                            className="w-16 h-16 mx-auto object-contain"
+                                                        />
+                                                    ) : (
+                                                        <div className="text-3xl mb-1">{shape.icon || '👤'}</div>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-start justify-between mb-1">
                                                     <span className={`font-semibold text-sm ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'}`}>{shape.name}</span>

@@ -59,6 +59,7 @@ interface UserProfile {
   archetypes: string[];
   brands: string[];
   priceRange: string;
+  avatar_url?: string; // Optional uploaded photo
 }
 
 function buildPrompt(profile: UserProfile): string {
@@ -157,7 +158,7 @@ IMPORTANT REQUIREMENTS:
 5. Brand recommendations must ONLY include brands from ${priceInfo.tier} tier (budget examples: Zara, H&M, Mango; mid: Sandro, Reiss, Theory; luxury: Gucci, Prada, YSL)
 6. Consider their body shape (${profile.bodyShape}) and fit preference (${profile.fitPreference}) in recommendations
 7. Styling wisdom should be specific to their lifestyle needs
-8. Return ONLY the JSON object, no other text`;
+8. Return ONLY the JSON object, no other text${profile.avatar_url ? '\n\nIMPORTANT: The user has provided a photo. Use this to refine your recommendations based on their actual appearance, style, and body proportions visible in the image.' : ''}`;
 }
 
 export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: string): Promise<StyleDNA> {
@@ -178,7 +179,30 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
 
-      const result = await model.generateContent(prompt);
+      let result;
+      if (profile.avatar_url) {
+        // Include photo in analysis
+        try {
+          const imageResponse = await fetch(profile.avatar_url);
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64Image = Buffer.from(imageBuffer).toString('base64');
+
+          result = await model.generateContent([
+            { text: prompt },
+            {
+              inlineData: {
+                data: base64Image,
+                mimeType: 'image/jpeg'
+              }
+            }
+          ]);
+        } catch (imgError) {
+          console.warn('Could not load photo, continuing without it:', imgError);
+          result = await model.generateContent(prompt);
+        }
+      } else {
+        result = await model.generateContent(prompt);
+      }
       const response = await result.response;
       const text = response.text();
       const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();

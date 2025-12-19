@@ -175,20 +175,22 @@ export default function StyleDNAPage() {
                             {styleDNA.color_palette.avoid && Array.isArray(styleDNA.color_palette.avoid) && styleDNA.color_palette.avoid.length > 0 && (
                                 <div className="mb-6 pt-6 border-t border-white/10">
                                     <label className="text-sm text-gray-400 block mb-3">Colors to Avoid</label>
-                                    <div className="flex gap-3 flex-wrap">
+                                    <div className="space-y-2">
                                         {styleDNA.color_palette.avoid.map((item: any, i: number) => {
                                             const colorName = typeof item === 'string' ? item : item.color;
                                             const reason = typeof item === 'object' ? item.reason : '';
                                             return (
-                                                <div key={i} className="relative group">
-                                                    <div className="w-12 h-12 rounded-lg border-2 border-red-500/50 bg-white/5 flex items-center justify-center">
-                                                        <span className="text-red-400 text-2xl">×</span>
-                                                    </div>
-                                                    {reason && (
-                                                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/90 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                                                            {reason}
+                                                <div key={i} className="flex items-center gap-3 bg-white/5 p-2 rounded-lg">
+                                                    <div className="relative">
+                                                        <div className="w-10 h-10 rounded-lg border border-white/20 shadow-lg" style={{ backgroundColor: colorName }} />
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <span className="text-white text-xl font-bold drop-shadow-lg">×</span>
                                                         </div>
-                                                    )}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-medium text-white">{colorName}</div>
+                                                        {reason && <div className="text-xs text-gray-400 mt-0.5">{reason}</div>}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -281,9 +283,12 @@ export default function StyleDNAPage() {
                                             {essentials.map((item: any, i: number) => {
                                                 const key = `${item.brand || ''}-${item.item}`;
                                                 const data = productData.get(key);
-                                                const productUrl = data?.url || getBrandSearchUrl(item.brand || '', item.item);
+                                                const productUrl = data?.url || '#';
                                                 const imageUrl = data?.imageUrl;
                                                 const icon = getProductImagePlaceholder(item.item);
+
+                                                // Debug logging
+                                                if (!imageUrl) console.log('Missing image for:', key, data);
 
                                                 return (
                                                     <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
@@ -344,9 +349,12 @@ export default function StyleDNAPage() {
                                                                 {items.map((item: any, i: number) => {
                                                                     const key = `${item.brand || ''}-${item.item}`;
                                                                     const data = productData.get(key);
-                                                                    const productUrl = data?.url || item.product_url || getBrandSearchUrl(item.brand || '', item.item);
+                                                                    const productUrl = data?.url || item.product_url || '#';
                                                                     const imageUrl = data?.imageUrl || item.image_url;
                                                                     const icon = getProductImagePlaceholder(item.item);
+
+                                                                    // Debug logging
+                                                                    if (!imageUrl) console.log('Missing image for:', key, data);
 
                                                                     return (
                                                                         <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
