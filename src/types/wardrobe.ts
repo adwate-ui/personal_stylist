@@ -17,6 +17,7 @@ export interface WardrobeItemAnalysis {
     error?: string;
     message?: string;
     complementary_items?: string[]; // Suggested items to wear with this piece
+    generated_by_model?: string; // Track which model generated this analysis
 }
 
 export interface WardrobeItem {
@@ -40,4 +41,5 @@ export interface WardrobeItem {
     name?: string;
     price?: number;
     link?: string;
+    generated_by_model?: string; // Track which model analyzed this item
 }

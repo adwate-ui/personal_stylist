@@ -303,21 +303,50 @@ export default function WardrobePage() {
                                     </div>
                                 )}
 
-                                {selectedItem.ai_analysis?.complementary_items && selectedItem.ai_analysis.complementary_items.length > 0 && (
-                                    <div>
-                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <span className="text-primary">✨</span> Pairs Well With
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {selectedItem.ai_analysis.complementary_items.map((item: string, i: number) => (
-                                                <div key={i} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300 hover:bg-white/10 hover:border-primary/30 transition-all cursor-default flex items-center gap-2">
-                                                    <span className="text-primary text-lg">+</span>
-                                                    <span>{item}</span>
-                                                </div>
-                                            ))}
+                                {/* Pairs Well With - From Inventory */}
+                                {(() => {
+                                    const complementaryMap: Record<string, string[]> = {
+                                        'Shirts': ['Trousers', 'Jeans', 'Suits', 'Ties', 'Belts'],
+                                        'Suits': ['Shirts', 'Ties', 'Belts', 'Shoes'],
+                                        'Trousers': ['Shirts', 'Jackets', 'Belts', 'Shoes'],
+                                        'Jeans': ['Shirts', 'Jackets', 'Shoes'],
+                                        'Jackets': ['Shirts', 'Trousers', 'Jeans'],
+                                        'Shoes': ['Trousers', 'Jeans', 'Suits'],
+                                        'Ties': ['Shirts', 'Suits', 'Jackets'],
+                                        'Belts': ['Trousers', 'Jeans', 'Suits'],
+                                        'Dresses': ['Shoes', 'Accessories', 'Jackets'],
+                                        'Skirts': ['Shirts', 'Jackets', 'Shoes']
+                                    };
+                                    const category = getMasterCategory(selectedItem.category, selectedItem.sub_category);
+                                    const pairsWith = items.filter(item => {
+                                        if (item.id === selectedItem.id) return false;
+                                        const cat = getMasterCategory(item.category, item.sub_category);
+                                        return (complementaryMap[category] || []).includes(cat);
+                                    }).slice(0, 6);
+                                    if (pairsWith.length === 0) return null;
+                                    return (
+                                        <div>
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <span className="text-primary">✨</span> Pairs Well With
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {pairsWith.map((item) => (
+                                                    <div key={item.id} onClick={() => setSelectedItem(item)} className="bg-white/5 border border-white/10 rounded-lg p-2 hover:bg-white/10 hover:border-primary/30 transition-all cursor-pointer">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-12 h-16 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                                                                <img src={item.image_url || "/placeholder-garment.jpg"} alt={item.name} className="w-full h-full object-cover" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-xs font-medium text-white truncate">{item.name || item.sub_category}</div>
+                                                                <div className="text-xs text-gray-400 truncate">{item.brand || item.category}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
 
                             {/* Similar Products Section */}
@@ -332,31 +361,56 @@ export default function WardrobePage() {
                                         const similarBrands = getSimilarBrands(selectedItem.brand || '', tier);
                                         const brands = Array.isArray(similarBrands) ? similarBrands : [];
 
-                                        return brands.slice(0, 6).map((brand, idx) => {
-                                            const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
-                                                `${brand} ${selectedItem.sub_category || selectedItem.category} ${selectedItem.color || ''}`
-                                            )}`;
-                                            return (
-                                                <a
-                                                    key={idx}
-                                                    href={searchUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
-                                                >
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-medium text-sm">{brand}</span>
-                                                        <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
-                                                    </div>
-                                                    <div className="text-xs text-gray-400 capitalize">
-                                                        {selectedItem.sub_category || selectedItem.category}
-                                                    </div>
-                                                </a>
-                                            );
-                                        });
+                                        return brands.slice(0, 6).map((brand, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={getBrandSearchUrl(brand, selectedItem.sub_category || selectedItem.category)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-medium text-sm">{brand}</span>
+                                                    <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
+                                                </div>
+                                                <div className="text-xs text-gray-400 capitalize">
+                                                    {selectedItem.sub_category || selectedItem.category}
+                                                </div>
+                                            </a>
+                                        ))
                                     })()}
                                 </div>
                             </div>
+
+                            {/* Model Attribution */}
+                            {(selectedItem.generated_by_model || selectedItem.ai_analysis?.generated_by_model) && (
+                                <div className="pt-4 border-t border-white/10">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="text-gray-500">Analysis by:</span>
+                                            <span className="text-primary font-medium">
+                                                {(() => {
+                                                    const model = selectedItem.generated_by_model || selectedItem.ai_analysis?.generated_by_model;
+                                                    if (model === 'gemini-3-pro-preview') return 'Gemini 3 Pro';
+                                                    if (model === 'gemini-2.5-pro') return 'Gemini 2.5 Pro';
+                                                    if (model === 'gemini-3-flash-preview') return 'Gemini 3 Flash';
+                                                    if (model === 'gemini-2.5-flash') return 'Gemini 2.5 Flash';
+                                                    return model;
+                                                })()}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                // TODO: Implement regeneration API call
+                                                toast.info('Regeneration feature coming soon!');
+                                            }}
+                                            className="text-xs px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-full transition-colors"
+                                        >
+                                            Regenerate ↻
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="pt-8 border-t border-white/10 flex justify-between items-center">
                                 <div className="text-xs text-gray-500">

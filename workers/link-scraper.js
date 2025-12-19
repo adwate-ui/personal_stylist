@@ -20,7 +20,30 @@ export default {
         try {
             const url = new URL(request.url);
 
-            // NEW: Image extraction endpoint for wardrobe essentials
+            // NEW: Product search endpoint - searches Google and returns first result + image
+            if (url.pathname === '/search-product') {
+                if (request.method !== 'POST') {
+                    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+                }
+
+                const { query } = await request.json();
+
+                if (!query) {
+                    return new Response(
+                        JSON.stringify({ error: 'Query required' }),
+                        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    );
+                }
+
+                const searchResult = await searchGoogleForProduct(query);
+
+                return new Response(
+                    JSON.stringify(searchResult),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+            }
+
+            // EXISTING: Image extraction endpoint for wardrobe essentials
             if (url.pathname === '/extract-image') {
                 if (request.method !== 'POST') {
                     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -128,6 +151,80 @@ export default {
         }
     },
 };
+
+/**
+ * Search Google for a product and return the first result URL + image
+ */
+async function searchGoogleForProduct(query) {
+    try {
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`;
+
+        const response = await fetch(searchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Google search failed: ${response.status}`);
+        }
+
+        const html = await response.text();
+
+        // Extract first shopping result URL
+        // Google Shopping results are in <a> tags with specific patterns
+        const urlPatterns = [
+            // Shopping result pattern
+            /<a[^>]+href="(\/url\?q=([^&"]+)[^"]*)"[^>]*>/gi,
+            // Direct link pattern
+            /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>/gi
+        ];
+
+        let productUrl = null;
+
+        for (const pattern of urlPatterns) {
+            const matches = html.matchAll(pattern);
+            for (const match of matches) {
+                let url = match[2] || match[1];
+
+                // Decode URL-encoded characters
+                url = decodeURIComponent(url);
+
+                // Skip Google's internal URLs
+                if (url.includes('google.com') || url.startsWith('/')) {
+                    continue;
+                }
+
+                // Check if it's a shopping site
+                const shoppingSites = ['amazon', 'flipkart', 'myntra', 'ajio', 'nykaa', 'tatacliq', 'shoppers', 'westside'];
+                if (shoppingSites.some(site => url.toLowerCase().includes(site))) {
+                    productUrl = url;
+                    break;
+                }
+            }
+            if (productUrl) break;
+        }
+
+        // If we found a product URL, try to extract its image
+        let imageUrl = null;
+        if (productUrl) {
+            imageUrl = await extractProductImage(productUrl);
+        }
+
+        return {
+            url: productUrl || `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`,
+            imageUrl: imageUrl
+        };
+    } catch (error) {
+        console.error('Google search error:', error);
+        return {
+            url: `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`,
+            imageUrl: null
+        };
+    }
+}
 
 /**
  * Extract product image URL from a webpage

@@ -52,7 +52,7 @@ async function retryWithExponentialBackoff<T>(
     throw new Error("Max retries exceeded");
 }
 
-async function generateWithFallback(promptParts: any[]) {
+async function generateWithFallback(promptParts: any[]): Promise<{ result: any; modelName: string }> {
     const preferredModel = process.env.GEMINI_MODEL;
     // Latest models as of December 2025
     const defaultModels = [
@@ -79,7 +79,8 @@ async function generateWithFallback(promptParts: any[]) {
                 return await result.response;
             });
 
-            return JSON.parse(response.text());
+            const result = JSON.parse(response.text());
+            return { result, modelName };
         } catch (error: any) {
             console.warn(`Model ${modelName} failed:`, error.message);
             // If it's the last model, throw the error to the caller
@@ -88,6 +89,7 @@ async function generateWithFallback(promptParts: any[]) {
             continue;
         }
     }
+    throw new Error("All models failed");
 }
 
 // Helper to convert ArrayBuffer to Base64 (Universal)
@@ -160,7 +162,8 @@ export async function analyzeProductLink(url: string, imageBuffer?: ArrayBuffer,
     }
 
     try {
-        return await generateWithFallback(parts);
+        const { result, modelName } = await generateWithFallback(parts);
+        return { ...result, generated_by_model: modelName };
     } catch (error) {
         console.error("Gemini Link Analysis Error:", error);
         return { error: `Gemini Error: ${error instanceof Error ? error.message : String(error)}` };
@@ -220,7 +223,8 @@ export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfil
     };
 
     try {
-        return await generateWithFallback([prompt, imagePart]);
+        const { result, modelName } = await generateWithFallback([prompt, imagePart]);
+        return { ...result, generated_by_model: modelName };
     } catch (error) {
         console.error("Gemini Identification Error:", error);
         return null;
@@ -274,7 +278,8 @@ export async function ratePurchase(
     };
 
     try {
-        return await generateWithFallback([prompt, imagePart]);
+        const { result, modelName } = await generateWithFallback([prompt, imagePart]);
+        return { ...result, generated_by_model: modelName };
     } catch (error) {
         console.error("Gemini Rating Error:", error);
         return { rating: 0, verdict: "Error", reasoning: "Could not generate rating." };
@@ -379,7 +384,8 @@ export async function generateStyleDNA(profile: any) {
     `;
 
     try {
-        return await generateWithFallback([prompt]);
+        const { result, modelName } = await generateWithFallback([prompt]);
+        return { ...result, generated_by_model: modelName };
     } catch (error) {
         console.error("Gemini Style DNA Error:", error);
         return { error: "Failed to generate Style DNA" };

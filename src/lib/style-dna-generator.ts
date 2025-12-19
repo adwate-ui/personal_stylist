@@ -34,6 +34,7 @@ export interface StyleDNA {
     why: string;
   }>;
   styling_wisdom: string[];
+  generated_by_model?: string; // Track which model generated this DNA
 }
 
 interface UserProfile {
@@ -195,6 +196,9 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
           }
         }
       }
+
+      // Store which model generated this DNA
+      parsed.generated_by_model = modelName;
 
       return parsed as StyleDNA;
     } catch (error: any) {
