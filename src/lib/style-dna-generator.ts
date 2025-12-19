@@ -209,14 +209,37 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
 
       const parsed = JSON.parse(cleanJson);
 
-      // Generate product URLs
+      // Generate product URLs using Cloudflare Worker
       if (parsed.must_have_staples) {
         for (const category in parsed.must_have_staples) {
           for (const type in parsed.must_have_staples[category]) {
-            parsed.must_have_staples[category][type] = parsed.must_have_staples[category][type].map((item: any) => ({
-              ...item,
-              product_url: getBrandSearchUrl(item.brand, item.item)
-            }));
+            const items = parsed.must_have_staples[category][type];
+            const updatedItems = [];
+
+            for (const item of items) {
+              try {
+                // Fetch actual product URL using worker
+                const productData = await getFirstSearchResultUrl(
+                  item.brand || '',
+                  item.item || '',
+                  item.color || ''
+                );
+                updatedItems.push({
+                  ...item,
+                  product_url: productData.url,
+                  image_url: productData.imageUrl // Also store image URL
+                });
+              } catch (error) {
+                console.warn(`Failed to fetch product URL for ${item.brand} ${item.item}:`, error);
+                // Fallback to '#' if worker fails
+                updatedItems.push({
+                  ...item,
+                  product_url: '#'
+                });
+              }
+            }
+
+            parsed.must_have_staples[category][type] = updatedItems;
           }
         }
       }
