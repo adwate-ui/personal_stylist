@@ -8,7 +8,7 @@ import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers, X, Shop
 import { supabase } from "@/lib/supabase";
 import { WardrobeItem } from "@/types/wardrobe";
 import { useProfile } from "@/hooks/useProfile";
-import { getBrandSearchUrl } from "@/lib/product-links";
+import { getBrandSearchUrl, getFirstSearchResultUrl } from "@/lib/product-links";
 import { formatPrice } from "@/lib/currency";
 import { getBrandTier, getSimilarBrands } from "@/lib/brand-tiers";
 
@@ -258,26 +258,51 @@ export default function WardrobePage() {
                                 )}
 
                                 {/* Price and Link Section */}
-                                <div className="flex items-center gap-4 pb-4 border-b border-white/10">
-                                    {selectedItem.price && profile?.location && (
-                                        <div className="text-2xl font-bold text-primary">
-                                            {formatPrice(selectedItem.price, profile.location)}
+                                <div className="space-y-3 pb-4 border-b border-white/10">
+                                    {/* Price Display */}
+                                    {(selectedItem.price || selectedItem.ai_analysis?.price || selectedItem.ai_analysis?.price_estimate) && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400 text-sm">Price:</span>
+                                            <div className="text-xl font-bold text-primary">
+                                                {selectedItem.price
+                                                    ? (profile?.location ? formatPrice(selectedItem.price, profile.location) : `Rs. ${selectedItem.price}`)
+                                                    : (selectedItem.ai_analysis?.price || selectedItem.ai_analysis?.price_estimate)}
+                                            </div>
                                         </div>
                                     )}
-                                    {(selectedItem.brand || selectedItem.name) && (
-                                        <a
-                                            href={getBrandSearchUrl(selectedItem.brand || '', selectedItem.name || '')}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="btn btn-primary px-6 py-2 text-sm flex items-center gap-2"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="9" cy="9" r="7" />
-                                                <path d="m21 21-4.35-4.35" />
-                                            </svg>
-                                            Find Similar Items
-                                        </a>
+
+                                    {/* Product URL Link - Smart fetch if missing */}
+                                    {(selectedItem.link || selectedItem.brand || selectedItem.name) && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400 text-sm">Product Link:</span>
+                                            {selectedItem.link ? (
+                                                <a
+                                                    href={selectedItem.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary hover:text-primary/80 text-sm underline underline-offset-2 flex items-center gap-1"
+                                                >
+                                                    View Product <ExternalLink size={12} />
+                                                </a>
+                                            ) : (
+                                                <button
+                                                    onClick={async () => {
+                                                        const color = selectedItem.color || selectedItem.ai_analysis?.primary_color;
+                                                        const data = await getFirstSearchResultUrl(
+                                                            selectedItem.brand || '',
+                                                            selectedItem.name || selectedItem.sub_category || '',
+                                                            color
+                                                        );
+                                                        window.open(data.url, '_blank');
+                                                    }}
+                                                    className="text-primary hover:text-primary/80 text-sm underline underline-offset-2 flex items-center gap-1"
+                                                >
+                                                    Find Product <ExternalLink size={12} />
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
+
                                 </div>
                             </div>
 

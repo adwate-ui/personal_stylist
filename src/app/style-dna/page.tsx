@@ -22,7 +22,8 @@ export default function StyleDNAPage() {
 
     // Fetch product URLs and images for wardrobe items
     useEffect(() => {
-        if (!styleDNA?.must_have_staples) return;
+        // Early return if no profile or styleDNA to prevent crash
+        if (!profile || !styleDNA?.must_have_staples) return;
 
         const fetchProductData = async () => {
             const essentials = styleDNA.must_have_staples;
@@ -64,7 +65,7 @@ export default function StyleDNAPage() {
         };
 
         fetchProductData();
-    }, [styleDNA]);
+    }, [profile, styleDNA]);
 
     if (!styleDNA) {
         return (

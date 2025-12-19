@@ -12,6 +12,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { analyzeImageWithGemini } from "@/lib/gemini-client";
 import { WardrobeItemAnalysis } from "@/types/wardrobe";
 import { supabase } from "@/lib/supabase";
+import { getFirstSearchResultUrl } from "@/lib/product-links";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -432,27 +433,25 @@ export default function AddItemPage() {
                                     <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                                         <div className="text-xs text-gray-500 uppercase mb-1">Color</div>
                                         <div className="font-medium text-sm flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full bg-current border border-white/20" style={{ color: preview.color?.toLowerCase() }}></span>
-                                            {preview.color}
+                                            <span className="w-4 h-4 rounded-full border border-white/30 shadow-sm" style={{ backgroundColor: preview.color || preview.primary_color || '#FFFFFF' }}></span>
+                                            {preview.color || preview.primary_color}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group cursor-pointer" onClick={async () => {
+                                    const data = await getFirstSearchResultUrl(preview.brand || '', preview.item_name || preview.sub_category || '', preview.color || preview.primary_color);
+                                    window.open(data.url, '_blank');
+                                }}>
                                     <div className="flex justify-between items-center mb-1">
                                         <div className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
                                             <Search size={12} /> Find on Google
                                         </div>
                                         <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
                                     </div>
-                                    <a
-                                        href={`https://www.google.com/search?q=${encodeURIComponent((preview.brand || "") + " " + (preview.item_name || preview.sub_category))}&tbm=shop`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4"
-                                    >
+                                    <div className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4">
                                         View Purchasing Options
-                                    </a>
+                                    </div>
                                 </div>
 
                                 <div>
