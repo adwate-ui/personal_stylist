@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-static';
-export const revalidate = false;
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 /**
  * API route to get the first search result URL for a product
