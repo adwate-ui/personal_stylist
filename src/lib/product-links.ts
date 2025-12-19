@@ -51,42 +51,30 @@ export function getProductImagePlaceholder(itemName: string): string {
 
 /**
  * Get the first search result URL and image for a product using Cloudflare Worker
- * Uses link-scraper.adwate.workers.dev to extract product data
+ * Uses link-scraper.adwate.workers.dev to search and extract product data
  */
 export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string }> {
     try {
-        const params = new URLSearchParams({
-            brand,
-            product: itemName,
-            ...(color && { color })
+        // Build search query with brand, product, and color
+        const searchQuery = [brand, itemName, color].filter(Boolean).join(' ');
+
+        // Use Cloudflare worker to search Google and extract product data
+        const workerResponse = await fetch('https://link-scraper.adwate.workers.dev/search-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: searchQuery })
         });
 
-        const response = await fetch(`/api/product-link?${params.toString()}`);
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch product link');
+        if (workerResponse.ok) {
+            const { url, imageUrl } = await workerResponse.json();
+            return {
+                url: url || getBrandSearchUrl(brand, itemName),
+                imageUrl: imageUrl || undefined
+            };
         }
 
-        const data = await response.json();
-        const productUrl = data.url || getBrandSearchUrl(brand, itemName);
-
-        // Use Cloudflare worker to extract image from product page
-        try {
-            const workerResponse = await fetch('https://link-scraper.adwate.workers.dev/extract-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: productUrl })
-            });
-
-            if (workerResponse.ok) {
-                const { imageUrl } = await workerResponse.json();
-                return { url: productUrl, imageUrl: imageUrl || undefined };
-            }
-        } catch (imageError) {
-            console.error('Cloudflare worker image extraction failed:', imageError);
-        }
-
-        return { url: productUrl };
+        // Fallback to brand search URL if worker fails
+        return { url: getBrandSearchUrl(brand, itemName) };
     } catch (error) {
         console.error('Error fetching product data:', error);
         return { url: getBrandSearchUrl(brand, itemName) };
