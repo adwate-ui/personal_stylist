@@ -29,13 +29,13 @@ export const WORLD_CITIES = [
     'Scottsdale', 'North Las Vegas', 'Fremont', 'Gilbert', 'San Bernardino', 'Boise', 'Birmingham', 'Spokane', 'Rochester', 'Modesto',
 
     // CHINA (80 cities)
-    'Shanghai', 'Beijing', 'Guangzhou', 'Shenzhen', 'Chengdu', 'Tianjin', 'Chongqing', 'Wuhan', 'Hangzhou', 'Xi\\'an',
+    'Shanghai', 'Beijing', 'Guangzhou', 'Shenzhen', 'Chengdu', 'Tianjin', 'Chongqing', 'Wuhan', 'Hangzhou', "Xi'an",
     'Nanjing', 'Shenyang', 'Harbin', 'Qingdao', 'Jinan', 'Dalian', 'Zhengzhou', 'Changchun', 'Kunming', 'Taiyuan',
     'Shijiazhuang', 'Nanchang', 'Changsha', 'Fuzhou', 'Urumqi', 'Lanzhou', 'Hefei', 'Guiyang', 'Nanning', 'Ningbo',
     'Wenzhou', 'Xiamen', 'Suzhou', 'Wuxi', 'Foshan', 'Dongguan', 'Tangshan', 'Baoding', 'Zibo', 'Yantai',
     'Hohhot', 'Xuzhou', 'Luoyang', 'Handan', 'Weifang', 'Zhuhai', 'Shaoxing', 'Jilin', 'Baotou', 'Huizhou',
     'Yinchuan', 'Liuzhou', 'Quanzhou', 'Yangzhou', 'Linyi', 'Ganzhou', 'Daqing', 'Anshan', 'Qiqihar', 'Nantong',
-    'Shangqiu', 'Xining', 'Zhongshan', 'Wuhu', 'Huai\\'an', 'Yancheng', 'Xinxiang', 'Yichang', 'Changzhou', 'Kaifeng',
+    'Shangqiu', 'Xining', 'Zhongshan', 'Wuhu', "Huai'an", 'Yancheng', 'Xinxiang', 'Yichang', 'Changzhou', 'Kaifeng',
     'Xianyang', 'Datong', 'Mianyang', 'Luzhou', 'Zhanjiang', 'Zunyi', 'Hengyang', 'Taizhou', 'Guilin', 'Jinhua',
 
     // EUROPE (150 cities)
@@ -109,7 +109,7 @@ export const WORLD_CITIES = [
     'Singapore', 'Hong Kong', 'Taipei', 'Taichung', 'Kaohsiung', 'Tainan', 'Macau', 'Ulaanbaatar', 'Bishkek', 'Almaty',
     'Tashkent', 'Astana', 'Dushanbe', 'Ashgabat', 'Kabul', 'Yangon', 'Naypyidaw', 'Phnom Penh', 'Vientiane', 'Colombo',
     'Kathmandu', 'Jerusalem', 'Tel Aviv', 'Amman', 'Beirut', 'Damascus', 'Baghdad', 'Kuwait City', 'Doha', 'Manama',
-    'Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dubai', 'Abu Dhabi', 'Sharjah', 'Muscat', 'Sana\\'a', 'Aden',
+    'Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dubai', 'Abu Dhabi', 'Sharjah', 'Muscat', "Sana'a", 'Aden',
 
     // AFRICA (120 cities)
     // Egypt
@@ -128,7 +128,7 @@ export const WORLD_CITIES = [
     // Other Africa
     'Kinshasa', 'Luanda', 'Nairobi', 'Casablanca', 'Algiers', 'Khartoum', 'Abidjan', 'Dakar', 'Accra', 'Kampala',
     'Bamako', 'Lusaka', 'Kigali', 'Harare', 'Maputo', 'Yaoundé', 'Antananarivo', 'Douala', 'Ouagadougou', 'Conakry',
-    'N\\'Djamena', 'Lomé', 'Cotonou', 'Niamey', 'Libreville', 'Brazzaville', 'Port Louis', 'Freetown', 'Monrovia', 'Nouakchott',
+    "N'Djamena", 'Lomé', 'Cotonou', 'Niamey', 'Libreville', 'Brazzaville', 'Port Louis', 'Freetown', 'Monrovia', 'Nouakchott',
     'Bangui', 'Bujumbura', 'Windhoek', 'Gaborone', 'Maseru', 'Mbabane', 'Lilongwe', 'Blantyre', 'Port Said', 'Fez',
     'Marrakech', 'Rabat', 'Tangier', 'Agadir', 'Meknes', 'Oujda', 'Kenitra', 'Tétouan', 'Safi', 'El Jadida',
 
@@ -143,7 +143,7 @@ export const WORLD_CITIES = [
 
     // CANADA (50 cities)
     'Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener',
-    'London', 'Victoria', 'Halifax', 'Oshawa', 'Windsor', 'Saskatoon', 'Regina', 'St. John\\'s', 'Barrie', 'Kelowna',
+    'London', 'Victoria', 'Halifax', 'Oshawa', 'Windsor', 'Saskatoon', 'Regina', "St. John's", 'Barrie', 'Kelowna',
     'Abbotsford', 'Sudbury', 'Kingston', 'Saguenay', 'Sherbrooke', 'Trois-Rivières', 'Moncton', 'Saint John', 'Thunder Bay', 'Kamloops',
     'Nanaimo', 'Brantford', 'Red Deer', 'Lethbridge', 'Saint-Jérôme', 'Chilliwack', 'Medicine Hat', 'Grande Prairie', 'Airdrie', 'Halton Hills',
     'Saint-Hyacinthe', 'Lac-Brome', 'Port Coquitlam', 'Fredericton', 'Charlottetown', 'Whitehorse', 'Yellowknife', 'Iqaluit', 'Fort McMurray', 'Prince George',
