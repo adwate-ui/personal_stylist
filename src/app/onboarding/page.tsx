@@ -1,29 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
-// import { GlossaryText } from "@/components/GlossaryText"; // Unused
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { generateStyleDNA, StyleDNA } from "@/lib/style-generator";
+import { generateStyleDNAWithAI, StyleDNA } from "@/lib/style-dna-generator";
 
 export default function Onboarding() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const mode = searchParams.get('mode'); // 'preferences' for returning users
     const [avatarPreview, setAvatarPreview] = useState<string>("");
-    const { saveProfile } = useProfile();
-    const [step, setStep] = useState(1);
+    const { profile, saveProfile, loading: profileLoading } = useProfile();
+    const [step, setStep] = useState(mode === 'preferences' ? 2 : 1); // Skip basics if from preferences
     const [analyzing, setAnalyzing] = useState(false);
     const [styleDNA, setStyleDNA] = useState<StyleDNA | null>(null);
     const [saving, setSaving] = useState(false);
+    const [cityError, setCityError] = useState<string>("");
+    const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+    const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
     // Initialize with local state, we'll save to global state at the end
+    const [geminiApiKey, setGeminiApiKey] = useState("");
+    const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+    const [skinToneBase, setSkinToneBase] = useState("");
+    const [skinToneUndertone, setSkinToneUndertone] = useState("");
+    const [showMeasurementCalc, setShowMeasurementCalc] = useState(false);
+    const [measurements, setMeasurements] = useState({ shoulders: '', chest: '', waist: '', hips: '' });
+
     const [formData, setFormData] = useState({
         // Basics
         name: "",
         gender: "",
         age: "",
         location: "", // Climate context
+        gemini_api_key: "",
 
         // Body
         height: "",
@@ -33,6 +45,7 @@ export default function Onboarding() {
 
         // Color
         skinTone: "",
+        skinToneUndertone: "",
         eyeColor: "",
         hairColor: "",
 
@@ -51,39 +64,101 @@ export default function Onboarding() {
         avatar_url: "", // Stores string URL now
     });
 
+    // Major global cities for validation
+    const validCities = [
+        // India
+        'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad',
+        'Jaipur', 'Surat', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Gurgaon', 'Noida',
+        // North America
+        'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio',
+        'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'San Francisco', 'Seattle',
+        'Denver', 'Washington DC', 'Boston', 'Portland', 'Las Vegas', 'Miami', 'Atlanta',
+        'Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Mexico City', 'Guadalajara',
+        // Europe
+        'London', 'Paris', 'Berlin', 'Madrid', 'Rome', 'Barcelona', 'Vienna', 'Amsterdam',
+        'Brussels', 'Copenhagen', 'Stockholm', 'Oslo', 'Helsinki', 'Dublin', 'Lisbon',
+        'Prague', 'Budapest', 'Warsaw', 'Athens', 'Zurich', 'Geneva', 'Munich', 'Hamburg',
+        'Milan', 'Naples', 'Turin', 'Manchester', 'Birmingham', 'Edinburgh', 'Glasgow',
+        // Asia
+        'Tokyo', 'Shanghai', 'Beijing', 'Singapore', 'Hong Kong', 'Seoul', 'Bangkok',
+        'Kuala Lumpur', 'Manila', 'Jakarta', 'Ho Chi Minh City', 'Hanoi', 'Taipei', 'Dubai',
+        'Abu Dhabi', 'Riyadh', 'Tel Aviv', 'Istanbul', 'Ankara', 'Tehran', 'Baghdad',
+        // Oceania
+        'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Auckland', 'Wellington', 'Adelaide',
+        // South America
+        'São Paulo', 'Rio de Janeiro', 'Buenos Aires', 'Lima', 'Bogotá', 'Santiago',
+        'Caracas', 'Brasília', 'Montevideo', 'Quito',
+        // Africa
+        'Cairo', 'Lagos', 'Johannesburg', 'Cape Town', 'Nairobi', 'Casablanca', 'Accra',
+        'Addis Ababa', 'Dar es Salaam', 'Algiers', 'Khartoum', 'Tunis'
+    ];
+
     const bodyShapeVisuals: Record<string, string> = {
-        'Inverted Triangle': 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&auto=format&fit=crop',
-        'Rectangle': 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&auto=format&fit=crop',
-        'Triangle': 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop',
-        'Hourglass': 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&auto=format&fit=crop',
-        'Oval': 'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&auto=format&fit=crop'
+        // Women's body shapes
+        'Hourglass': '/body_shape_hourglass_1766144787860.png',
+        'Rectangle': '/body_shape_rectangle_1766144804765.png',
+        'Pear': '/body_shape_pear_1766144822050.png',
+        'Inverted Triangle': '/body_shape_inverted_triangle_f_1766144838895.png',
+        'Apple': '/body_shape_apple_1766144855874.png',
+        // Men's body shapes
+        'Triangle': '/body_shape_triangle_m_1766144882748.png',
+        'Oval': '/body_shape_oval_m_1766144932373.png',
+        'Trapezoid': '/body_shape_trapezoid_m_1766144949305.png'
     };
 
     const aestheticVisuals: Record<string, string> = {
-        'Old Money': 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=500&auto=format&fit=crop',
-        'Minimalist': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&auto=format&fit=crop',
-        'High Street': 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=500&auto=format&fit=crop',
-        'Classic': 'https://images.unsplash.com/photo-1507680434567-5739c8a92405?w=500&auto=format&fit=crop',
-        'Bohemian': 'https://images.unsplash.com/photo-1509319117443-ef63442d46ca?w=500&auto=format&fit=crop',
-        'Avant-Garde': 'https://images.unsplash.com/photo-1558769132-cb1aea00f2fe?w=500&auto=format&fit=crop',
-        'Ivy League': 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=500&auto=format&fit=crop',
-        'Glamorous': 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=500&auto=format&fit=crop'
+        'Old Money': 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=500&auto=format&fit=crop&q=80',
+        'Minimalist': 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&auto=format&fit=crop&q=80',
+        'High Street': 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&auto=format&fit=crop&q=80',
+        'Classic': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80',
+        'Bohemian': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&auto=format&fit=crop&q=80',
+        'Avant-Garde': 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&auto=format&fit=crop&q=80',
+        'Ivy League': 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=500&auto=format&fit=crop&q=80',
+        'Glamorous': 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=500&auto=format&fit=crop&q=80'
     };
 
     const totalSteps = 6;
 
-    // Load saved form data from localStorage on mount
+    // Check if returning user and redirect to wardrobe
     useEffect(() => {
-        const saved = localStorage.getItem('onboarding_draft');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setFormData(parsed);
-            } catch (e) {
-                console.error('Failed to parse saved onboarding data');
+        if (!profileLoading && mode !== 'preferences') {
+            // If user has Style DNA, they've completed onboarding
+            if (profile.styleDNA) {
+                router.push('/wardrobe');
+                return;
             }
         }
-    }, []);
+    }, [profileLoading, profile, mode, router]);
+
+    // Load saved form data from localStorage on mount
+    useEffect(() => {
+        if (mode === 'preferences' && !profileLoading) {
+            // Load existing profile data for preferences mode
+            setFormData(prev => ({
+                ...prev,
+                ...profile,
+                // Convert to expected format
+                brands: Array.isArray(profile.brands) ? profile.brands : [],
+                archetypes: Array.isArray(profile.archetypes) ? profile.archetypes : []
+            }));
+            if (profile.avatar_url) {
+                setAvatarPreview(profile.avatar_url);
+            }
+        } else {
+            const saved = localStorage.getItem('onboarding_draft');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    setFormData(parsed);
+                    if (parsed.avatar_url) {
+                        setAvatarPreview(parsed.avatar_url);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse saved onboarding data');
+                }
+            }
+        }
+    }, [mode, profileLoading, profile]);
 
     // Save form data to localStorage whenever it changes
     useEffect(() => {
@@ -102,27 +177,126 @@ export default function Onboarding() {
 
 
 
+
+    // Calculate body shape from measurements
+    const calculateBodyShape = () => {
+        const { shoulders, chest, waist, hips } = measurements;
+        if (!shoulders || !chest || !waist || !hips) {
+            alert('Please enter all measurements');
+            return;
+        }
+
+        const s = parseFloat(shoulders);
+        const c = parseFloat(chest);
+        const w = parseFloat(waist);
+        const h = parseFloat(hips);
+
+        let shape = '';
+
+        if (formData.gender === 'male') {
+            // Male body shapes
+            const shoulderHipRatio = s / h;
+            const waistHipRatio = w / h;
+
+            if (shoulderHipRatio > 1.05 && waistHipRatio < 0.9) {
+                shape = 'Inverted Triangle'; // Broad shoulders, narrow hips
+            } else if (shoulderHipRatio < 0.95 && waistHipRatio > 0.95) {
+                shape = 'Triangle'; // Narrow shoulders, wider hips
+            } else if (Math.abs(shoulderHipRatio - 1) < 0.05 && Math.abs(waistHipRatio - 1) < 0.05) {
+                shape = 'Rectangle'; // Equal proportions
+            } else if (w > s && w > h) {
+                shape = 'Oval'; // Rounded midsection
+            } else {
+                shape = 'Trapezoid'; // Ideal V-shape
+            }
+        } else if (formData.gender === 'female') {
+            // Female body shapes
+            const bustHipRatio = c / h;
+            const waistHipRatio = w / h;
+
+            if (Math.abs(bustHipRatio - 1) < 0.1 && waistHipRatio < 0.75) {
+                shape = 'Hourglass'; // Balanced with defined waist
+            } else if (Math.abs(bustHipRatio - 1) < 0.1 && waistHipRatio > 0.8) {
+                shape = 'Rectangle'; // Straight figure
+            } else if (bustHipRatio < 0.9) {
+                shape = 'Pear'; // Hips wider than bust
+            } else if (bustHipRatio > 1.1) {
+                shape = 'Inverted Triangle'; // Shoulders broader
+            } else if (waistHipRatio > 0.85) {
+                shape = 'Apple'; // Fuller middle
+            } else {
+                shape = 'Rectangle';
+            }
+        }
+
+        setFormData({ ...formData, bodyShape: shape });
+        setShowMeasurementCalc(false);
+        alert(`Based on your measurements, your body shape is: ${shape}`);
+    };
+
+    // City autocomplete handler
+    const handleCityInput = (value: string) => {
+        setFormData({ ...formData, location: value });
+        if (cityError) setCityError("");
+
+        // Show suggestions after 3 characters
+        if (value.length >= 3) {
+            const filtered = validCities.filter(city =>
+                city.toLowerCase().includes(value.toLowerCase())
+            ).slice(0, 15); // Limit to top 15 matches
+            setCitySuggestions(filtered);
+            setShowCitySuggestions(filtered.length > 0);
+        } else {
+            setShowCitySuggestions(false);
+            setCitySuggestions([]);
+        }
+    };
+
+    const selectCity = (city: string) => {
+        setFormData({ ...formData, location: city });
+        setShowCitySuggestions(false);
+        setCitySuggestions([]);
+        setCityError("");
+    };
+
     // ... inside component ...
+
+    const validateCity = (city: string): boolean => {
+        if (!city.trim()) {
+            setCityError("City is required");
+            return false;
+        }
+        const normalized = city.trim();
+        const isValid = validCities.some(c =>
+            c.toLowerCase() === normalized.toLowerCase()
+        );
+        if (!isValid) {
+            setCityError("Please select a city from the suggestions");
+            return false;
+        }
+        setCityError("");
+        return true;
+    };
 
     const generateDNA = async () => {
         setAnalyzing(true);
-        // Simulate "AI" thinking time for UX
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
         try {
-            const dna = generateStyleDNA(formData);
+            // Get API key from formData, profile, or localStorage
+            const apiKey = formData.gemini_api_key || profile.gemini_api_key || localStorage.getItem('gemini_api_key') || '';
+
+            if (!apiKey) {
+                alert('Please add your Gemini API key in Step 1 to generate Style DNA, or add it later in Settings.');
+                setAnalyzing(false);
+                return;
+            }
+
+            const dna = await generateStyleDNAWithAI(formData, apiKey);
             setStyleDNA(dna);
-        } catch (error) {
+        } catch (error: any) {
             console.error("DNA Generation Error:", error);
-            // Fallback
-            setStyleDNA({
-                archetype_name: "Modern Essentialist",
-                summary: "You appreciate clean lines and functionality.",
-                color_palette: { neutrals: [], accents: [], avoid: [] },
-                must_have_staples: [],
-                brand_recommendations: [],
-                styling_tips: []
-            });
+            alert(error.message || "Failed to generate Style DNA. Please try again.");
+            setAnalyzing(false);
         } finally {
             setAnalyzing(false);
         }
@@ -161,26 +335,46 @@ export default function Onboarding() {
             return;
         }
 
-        setAnalyzing(true); // Reuse loading state
+        console.log('🖼️ Avatar upload started...');
+        setAnalyzing(true);
         try {
             const file = e.target.files[0];
+            console.log('📁 File selected:', file.name, file.size, 'bytes');
+
             const fileExt = file.name.split('.').pop();
             const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
             const filePath = `${fileName}`;
+
+            console.log('⬆️ Uploading to Supabase:', filePath);
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file);
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('❌ Upload error:', uploadError);
+                throw uploadError;
+            }
+
+            console.log('✅ Upload successful!');
 
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const avatarUrl = data.publicUrl;
 
-            setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
-            setAvatarPreview(data.publicUrl);
+            console.log('🔗 Public URL:', avatarUrl);
+            console.log('📝 Setting avatarPreview:', avatarUrl);
+
+            setAvatarPreview(avatarUrl);
+            setFormData(prev => {
+                const updated = { ...prev, avatar_url: avatarUrl };
+                console.log('💾 Updated formData:', updated.avatar_url);
+                return updated;
+            });
+
+            console.log('✨ Avatar preview should now be visible');
         } catch (error) {
-            console.error('Error uploading avatar:', error);
-            alert('Error uploading avatar!');
+            console.error('💥 Avatar upload error:', error);
+            alert(`Error uploading avatar: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setAnalyzing(false);
         }
@@ -219,11 +413,24 @@ export default function Onboarding() {
                                         ))}
                                     </div>
                                 </div>
+                                {styleDNA.color_palette.rationale && (
+                                    <div className="pt-4 border-t border-white/10">
+                                        <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Why These Colors?</label>
+                                        <p className="text-sm text-gray-300 italic">{styleDNA.color_palette.rationale}</p>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Avoid</label>
                                     <div className="flex gap-2 flex-wrap">
-                                        {styleDNA.color_palette.avoid.map((c: string, i: number) => (
-                                            <span key={i} className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs">{c}</span>
+                                        {styleDNA.color_palette.avoid.map((item: { color: string; reason: string }, i: number) => (
+                                            <div key={i} className="group relative">
+                                                <span className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs cursor-help">
+                                                    {item.color}
+                                                </span>
+                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/90 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                    {item.reason}
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -233,17 +440,40 @@ export default function Onboarding() {
                         {/* Staples */}
                         <div className="card glass p-8">
                             <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Shirt className="text-primary" /> Wardrobe Essentials</h3>
-                            <ul className="space-y-4">
-                                {styleDNA.must_have_staples.map((item, i) => (
-                                    <li key={i} className="flex gap-3 items-start">
-                                        <Check size={18} className="text-primary mt-1 shrink-0" />
-                                        <div>
-                                            <div className="font-bold">{item.item}</div>
-                                            <div className="text-sm text-gray-400">{item.why}</div>
-                                        </div>
-                                    </li>
+                            <div className="space-y-6">
+                                {Object.entries(styleDNA.must_have_staples).map(([category, types]) => (
+                                    <div key={category}>
+                                        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3 border-b border-white/10 pb-2">
+                                            {category.replace(/_/g, ' ')}
+                                        </h4>
+                                        {Object.entries(types as Record<string, Array<{ item: string; brand: string; why: string; product_url: string }>>).map(([type, items]) => (
+                                            <div key={type} className="mb-4">
+                                                <h5 className="text-xs text-gray-500 uppercase tracking-wider mb-2">{type.replace(/_/g, ' ')}</h5>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {items.map((item: { item: string; brand: string; why: string; product_url: string }, i: number) => (
+                                                        <div key={i} className="flex gap-3 items-start bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors">
+                                                            <Check size={18} className="text-primary mt-1 shrink-0" />
+                                                            <div className="flex-1">
+                                                                <div className="font-bold">{item.item}</div>
+                                                                <div className="text-xs text-primary">@ {item.brand}</div>
+                                                                <div className="text-sm text-gray-400 mt-1">{item.why}</div>
+                                                                <a
+                                                                    href={item.product_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-xs text-primary hover:underline mt-1 inline-block"
+                                                                >
+                                                                    Shop Now →
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
 
                         {/* Brands */}
@@ -258,18 +488,6 @@ export default function Onboarding() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Tips */}
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Sparkles className="text-primary" /> Styling Wisdom</h3>
-                            <ul className="space-y-3">
-                                {styleDNA.styling_tips.map((tip: string, i: number) => (
-                                    <li key={i} className="text-gray-300 italic border-l-2 border-primary/30 pl-4 py-1">
-                                        &quot;{tip}&quot;
-                                    </li>
-                                ))}
-                            </ul>
                         </div>
                     </div>
 
@@ -318,7 +536,7 @@ export default function Onboarding() {
 
                     {/* Step Content */}
                     <div className="flex-1">
-                        {step === 1 && (
+                        {step === 1 && mode !== 'preferences' && (
                             <div className="space-y-6 animate-fade-in">
                                 <div className="flex items-center gap-3 text-primary mb-2">
                                     <User size={24} />
@@ -343,14 +561,89 @@ export default function Onboarding() {
                                                 <option value="other">Prefer not to say</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label>Location (City)</label>
-                                            <input type="text" placeholder="New York, NY" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
+                                        <div className="space-y-2 relative">
+                                            <label className="block text-sm font-medium">City</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Start typing (e.g., Mumbai, Bangalore, Delhi)"
+                                                value={formData.location}
+                                                onChange={e => handleCityInput(e.target.value)}
+                                                onBlur={() => {
+                                                    // Delay hiding to allow click on suggestion
+                                                    setTimeout(() => {
+                                                        setShowCitySuggestions(false);
+                                                        validateCity(formData.location);
+                                                    }, 200);
+                                                }}
+                                                onFocus={() => {
+                                                    if (formData.location.length >= 3 && citySuggestions.length > 0) {
+                                                        setShowCitySuggestions(true);
+                                                    }
+                                                }}
+                                                className={`w-full px-4 py-3 bg-white/5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all ${cityError ? 'border-red-500 focus:ring-red-500' : 'border-white/10'}`}
+                                                autoComplete="off"
+                                            />
+
+                                            {/* Autocomplete Dropdown */}
+                                            {showCitySuggestions && citySuggestions.length > 0 && (
+                                                <div className="absolute z-50 w-full mt-1 bg-surface border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto">
+                                                    {citySuggestions.slice(0, 10).map(city => (
+                                                        <button
+                                                            key={city}
+                                                            type="button"
+                                                            className="w-full text-left px-4 py-2 hover:bg-primary/10 hover:text-primary transition-colors text-sm border-b border-white/5 last:border-0"
+                                                            onMouseDown={() => selectCity(city)}
+                                                        >
+                                                            {city}
+                                                        </button>
+                                                    ))}
+                                                    {citySuggestions.length > 10 && (
+                                                        <div className="px-4 py-2 text-xs text-gray-500 text-center">
+                                                            ...and {citySuggestions.length - 10} more
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {cityError && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><span>⚠️</span>{cityError}</p>}
+                                            {!cityError && formData.location.length > 0 && formData.location.length < 3 && (
+                                                <p className="text-gray-500 text-xs mt-1">Type at least 3 characters to see suggestions</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
                                         <label>Age</label>
-                                        <input type="number" placeholder="25" onChange={e => setFormData({ ...formData, age: e.target.value })} />
+                                        <input
+                                            type="number"
+                                            placeholder="25"
+                                            value={formData.age}
+                                            onChange={e => setFormData({ ...formData, age: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Gemini API Key Input */}
+                                <div className="mt-8 p-6 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl">
+                                    <div className="flex items-start gap-3 mb-4">
+                                        <Sparkles className="text-primary mt-1" size={24} />
+                                        <div>
+                                            <h4 className="font-bold text-lg">AI-Powered Style DNA</h4>
+                                            <p className="text-sm text-gray-300">Add your Gemini API key to unlock personalized style recommendations</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="block text-sm font-medium">Gemini API Key (Optional)</label>
+                                        <input
+                                            type="password"
+                                            placeholder="Enter your Gemini API key"
+                                            value={formData.gemini_api_key}
+                                            onChange={e => setFormData({ ...formData, gemini_api_key: e.target.value })}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                                        />
+                                        <p className="text-xs text-gray-400">
+                                            Don't have one? <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get your free API key here →</a>
+                                        </p>
+                                        <p className="text-xs text-gray-500 italic">You can also add this later from Settings</p>
                                     </div>
                                 </div>
                             </div>
@@ -388,32 +681,61 @@ export default function Onboarding() {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label>Body Shape Category</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
-                                        {[
-                                            { name: 'Inverted Triangle', desc: 'Broader shoulders, narrower hips' },
-                                            { name: 'Rectangle', desc: 'Balanced shoulders and hips, undefined waist' },
-                                            { name: 'Triangle', desc: 'Hips wider than shoulders' },
-                                            { name: 'Hourglass', desc: 'Balanced shoulders/hips, defined waist' },
-                                            { name: 'Oval', desc: 'Fuller midsection, rounded frame' }
-                                        ].map(shape => (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-base font-semibold">Body Shape</label>
+                                        <button
+                                            type="button"
+                                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                                            onClick={() => setShowMeasurementCalc(true)}
+                                        >
+                                            <Ruler size={14} />
+                                            Measurement guide
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {(formData.gender === 'male' ? [
+                                            { name: 'Triangle', desc: 'Wider waist/hips', icon: '🔻' },
+                                            { name: 'Inverted Triangle', desc: 'Broad shoulders', icon: '🔺' },
+                                            { name: 'Rectangle', desc: 'Equal proportions', icon: '⬜' },
+                                            { name: 'Oval', desc: 'Rounded center', icon: '⭕' },
+                                            { name: 'Trapezoid', desc: 'Ideal V-shape', icon: '🔶' }
+                                        ] : formData.gender === 'female' ? [
+                                            { name: 'Hourglass', desc: 'Defined waist', icon: '⌛' },
+                                            { name: 'Rectangle', desc: 'Straight figure', icon: '⬜' },
+                                            { name: 'Pear', desc: 'Wider hips', icon: '🍐' },
+                                            { name: 'Inverted Triangle', desc: 'Broad shoulders', icon: '🔺' },
+                                            { name: 'Apple', desc: 'Fuller middle', icon: '🍎' }
+                                        ] : [
+                                            { name: 'Balanced', desc: 'Proportionate', icon: '⚖️' },
+                                            { name: 'Top-Heavy', desc: 'Broader upper', icon: '🔺' },
+                                            { name: 'Bottom-Heavy', desc: 'Wider lower', icon: '🔻' },
+                                            { name: 'Straight', desc: 'Even shape', icon: '⬜' },
+                                            { name: 'Rounded', desc: 'Fuller frame', icon: '⭕' }
+                                        ]).map(shape => (
                                             <button
                                                 key={shape.name}
-                                                className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[160px] flex flex-col justify-end ${formData.bodyShape === shape.name ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'}`}
+                                                type="button"
+                                                className={`p-3 rounded-lg border text-left transition-all ${formData.bodyShape === shape.name ? 'border-primary bg-primary/10 ring-1 ring-primary/50' : 'border-white/10 hover:border-white/30 hover:bg-white/5'}`}
                                                 onClick={() => setFormData({ ...formData, bodyShape: shape.name })}
                                             >
-                                                <div className="absolute inset-0 z-0">
-                                                    <img src={bodyShapeVisuals[shape.name]} alt={shape.name} className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
-                                                    <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.bodyShape === shape.name ? 'opacity-90' : 'opacity-100'}`} />
+                                                <div className="text-center mb-2">
+                                                    <div className="text-3xl mb-1">{shape.icon || '👤'}</div>
                                                 </div>
-                                                <div className="relative z-10 p-3">
-                                                    <span className={`font-bold block ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'}`}>{shape.name}</span>
-                                                    <span className="text-xs text-gray-300 line-clamp-2">{shape.desc}</span>
+                                                <div className="flex items-start justify-between mb-1">
+                                                    <span className={`font-semibold text-sm ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'}`}>{shape.name}</span>
+                                                    {formData.bodyShape === shape.name && <Check size={16} className="text-primary shrink-0" />}
                                                 </div>
+                                                <p className="text-xs text-gray-400">{shape.desc}</p>
                                             </button>
                                         ))}
                                     </div>
+                                    {!formData.gender && (
+                                        <p className="text-xs text-yellow-400/80 mt-2 flex items-center gap-1">
+                                            <span>⚠️</span>
+                                            Select gender above for specific body shapes
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -444,68 +766,152 @@ export default function Onboarding() {
                                 <p className="text-gray-400">We use this to determine your seasonal color palette.</p>
 
                                 <div className="space-y-6 pt-4">
-                                    {/* Skin Tone Visuals */}
-                                    <div>
-                                        <label className="block mb-3">Skin Tone & Undertone</label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                            {[
-                                                { id: "fair_cool", label: "Fair (Cool)", color: "#ffe0d9", img: "https://images.unsplash.com/photo-1515688594390-b649af70d282?w=200&fit=crop" },
-                                                { id: "fair_warm", label: "Fair (Warm)", color: "#fcecd5", img: "https://images.unsplash.com/photo-1541257710737-06d667133a53?w=200&fit=crop" },
-                                                { id: "medium_cool", label: "Medium (Cool)", color: "#e3c4a8", img: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&fit=crop" },
-                                                { id: "medium_warm", label: "Medium (Warm)", color: "#dcb690", img: "https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=200&fit=crop" },
-                                                { id: "dark_cool", label: "Dark (Cool)", color: "#8d5e3f", img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&fit=crop" },
-                                                { id: "dark_warm", label: "Dark (Warm)", color: "#744627", img: "https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=200&fit=crop" }
-                                            ].map(tone => (
-                                                <button
-                                                    key={tone.id}
-                                                    onClick={() => setFormData({ ...formData, skinTone: tone.id })}
-                                                    className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all overflow-hidden ${formData.skinTone === tone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'}`}
-                                                >
-                                                    <div className="w-full h-24 rounded-lg overflow-hidden relative">
-                                                        <img src={tone.img} alt={tone.label} className="w-full h-full object-cover" />
-                                                        <div className="absolute bottom-0 right-0 w-6 h-6 rounded-tl-lg" style={{ backgroundColor: tone.color }}></div>
-                                                    </div>
-                                                    <span className={`text-sm font-medium ${formData.skinTone === tone.id ? 'text-primary' : 'text-gray-300'}`}>
-                                                        {tone.label}
-                                                    </span>
-                                                </button>
-                                            ))}
+                                    {/* Skin Tone - 12-Tone System */}
+                                    <div className="space-y-4">
+                                        <label className="block text-base font-semibold">Skin Tone & Undertone</label>
+
+                                        {/* Step 1: Base Skin Tone */}
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-gray-400">1. Select your base skin tone:</p>
+                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                                {[
+                                                    { id: 'very_fair', label: 'Very Fair', color: '#fef5e7' },
+                                                    { id: 'fair', label: 'Fair', color: '#f8e1d0' },
+                                                    { id: 'light', label: 'Light', color: '#e8c8a9' },
+                                                    { id: 'medium', label: 'Medium', color: '#d4a574' },
+                                                    { id: 'tan', label: 'Tan', color: '#b8825f' },
+                                                    { id: 'deep', label: 'Deep', color: '#7a5347' }
+                                                ].map(tone => (
+                                                    <button
+                                                        key={tone.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSkinToneBase(tone.id);
+                                                            // Combine base + undertone if undertone selected
+                                                            if (skinToneUndertone) {
+                                                                setFormData({ ...formData, skinTone: `${tone.id}_${skinToneUndertone}`, skinToneUndertone });
+                                                            }
+                                                        }}
+                                                        className={`p-2 rounded-lg border text-center transition-all ${skinToneBase === tone.id ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'}`}
+                                                    >
+                                                        <div
+                                                            className="w-full h-12 rounded mb-1"
+                                                            style={{ backgroundColor: tone.color }}
+                                                        />
+                                                        <span className={`text-xs font-medium ${skinToneBase === tone.id ? 'text-primary' : 'text-gray-300'}`}>{tone.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
+
+                                        {/* Step 2: Undertone */}
+                                        {skinToneBase && (
+                                            <div className="space-y-2 animate-fade-in">
+                                                <p className="text-sm text-gray-400">2. Select your undertone:</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                    {[
+                                                        { id: 'cool', label: 'Cool', desc: 'Pink/blue tones', color: '#FFB6C1' },
+                                                        { id: 'warm', label: 'Warm', desc: 'Golden/yellow tones', color: '#FFD700' },
+                                                        { id: 'neutral', label: 'Neutral', desc: 'Balanced tones', color: '#D2B48C' },
+                                                        { id: 'olive', label: 'Olive', desc: 'Greenish tones', color: '#90A955' }
+                                                    ].map(undertone => (
+                                                        <button
+                                                            key={undertone.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSkinToneUndertone(undertone.id);
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    skinTone: `${skinToneBase}_${undertone.id}`,
+                                                                    skinToneUndertone: undertone.id
+                                                                });
+                                                            }}
+                                                            className={`p-3 rounded-lg border text-left transition-all ${skinToneUndertone === undertone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'}`}
+                                                        >
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div
+                                                                    className="w-8 h-8 rounded-full border-2 border-white/20"
+                                                                    style={{ backgroundColor: undertone.color }}
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className={`font-semibold text-sm ${skinToneUndertone === undertone.id ? 'text-primary' : 'text-white'}`}>{undertone.label}</span>
+                                                                        {skinToneUndertone === undertone.id && <Check size={14} className="text-primary" />}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-gray-400">{undertone.desc}</p>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Selected Combination */}
+                                        {formData.skinTone && (
+                                            <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 p-3 rounded-lg">
+                                                <Check size={16} />
+                                                <span>Selected: {formData.skinTone.replace('_', ' - ')}</span>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    {/* Hair and Eye Colors - Better Spacing */}
+                                    <div className="space-y-6">
                                         <div>
-                                            <label>Hair Color</label>
-                                            <select
-                                                value={formData.hairColor}
-                                                onChange={e => setFormData({ ...formData, hairColor: e.target.value })}
-                                                className="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"
-                                            >
-                                                <option value="">Select...</option>
-                                                <option value="Black">Black</option>
-                                                <option value="Dark Brown">Dark Brown</option>
-                                                <option value="Light Brown">Light Brown</option>
-                                                <option value="Blonde">Blonde</option>
-                                                <option value="Red">Red</option>
-                                                <option value="Grey/White">Grey/White</option>
-                                                <option value="Other">Other</option>
-                                            </select>
+                                            <label className="block text-base font-semibold mb-3">Hair Color</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {[
+                                                    { name: 'Black', color: '#1a1a1a' },
+                                                    { name: 'Dark Brown', color: '#3d2817' },
+                                                    { name: 'Light Brown', color: '#6f4e37' },
+                                                    { name: 'Blonde', color: '#e6c287' },
+                                                    { name: 'Red', color: '#8b3103' },
+                                                    { name: 'Auburn', color: '#a52a2a' },
+                                                    { name: 'Grey', color: '#c0c0c0' }
+                                                ].map(hair => (
+                                                    <button
+                                                        key={hair.name}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, hairColor: hair.name })}
+                                                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${formData.hairColor === hair.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'}`}
+                                                    >
+                                                        <div
+                                                            className="w-10 h-10 rounded-full border-2 border-white/20"
+                                                            style={{ backgroundColor: hair.color }}
+                                                        />
+                                                        <span className="text-[10px] text-center leading-tight">{hair.name}</span>
+                                                        {formData.hairColor === hair.name && <Check size={12} className="text-primary" />}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div>
-                                            <label>Eye Color</label>
-                                            <select
-                                                value={formData.eyeColor}
-                                                onChange={e => setFormData({ ...formData, eyeColor: e.target.value })}
-                                                className="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"
-                                            >
-                                                <option value="">Select...</option>
-                                                <option value="Brown">Brown</option>
-                                                <option value="Hazel">Hazel</option>
-                                                <option value="Blue">Blue</option>
-                                                <option value="Green">Green</option>
-                                                <option value="Grey">Grey</option>
-                                                <option value="Other">Other</option>
-                                            </select>
+                                            <label className="block text-base font-semibold mb-3">Eye Color</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {[
+                                                    { name: 'Brown', color: '#5C4033' },
+                                                    { name: 'Hazel', color: '#8E7618' },
+                                                    { name: 'Blue', color: '#5FA8D3' },
+                                                    { name: 'Green', color: '#50C878' },
+                                                    { name: 'Grey', color: '#A9A9A9' },
+                                                    { name: 'Amber', color: '#FFBF00' }
+                                                ].map(eye => (
+                                                    <button
+                                                        key={eye.name}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, eyeColor: eye.name })}
+                                                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${formData.eyeColor === eye.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'}`}
+                                                    >
+                                                        <div
+                                                            className="w-10 h-10 rounded-full border-2 border-white/20 shadow-inner"
+                                                            style={{ backgroundColor: eye.color }}
+                                                        />
+                                                        <span className="text-xs">{eye.name}</span>
+                                                        {formData.eyeColor === eye.name && <Check size={12} className="text-primary" />}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -586,10 +992,25 @@ export default function Onboarding() {
                                     <div className="animate-fade-in mb-8">
                                         <label className="block text-lg font-bold mb-3">Brands you admire (Select or type)</label>
                                         <div className="flex flex-wrap gap-2 mb-4">
-                                            {(formData.priceRange === 'budget' ? ['ZARA', 'H&M', 'Mango', 'Uniqlo', 'Massimo Dutti'] :
-                                                formData.priceRange === 'mid' ? ['Sandro', 'Reiss', 'Theory', 'Ted Baker', 'AllSaints'] :
-                                                    formData.priceRange === 'luxury' ? ['Gucci', 'Prada', 'YSL', 'Burberry', 'Ralph Lauren'] :
-                                                        ['Chanel', 'Hermès', 'Dior', 'Brunello Cucinelli', 'Loro Piana']
+                                            {(formData.priceRange === 'budget' ? [
+                                                'ZARA', 'H&M', 'Mango', 'Uniqlo', 'Massimo Dutti', 'COS', 'Forever 21',
+                                                'Gap', 'Old Navy', 'Primark', 'Pull&Bear', 'Bershka', 'Stradivarius',
+                                                'Topshop', 'ASOS'
+                                            ] :
+                                                formData.priceRange === 'mid' ? [
+                                                    'Sandro', 'Reiss', 'Theory', 'Ted Baker', 'AllSaints', 'Maje', 'The Kooples',
+                                                    'Club Monaco', 'Whistles', 'Cos', 'Ganni', 'Nanushka', 'Equipment',
+                                                    '& Other Stories', 'Arket'
+                                                ] :
+                                                    formData.priceRange === 'luxury' ? [
+                                                        'Gucci', 'Prada', 'YSL', 'Burberry', 'Ralph Lauren', 'Valentino', 'Givenchy',
+                                                        'Celine', 'Fendi', 'Bottega Veneta', 'Loewe', 'Alexander McQueen', 'Versace',
+                                                        'Balenciaga', 'Saint Laurent'
+                                                    ] : [
+                                                        'Chanel', 'Hermès', 'Dior', 'Brunello Cucinelli', 'Loro Piana', 'Tom Ford',
+                                                        'The Row', 'Armani Privé', 'Kiton', 'Brioni', 'Zegna', 'Stefano Ricci',
+                                                        'Berluti', 'Isaia', 'Givenchy Haute Couture'
+                                                    ]
                                             ).map(brand => (
                                                 <button
                                                     key={brand}
@@ -632,14 +1053,29 @@ export default function Onboarding() {
                                             <button
                                                 key={archetype.name}
                                                 onClick={() => toggleArchetype(archetype.name)}
+                                                type="button"
                                                 className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min-h-[140px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'}`}
                                             >
                                                 <div className="absolute inset-0 z-0">
-                                                    <img src={aestheticVisuals[archetype.name]} alt={archetype.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                                                    {/* Fallback gradient background */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-white/5" />
+
+                                                    {/* Image with error handling */}
+                                                    <img
+                                                        src={aestheticVisuals[archetype.name]}
+                                                        alt={archetype.name}
+                                                        className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                                                        onError={(e) => {
+                                                            // Hide image if it fails to load, gradient will show
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                        loading="lazy"
+                                                    />
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'}`} />
                                                 </div>
                                                 <div className="relative z-10 p-3">
                                                     <div className={`font-bold text-lg leading-tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'}`}>{archetype.name}</div>
+                                                    <div className="text-xs text-gray-300 mt-1 line-clamp-2">{archetype.desc}</div>
                                                 </div>
                                             </button>
                                         ))}
@@ -663,7 +1099,13 @@ export default function Onboarding() {
                                 >
                                     {(avatarPreview || formData.avatar_url) ? (
                                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 group-hover:bg-black/30 transition-colors">
-                                            <img src={formData.avatar_url} alt="Avatar" className="w-full h-full object-cover opacity-50" />
+                                            <img
+                                                src={avatarPreview || formData.avatar_url}
+                                                alt="Avatar Preview"
+                                                className="w-full h-full object-cover"
+                                                onLoad={() => console.log('✅ Avatar loaded:', avatarPreview || formData.avatar_url)}
+                                                onError={(e) => console.error('❌ Avatar failed:', e.currentTarget.src)}
+                                            />
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                                 <Check size={48} className="text-primary mb-2 shadow-black drop-shadow-lg" />
                                                 <span className="text-white font-bold drop-shadow-md">Photo Uploaded</span>
@@ -713,6 +1155,104 @@ export default function Onboarding() {
                             )}
                         </button>
                     </div>
+
+                    {/* Measurement Calculator Modal */}
+                    {showMeasurementCalc && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowMeasurementCalc(false)}>
+                            <div className="glass p-8 rounded-2xl max-w-2xl w-full border border-white/10" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold">Measurement Guide</h3>
+                                    <button onClick={() => setShowMeasurementCalc(false)} className="text-gray-400 hover:text-white">✕</button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-lg mb-3">Enter Measurements (in cm)</h4>
+                                        <div>
+                                            <label className="block text-sm mb-2">Shoulders</label>
+                                            <input
+                                                type="number"
+                                                value={measurements.shoulders}
+                                                onChange={e => setMeasurements({ ...measurements, shoulders: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+                                                placeholder="e.g., 45"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm mb-2">Chest/Bust</label>
+                                            <input
+                                                type="number"
+                                                value={measurements.chest}
+                                                onChange={e => setMeasurements({ ...measurements, chest: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+                                                placeholder="e.g., 95"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm mb-2">Waist</label>
+                                            <input
+                                                type="number"
+                                                value={measurements.waist}
+                                                onChange={e => setMeasurements({ ...measurements, waist: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+                                                placeholder="e.g., 75"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm mb-2">Hips</label>
+                                            <input
+                                                type="number"
+                                                value={measurements.hips}
+                                                onChange={e => setMeasurements({ ...measurements, hips: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+                                                placeholder="e.g., 100"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => calculateBodyShape()}
+                                            className="btn btn-primary w-full"
+                                        >
+                                            Calculate Body Shape
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="font-semibold text-lg mb-3">Reference Guide</h4>
+                                        <div className="bg-white/5 rounded-lg p-4 space-y-2 text-sm">
+                                            <p><strong>Shoulders:</strong> Measure across back from shoulder to shoulder</p>
+                                            <p><strong>Chest/Bust:</strong> Measure around fullest part</p>
+                                            <p><strong>Waist:</strong> Measure at natural waistline</p>
+                                            <p><strong>Hips:</strong> Measure around fullest part of hips</p>
+                                        </div>
+                                        {formData.gender && (
+                                            <div className="mt-4 p-3 bg-white/5 rounded-lg text-center">
+                                                <p className="text-xs mb-2 text-gray-400">Body Shape Reference</p>
+                                                <div className="grid grid-cols-3 gap-2 text-2xl">
+                                                    {formData.gender === 'male' ? (
+                                                        <>
+                                                            <div className="flex flex-col items-center"><span>🔻</span><span className="text-[8px] text-gray-500 mt-1">Triangle</span></div>
+                                                            <div className="flex flex-col items-center"><span>🔺</span><span className="text-[8px] text-gray-500 mt-1">Inv-Tri</span></div>
+                                                            <div className="flex flex-col items-center"><span>⬜</span><span className="text-[8px] text-gray-500 mt-1">Rectangle</span></div>
+                                                            <div className="flex flex-col items-center"><span>⭕</span><span className="text-[8px] text-gray-500 mt-1">Oval</span></div>
+                                                            <div className="flex flex-col items-center"><span>🔶</span><span className="text-[8px] text-gray-500 mt-1">Trapezoid</span></div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex flex-col items-center"><span>⌛</span><span className="text-[8px] text-gray-500 mt-1">Hourglass</span></div>
+                                                            <div className="flex flex-col items-center"><span>⬜</span><span className="text-[8px] text-gray-500 mt-1">Rectangle</span></div>
+                                                            <div className="flex flex-col items-center"><span>🍐</span><span className="text-[8px] text-gray-500 mt-1">Pear</span></div>
+                                                            <div className="flex flex-col items-center"><span>🔺</span><span className="text-[8px] text-gray-500 mt-1">Inv-Tri</span></div>
+                                                            <div className="flex flex-col items-center"><span>🍎</span><span className="text-[8px] text-gray-500 mt-1">Apple</span></div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -10,7 +10,7 @@ const BRAND_SEARCH_URLS: { [key: string]: (query: string) => string } = {
     'COS': (q) => `https://www.cosstores.com/en_inr/search.html?q=${encodeURIComponent(q)}`,
     'Marks & Spencer': (q) => `https://www.marksandspencer.in/search?q=${encodeURIComponent(q)}`,
     'Gap': (q) => `https://www.gap.in/search?query=${encodeURIComponent(q)}`,
-    'Levi\'s': (q) => `https://www.levi.in/search?q=${encodeURIComponent(q)}`,
+    "Levi's": (q) => `https://www.levi.in/search?q=${encodeURIComponent(q)}`,
     'Tommy Hilfiger': (q) => `https://in.tommy.com/search?q=${encodeURIComponent(q)}`,
     'Ralph Lauren': (q) => `https://www.ralphlauren.co.in/search?q=${encodeURIComponent(q)}`,
     'Calvin Klein': (q) => `https://www.calvinklein.co.in/search?q=${encodeURIComponent(q)}`,
@@ -47,4 +47,48 @@ export function getProductImagePlaceholder(itemName: string): string {
     if (item.includes('glasses') || item.includes('sunglasses')) return '🕶️';
 
     return '👕'; // Default
+}
+
+/**
+ * Get the first search result URL and image for a product using Cloudflare Worker
+ * Uses link-scraper.adwate.workers.dev to extract product data
+ */
+export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string }> {
+    try {
+        const params = new URLSearchParams({
+            brand,
+            product: itemName,
+            ...(color && { color })
+        });
+
+        const response = await fetch(`/api/product-link?${params.toString()}`);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch product link');
+        }
+
+        const data = await response.json();
+        const productUrl = data.url || getBrandSearchUrl(brand, itemName);
+
+        // Use Cloudflare worker to extract image from product page
+        try {
+            const workerResponse = await fetch('https://link-scraper.adwate.workers.dev/extract-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: productUrl })
+            });
+
+            if (workerResponse.ok) {
+                const { imageUrl } = await workerResponse.json();
+                return { url: productUrl, imageUrl: imageUrl || undefined };
+            }
+        } catch (imageError) {
+            console.error('Cloudflare worker image extraction failed:', imageError);
+        }
+
+        return { url: productUrl };
+    } catch (error) {
+        console.error('Error fetching product data:', error);
+        return { url: getBrandSearchUrl(brand, itemName) };
+    }
 }

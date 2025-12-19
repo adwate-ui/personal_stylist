@@ -22,9 +22,11 @@ export default function PreferencesPage() {
         alert("Preferences saved!");
     };
 
-    const handleRedoOnboarding = () => {
+    const handleRedoOnboarding = async () => {
         if (confirm("This will reset your style profile. Continue?")) {
-            router.push("/onboarding");
+            // Clear Style DNA to allow regeneration
+            await saveProfile({ ...profile, styleDNA: null });
+            router.push("/onboarding?mode=preferences");
         }
     };
 

@@ -54,8 +54,13 @@ async function retryWithExponentialBackoff<T>(
 
 async function generateWithFallback(promptParts: any[]) {
     const preferredModel = process.env.GEMINI_MODEL;
-    // Removed legacy 1.5-flash to avoid 404s, prioritized 2.5 and 3.0
-    const defaultModels = ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-1.5-pro"];
+    // Latest models as of December 2025
+    const defaultModels = [
+        "gemini-3-pro-preview",     // Premium primary - most capable
+        "gemini-2.5-pro",           // Premium secondary - advanced reasoning
+        "gemini-3-flash-preview",   // Free primary - fast and intelligent
+        "gemini-2.5-flash"          // Free secondary - price-performance
+    ];
 
     // Create a unique list of models, prioritizing the env var if set
     const models = preferredModel ? [preferredModel, ...defaultModels] : defaultModels;
