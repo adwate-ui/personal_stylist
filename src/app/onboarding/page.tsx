@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Briefcase, Sparkles, User, Shirt, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { generateStyleDNAWithAI, StyleDNA } from "@/lib/style-dna-generator";
 
-export default function Onboarding() {
+function OnboardingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const mode = searchParams.get('mode'); // 'preferences' for returning users
@@ -1256,5 +1256,17 @@ export default function Onboarding() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function Onboarding() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        }>
+            <OnboardingContent />
+        </Suspense>
     );
 }
