@@ -52,6 +52,7 @@ export function getProductImagePlaceholder(itemName: string): string {
 /**
  * Get the first search result URL and image for a product using Cloudflare Worker
  * Uses link-scraper.adwate.workers.dev to search and extract product data
+ * Returns '#' if worker fails to ensure no Google search fallback
  */
 export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string }> {
     try {
@@ -67,16 +68,19 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
 
         if (workerResponse.ok) {
             const { url, imageUrl } = await workerResponse.json();
+            // CRITICAL: Return actual product URL or '#', NO Google search fallback
             return {
-                url: url || getBrandSearchUrl(brand, itemName),
+                url: url || '#',
                 imageUrl: imageUrl || undefined
             };
         }
 
-        // Fallback to brand search URL if worker fails
-        return { url: getBrandSearchUrl(brand, itemName) };
+        // Worker failed - return '#' instead of Google search
+        console.warn(`Worker failed for: ${searchQuery}`);
+        return { url: '#' };
     } catch (error) {
         console.error('Error fetching product data:', error);
-        return { url: getBrandSearchUrl(brand, itemName) };
+        // Error - return '#' instead of Google search
+        return { url: '#' };
     }
 }

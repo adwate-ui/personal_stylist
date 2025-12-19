@@ -387,12 +387,15 @@ export default function WardrobePage() {
                                         const brands = Array.isArray(similarBrands) ? similarBrands : [];
 
                                         return brands.slice(0, 6).map((brand, idx) => (
-                                            <a
+                                            <button
                                                 key={idx}
-                                                href={getBrandSearchUrl(brand, selectedItem.sub_category || selectedItem.category)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group"
+                                                onClick={async () => {
+                                                    const data = await getFirstSearchResultUrl(brand, selectedItem.sub_category || selectedItem.category, '');
+                                                    if (data.url && data.url !== '#') {
+                                                        window.open(data.url, '_blank');
+                                                    }
+                                                }}
+                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group text-left w-full"
                                             >
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="font-medium text-sm">{brand}</span>
@@ -401,7 +404,7 @@ export default function WardrobePage() {
                                                 <div className="text-xs text-gray-400 capitalize">
                                                     {selectedItem.sub_category || selectedItem.category}
                                                 </div>
-                                            </a>
+                                            </button>
                                         ))
                                     })()}
                                 </div>
