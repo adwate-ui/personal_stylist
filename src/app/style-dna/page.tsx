@@ -10,17 +10,10 @@ export default function StyleDNAPage() {
     const [productData, setProductData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
     const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 size={48} className="text-primary animate-spin" />
-            </div>
-        );
-    }
-
     const styleDNA = profile?.styleDNA;
 
     // Fetch product URLs and images for wardrobe items
+    // IMPORTANT: This useEffect must be called before any conditional returns
     useEffect(() => {
         // Early return if no profile or styleDNA to prevent crash
         if (!profile || !styleDNA?.must_have_staples) return;
@@ -66,6 +59,15 @@ export default function StyleDNAPage() {
 
         fetchProductData();
     }, [profile, styleDNA]);
+
+    // Conditional renders AFTER all hooks
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 size={48} className="text-primary animate-spin" />
+            </div>
+        );
+    }
 
     if (!styleDNA) {
         return (
