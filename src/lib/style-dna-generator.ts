@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getBrandSearchUrl } from "./product-links";
+import { getFirstSearchResultUrl } from "./product-links";
 
 // Model priority: Premium models first, free tier as fallback
 const MODELS = {
