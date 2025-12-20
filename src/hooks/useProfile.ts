@@ -30,7 +30,7 @@ const DEFAULT_PROFILE = {
     priceRange: "",
     styleReport: null as any,
     styleDNA: null as any,
-    gemini_api_key: ""
+    gemini_api_key: process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""
 };
 
 export function useProfile() {
@@ -95,7 +95,7 @@ export function useProfile() {
             priceRange: dbProfile.price_range || "",
             styleDNA: dbProfile.style_dna || null,
             styleReport: dbProfile.style_report || null,
-            gemini_api_key: dbProfile.gemini_api_key || ""
+            gemini_api_key: dbProfile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""
         };
     };
 
