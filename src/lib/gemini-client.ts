@@ -69,7 +69,7 @@ export async function analyzeImageWithGemini(
     - primary_color: string (precise color name AND hex code, e.g., "Navy Blue #1A2B3C", "Charcoal Gray #36454F", "Crimson Red #DC143C")
     - style_tags: string[] (e.g., ["casual", "streetwear", "minimalist", "vintage"])
     - description: string (short, engaging description)
-    - price_estimate: string (e.g., "${currencySymbol}${currencySymbol}", "${currencySymbol}${currencySymbol}${currencySymbol}", "${currencySymbol}") - use ${currencySymbol} symbol
+    - price_estimate: string (e.g., "${currencySymbol} 1500", "${currencySymbol} 2000-5000") - use numeric values with currency symbol. Do NOT use abstract signs like $$$.
     - style_score: number (1-100, purely objective style rating based on versatility and trend)
     - style_reasoning: string (2-3 sentences explaining the style score and how this item fits into a wardrobe)
     - brand: string (brand name if visible, else empty)
@@ -128,6 +128,87 @@ export async function analyzeImageWithGemini(
         }
     }
 
+    throw new Error("All models failed");
+}
+
+export async function analyzeLinkWithGemini(
+    url: string,
+    metadata: { title?: string; brand?: string; price?: string; description?: string },
+    file: File | null,
+    apiKey: string,
+    userLocation?: string,
+    wardrobeItems?: Array<{ name: string; category: string; color?: string }>
+): Promise<WardrobeItemAnalysis> {
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    // Build context strings
+    const currencySymbol = userLocation && userLocation.toLowerCase().includes('india') ? '₹' : '$';
+    const wardrobeContext = wardrobeItems && wardrobeItems.length > 0
+        ? `\n\nUser's Current Wardrobe:\n${wardrobeItems.map((item, i) => `${i + 1}. ${item.name || item.category} (${item.color || 'color N/A'})`).join('\n')}\n\nFor complementary_items, ONLY suggest items from the above wardrobe list by their exact names.`
+        : '';
+
+    const linkContext = `
+    CONTEXT FROM LINK METADATA (Use as ground truth if available):
+    URL: ${url}
+    Title: "${metadata.title || ''}"
+    Brand: "${metadata.brand || ''}"
+    Price: "${metadata.price || ''}"
+    Description: "${metadata.description || ''}"
+    `;
+
+    const prompt = `Analyze this product from a URL store link. 
+    ${linkContext}
+    
+    Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
+    - category: string (Top, Bottom, Outerwear, Shoes, Accessory, Dress, Bag, Other)
+    - sub_category: string (e.g., T-Shirt, Jeans, Blazer, Sneakers)
+    - primary_color: string (precise color name AND hex code, e.g., "Navy Blue #1A2B3C")
+    - style_tags: string[] (e.g., ["casual", "streetwear", "minimalist", "vintage"])
+    - description: string (short, engaging description based on the link info)
+    - price_estimate: string (Use the metadata price if available, else estimate: "${currencySymbol} 1500", "${currencySymbol} 2000-5000")
+    - style_score: number (1-100, purely objective style rating)
+    - style_reasoning: string (2-3 sentences explaining the style score)
+    - brand: string (Use metadata brand if available - "${metadata.brand || ''}")
+    - styling_tips: string[] (3 short tips)
+    - complementary_items: string[] (5 items that would pair well - ${wardrobeItems && wardrobeItems.length > 0 ? 'ONLY from user wardrobe' : 'generics'})
+    ${wardrobeContext}`;
+
+    const modelsToTry = [
+        MODELS.premium_primary,
+        MODELS.premium_secondary,
+        MODELS.free_primary,
+        MODELS.free_secondary
+    ];
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+        const modelName = modelsToTry[i];
+
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            // Construct parts: Prompt + Image (if available)
+            const parts: any[] = [prompt];
+            if (file) {
+                const base64Data = await fileToBase64(file);
+                parts.push({
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: file.type,
+                    },
+                });
+            }
+
+            const result = await model.generateContent(parts);
+            const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (!text) throw new Error('No text content');
+
+            return JSON.parse(cleanJsonString(text));
+
+        } catch (error: any) {
+            console.warn(`Model ${modelName} failed for Link Analysis: ${error?.message}`);
+            if (i === modelsToTry.length - 1) throw handleGeminiError(error);
+        }
+    }
     throw new Error("All models failed");
 }
 

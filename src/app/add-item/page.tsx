@@ -9,7 +9,7 @@ import { Upload, Link as LinkIcon, Loader2, Check, AlertCircle, ArrowRight, Tren
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useProfile } from "@/hooks/useProfile";
-import { analyzeImageWithGemini } from "@/lib/gemini-client";
+import { analyzeImageWithGemini, analyzeLinkWithGemini } from "@/lib/gemini-client";
 import { WardrobeItemAnalysis } from "@/types/wardrobe";
 import { supabase } from "@/lib/supabase";
 import { getFirstSearchResultUrl } from "@/lib/product-links";
@@ -225,7 +225,7 @@ export default function AddItemPage() {
                 throw new Error("API Key required");
             }
 
-            const analysis = await analyzeImageWithGemini(imgFile, apiKey, profile.location, wardrobeItems);
+            const analysis = await analyzeLinkWithGemini(url, data, imgFile, apiKey, profile.location, wardrobeItems);
 
             // Merge scraped data with AI analysis
             const previewData: WardrobeItemAnalysis = {
@@ -548,12 +548,17 @@ export default function AddItemPage() {
                                 </div>
 
                                 <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group cursor-pointer" onClick={async () => {
-                                    const data = await getFirstSearchResultUrl(preview.brand || '', preview.item_name || preview.sub_category || '', preview.color || preview.primary_color);
-                                    window.open(data.url, '_blank');
+                                    if (activeTab === 'link' && url) {
+                                        window.open(url, '_blank');
+                                    } else {
+                                        const data = await getFirstSearchResultUrl(preview.brand || '', preview.item_name || preview.sub_category || '', preview.color || preview.primary_color);
+                                        window.open(data.url, '_blank');
+                                    }
                                 }}>
                                     <div className="flex justify-between items-center mb-1">
                                         <div className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
-                                            <Search size={12} /> Find on Google
+                                            {activeTab === 'link' ? <LinkIcon size={12} /> : <Search size={12} />}
+                                            {activeTab === 'link' ? "Product Link" : "Find on Google"}
                                         </div>
                                         <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
                                     </div>

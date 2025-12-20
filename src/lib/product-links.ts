@@ -71,10 +71,24 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
             if (workerResponse.ok) {
                 const data = await workerResponse.json();
                 if (data.url && data.url.startsWith('http')) {
-                    // Success: Found direct link with image
+                    // Success: Found direct link
+                    // Enhance image using AuthentiQC (User Request)
+                    let finalImageUrl = data.imageUrl;
+
+                    try {
+                        const authResponse = await fetch(`https://authentiqc-worker.adwate.workers.dev/fetch-metadata?url=${encodeURIComponent(data.url)}`);
+                        if (authResponse.ok) {
+                            const authData = await authResponse.json();
+                            const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
+                            if (authImage) finalImageUrl = authImage;
+                        }
+                    } catch (e) {
+                        console.warn('AuthentiQC image fetch failed:', e);
+                    }
+
                     return {
                         url: data.url,
-                        imageUrl: data.imageUrl,
+                        imageUrl: finalImageUrl,
                         title: data.title,
                         price: data.price,
                         brand: data.brand

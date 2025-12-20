@@ -260,7 +260,7 @@ export default function StyleDNAPage() {
                                                 const hexCode = typeof c === 'string' ? c : c.hex;
                                                 const colorName = typeof c === 'object' && c.name ? c.name : hexToColorName(hexCode);
                                                 return (
-                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                    <div key={i} className="flex flex-col items-center gap-1 w-20">
                                                         <div
                                                             className="w-16 h-16 rounded-lg border border-white/20 shadow-lg"
                                                             style={{ backgroundColor: hexCode }}
@@ -282,7 +282,7 @@ export default function StyleDNAPage() {
                                                 const hexCode = typeof c === 'string' ? c : c.hex;
                                                 const colorName = typeof c === 'object' && c.name ? c.name : hexToColorName(hexCode);
                                                 return (
-                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                    <div key={i} className="flex flex-col items-center gap-1 w-20">
                                                         <div
                                                             className="w-16 h-16 rounded-lg border border-white/20 shadow-lg"
                                                             style={{ backgroundColor: hexCode }}
