@@ -56,25 +56,44 @@ export function getProductImagePlaceholder(itemName: string): string {
  */
 export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
     try {
-        // AuthentiqC worker replaces link-scraper, but doesn't support generic search.
-        // So we fallback to generating a direct Google Shopping Search URL.
         const searchQuery = [brand, itemName, color].filter(Boolean).join(' ');
+
+        // Use link-scraper for URL discovery (User Request)
+        const workerUrl = 'https://link-scraper.adwate.workers.dev';
+
+        try {
+            const workerResponse = await fetch(`${workerUrl}/search-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: searchQuery })
+            });
+
+            if (workerResponse.ok) {
+                const data = await workerResponse.json();
+                if (data.url && data.url.startsWith('http')) {
+                    // Return URL but suppress image as requested
+                    return {
+                        url: data.url,
+                        imageUrl: undefined,
+                        title: data.title,
+                        price: data.price,
+                        brand: data.brand
+                    };
+                }
+            }
+        } catch (workerError) {
+            console.warn('Worker search failed, using fallback', workerError);
+        }
+
+        // Fallback: Google Search Page
         const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=shop`;
 
         return {
             url: googleSearchUrl,
-            // imageUrl is undefined since we aren't scraping search results anymore
+            imageUrl: undefined
         };
-
-        /* 
-        // Logic removed: Old link-scraper usage
-        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
-        const workerResponse = await fetch(`${workerUrl}/search-product`, ...)
-        */
     } catch (error) {
         console.error('Error fetching product data:', error);
         return { url: '#' };
     }
 }
-
-

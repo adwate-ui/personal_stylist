@@ -34,6 +34,7 @@ export interface StyleDNA {
     why: string;
   }>;
   styling_wisdom: string[];
+  style_pillars?: string[];
   generated_by_model?: string; // Track which model generated this DNA
 }
 
