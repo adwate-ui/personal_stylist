@@ -285,6 +285,7 @@ export async function generateOutfit(
     bottom?: any;
     shoes?: any;
     layering?: any;
+    bag?: any;
     accessories?: any[];
     reasoning: string;
     style_tips: string[];
@@ -318,6 +319,7 @@ export async function generateOutfit(
         "bottom_id": "uuid of bottom (optional if dress selected)",
         "shoes_id": "uuid of shoes",
         "layering_id": "uuid of jacket/coat (optional)",
+        "bag_id": "uuid of bag (optional)",
         "accessory_ids": ["uuid", "uuid"] (max 2),
         "reasoning": "2 sentences explaining why this outfit works for the occasion.",
         "style_tips": ["Tip 1", "Tip 2"]
@@ -338,6 +340,7 @@ export async function generateOutfit(
         bottom: findItem(selection.bottom_id),
         shoes: findItem(selection.shoes_id),
         layering: findItem(selection.layering_id),
+        bag: findItem(selection.bag_id),
         accessories: (selection.accessory_ids || []).map((id: string) => findItem(id)).filter(Boolean),
         reasoning: selection.reasoning,
         style_tips: selection.style_tips
