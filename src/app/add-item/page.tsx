@@ -194,20 +194,26 @@ export default function AddItemPage() {
 
                 const { data, error } = await supabase
                     .from('wardrobe_items')
-                    .select('name, category, color')
+                    .select('sub_category, category, primary_color')
                     .eq('user_id', user.id)
                     .limit(50); // Limit to prevent huge prompts
 
                 if (error) {
-                    console.error('Failed to fetch wardrobe:', error);
+                    console.error('Failed to fetch wardrobe - Full error:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
                     return;
                 }
 
                 if (data) {
                     setWardrobeItems(data.map(item => ({
-                        name: item.name || item.category,
+                        name: item.sub_category || item.category,
                         category: item.category,
-                        color: item.color
+                        color: item.primary_color
                     })));
                 }
             } catch (err) {

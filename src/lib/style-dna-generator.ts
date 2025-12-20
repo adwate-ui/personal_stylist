@@ -227,9 +227,41 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         result = await model.generateContent(prompt);
       }
 
-      // Extract text from response - Gemini SDK structure
-      const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Debug: Log the full response structure
+      console.log('[Style DNA] Full result object:', JSON.stringify({
+        hasResponse: !!result.response,
+        hasCandidates: !!result.response?.candidates,
+        candidatesLength: result.response?.candidates?.length,
+        firstCandidate: result.response?.candidates?.[0] ? 'exists' : 'missing'
+      }));
+
+      // Extract text from response with multiple fallback strategies
+      let text = '';
+
+      try {
+        // Strategy 1: Try the candidates array (most reliable)
+        if (result.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          text = result.response.candidates[0].content.parts[0].text;
+          console.log('[Style DNA] ✅ Extracted text via candidates array');
+        }
+        // Strategy 2: Try direct text() method (some SDK versions)
+        else if (typeof result.response.text === 'function') {
+          text = result.response.text();
+          console.log('[Style DNA] ✅ Extracted text via text() method');
+        }
+        // Strategy 3: Check if response itself has text property
+        else if (result.response?.text) {
+          text = result.response.text;
+          console.log('[Style DNA] ✅ Extracted text via text property');
+        }
+      } catch (extractError) {
+        console.error('[Style DNA] Text extraction error:', extractError);
+        console.error('[Style DNA] Response structure:', JSON.stringify(result.response, null, 2));
+        throw new Error(`Failed to extract text from Gemini response: ${extractError.message}`);
+      }
+
       if (!text) {
+        console.error('[Style DNA] No text found in response. Full response:', JSON.stringify(result.response, null, 2));
         throw new Error('No text content in Gemini response');
       }
 
