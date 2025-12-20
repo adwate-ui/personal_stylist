@@ -25,6 +25,7 @@ export interface StyleDNA {
         brand: string;
         why: string;
         product_url: string;
+        image_url?: string;
       }>;
     };
   };
@@ -176,11 +177,12 @@ IMPORTANT REQUIREMENTS:
 1. All hex codes must be valid CSS colors (#RRGGBB format)
 2. Color palette should be based on their skin tone (${profile.skinTone}) and complement their hair (${profile.hairColor}) and eyes (${profile.eyeColor})
 3. Must-have staples should include 10-15 items total across all categories
-4. Each staple must specify a brand from the ${priceInfo.tier} tier ONLY
-5. Brand recommendations must ONLY include brands from ${priceInfo.tier} tier (budget examples: Zara, H&M, Mango; mid: Sandro, Reiss, Theory; luxury: Gucci, Prada, YSL)
-6. Consider their body shape (${profile.bodyShape}) and fit preference (${profile.fitPreference}) in recommendations
-7. Styling wisdom should be specific to their lifestyle needs
-8. Return ONLY the JSON object, no other text${profile.avatar_url ? '\n\nIMPORTANT: The user has provided a photo. Use this to refine your recommendations based on their actual appearance, style, and body proportions visible in the image.' : ''}`;
+4. Each staple must specify a brand primarily from the ${priceInfo.tier} tier, but you may include the client's Admired Brands if they fit the style.
+5. Brand recommendations should prioritize the client's Admired Brands (${profile.brands.join(", ")}) if suitable; otherwise suggest brands in the ${priceInfo.tier} tier.
+6. Ensure recommended brands are known to be accessible in ${profile.location}.
+7. Consider their body shape (${profile.bodyShape}) and fit preference (${profile.fitPreference}) in recommendations
+8. Styling wisdom should be specific to their lifestyle needs
+9. Return ONLY the JSON object, no other text${profile.avatar_url ? '\n\nIMPORTANT: The user has provided a photo. Use this to refine your recommendations based on their actual appearance, style, and body proportions visible in the image.' : ''}`;
 }
 
 export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: string): Promise<StyleDNA> {

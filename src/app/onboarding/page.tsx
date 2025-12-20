@@ -335,12 +335,15 @@ function OnboardingContent() {
             }
 
             const dna = await generateStyleDNAWithAI(formData, apiKey);
-            setStyleDNA(dna);
+
+            // Auto-redirect to Style DNA page
+            await saveProfile({ ...formData, styleDNA: dna });
+            localStorage.removeItem('onboarding_draft');
+            router.push("/style-dna");
+
         } catch (error: any) {
             console.error("DNA Generation Error:", error);
             alert(error.message || "Failed to generate Style DNA. Please try again.");
-            setAnalyzing(false);
-        } finally {
             setAnalyzing(false);
         }
     };

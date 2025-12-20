@@ -69,6 +69,68 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
     return 'Other';
 };
 
+const SimilarProducts = ({ item }: { item: WardrobeItem }) => {
+    const tier = getBrandTier(item.brand || '');
+    const similarBrands = getSimilarBrands(item.brand || '', tier);
+    const brands = Array.isArray(similarBrands) ? similarBrands : [];
+    const [similarItemsData, setSimilarItemsData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
+
+    // Fetch images for similar items
+    useEffect(() => {
+        const fetchSimilarImages = async () => {
+            const dataMap = new Map();
+            // Limit to 6 brands to avoid excessive requests
+            for (const brand of brands.slice(0, 6)) {
+                try {
+                    const data = await getFirstSearchResultUrl(brand, item.sub_category || item.category, '');
+                    dataMap.set(brand, data);
+                } catch (error) {
+                    console.error(`Failed to fetch image for ${brand}:`, error);
+                }
+            }
+            setSimilarItemsData(dataMap);
+        };
+        fetchSimilarImages();
+    }, [item.id]);
+
+    return (
+        <>
+            {brands.slice(0, 6).map((brand, idx) => {
+                const itemData = similarItemsData.get(brand);
+                return (
+                    <button
+                        key={idx}
+                        onClick={() => {
+                            if (itemData?.url && itemData.url !== '#') {
+                                window.open(itemData.url, '_blank');
+                            }
+                        }}
+                        className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group text-left w-full overflow-hidden"
+                    >
+                        {/* Image Preview */}
+                        {itemData?.imageUrl && (
+                            <div className="w-full h-24 mb-2 bg-gray-800 rounded overflow-hidden">
+                                <img
+                                    src={itemData.imageUrl}
+                                    alt={brand}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm truncate pr-2">{brand}</span>
+                            <ExternalLink size={14} className="text-gray-400 group-hover:text-primary flex-shrink-0" />
+                        </div>
+                        <div className="text-xs text-gray-400 capitalize truncate">
+                            {item.sub_category || item.category}
+                        </div>
+                    </button>
+                );
+            })}
+        </>
+    );
+};
+
 export default function WardrobePage() {
     const [items, setItems] = useState<WardrobeItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -411,62 +473,7 @@ export default function WardrobePage() {
                                     Similar Items from {getBrandTier(selectedItem.brand || '')} Brands
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {(() => {
-                                        const tier = getBrandTier(selectedItem.brand || '');
-                                        const similarBrands = getSimilarBrands(selectedItem.brand || '', tier);
-                                        const brands = Array.isArray(similarBrands) ? similarBrands : [];
-                                        const [similarItemsData, setSimilarItemsData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
-
-                                        // Fetch images for similar items
-                                        useEffect(() => {
-                                            const fetchSimilarImages = async () => {
-                                                const dataMap = new Map();
-                                                for (const brand of brands.slice(0, 6)) {
-                                                    try {
-                                                        const data = await getFirstSearchResultUrl(brand, selectedItem.sub_category || selectedItem.category, '');
-                                                        dataMap.set(brand, data);
-                                                    } catch (error) {
-                                                        console.error(`Failed to fetch image for ${brand}:`, error);
-                                                    }
-                                                }
-                                                setSimilarItemsData(dataMap);
-                                            };
-                                            fetchSimilarImages();
-                                        }, [selectedItem.id]);
-
-                                        return brands.slice(0, 6).map((brand, idx) => {
-                                            const itemData = similarItemsData.get(brand);
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => {
-                                                        if (itemData?.url && itemData.url !== '#') {
-                                                            window.open(itemData.url, '_blank');
-                                                        }
-                                                    }}
-                                                    className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group text-left w-full overflow-hidden"
-                                                >
-                                                    {/* Image Preview */}
-                                                    {itemData?.imageUrl && (
-                                                        <div className="w-full h-24 mb-2 bg-gray-800 rounded overflow-hidden">
-                                                            <img
-                                                                src={itemData.imageUrl}
-                                                                alt={brand}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="font-medium text-sm truncate pr-2">{brand}</span>
-                                                        <ExternalLink size={14} className="text-gray-400 group-hover:text-primary flex-shrink-0" />
-                                                    </div>
-                                                    <div className="text-xs text-gray-400 capitalize truncate">
-                                                        {selectedItem.sub_category || selectedItem.category}
-                                                    </div>
-                                                </button>
-                                            );
-                                        });
-                                    })()}
+                                    <SimilarProducts item={selectedItem} />
                                 </div>
                             </div>
 

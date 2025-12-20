@@ -71,10 +71,10 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
             if (workerResponse.ok) {
                 const data = await workerResponse.json();
                 if (data.url && data.url.startsWith('http')) {
-                    // Return URL but suppress image as requested
+                    // Success: Found direct link with image
                     return {
                         url: data.url,
-                        imageUrl: undefined,
+                        imageUrl: data.imageUrl,
                         title: data.title,
                         price: data.price,
                         brand: data.brand
