@@ -98,28 +98,28 @@ export default function AddItemPage() {
         try {
             // Use Cloudflare Worker for server-side scraping
             const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
-            const response = await fetch(`${workerUrl}?url=${encodeURIComponent(url)}`);
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch product data from URL");
+            let data: any = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
+            let fetchFailed = false;
+
+            try {
+                const response = await fetch(`${workerUrl}?url=${encodeURIComponent(url)}`);
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    console.warn('[Add Item] Worker returned error status:', response.status);
+                    fetchFailed = true;
+                }
+            } catch (err) {
+                console.warn('[Add Item] Worker fetch failed:', err);
+                fetchFailed = true;
             }
 
-            const data = await response.json();
+            console.log('[Add Item] Worker response data:', data);
 
-            console.log('[Add Item] Worker response:', {
-                hasImageBase64: !!data.imageBase64,
-                hasImageUrl: !!data.imageUrl,
-                hasImage: !!data.image,
-                error: data.error
-            });
-
-            if (data.error) {
-                throw new Error(data.error);
-            }
-
-            // Check if we got an image URL
-            if (!data.imageBase64 && !data.image && !data.imageUrl) {
-                console.warn('[Add Item] No image found in direct scrape, attempting fallback search...');
+            // Check if we got an image URL - if not (or if fetch failed), try fallback
+            if ((!data.imageBase64 && !data.image && !data.imageUrl) || fetchFailed) {
+                console.warn('[Add Item] No image found or worker failed, attempting fallback search...');
 
                 // FALLBACK: Try searching for the URL itself using our search worker
                 // If that fails, try constructing a query from the URL path
@@ -131,9 +131,9 @@ export default function AddItemPage() {
                         // Strategy 2: Extract keywords from URL path
                         try {
                             const urlObj = new URL(url);
-                            const pathSegments = urlObj.pathname.split('/').filter(p => p.length > 2 && !['p', 'product', 'item', 'shop', 'en', 'in'].includes(p.toLowerCase()));
+                            const pathSegments = urlObj.pathname.split('/').filter(p => p.length > 2 && !['p', 'product', 'item', 'shop', 'en', 'in', 'html'].includes(p.toLowerCase()));
                             const slug = pathSegments.pop() || '';
-                            const keywords = slug.replace(/[-_]/g, ' ').replace(/\d+/g, '').trim();
+                            const keywords = slug.replace(/[_]/g, ' ').replace(/-/g, ' ').replace(/\.html.*/, '').replace(/\d+/g, '').trim();
 
                             const brand = data.brand || urlObj.hostname.replace('www.', '').split('.')[0];
                             const smartQuery = `${brand} ${keywords}`.trim();
@@ -150,6 +150,10 @@ export default function AddItemPage() {
                     if (fallbackData.imageUrl) {
                         console.log('[Add Item] ✅ Fallback search found image:', fallbackData.imageUrl);
                         data.imageUrl = fallbackData.imageUrl;
+                        // If we got metadata from fallback, fill it in if missing
+                        if (!data.title) data.title = fallbackData.title;
+                        if (!data.price) data.price = fallbackData.price;
+                        if (!data.brand) data.brand = fallbackData.brand;
                     } else {
                         throw new Error('Fallback search failed');
                     }
@@ -157,6 +161,7 @@ export default function AddItemPage() {
                     console.error('[Add Item] Fallback failed:', fallbackError);
                     clearInterval(interval);
                     setLoading(false);
+                    // Only show specific error if user input was valid but site failed
                     toast.error("Couldn't load product image", {
                         description: "This site has strict security blocks. Please upload a screenshot instead.",
                         duration: 6000

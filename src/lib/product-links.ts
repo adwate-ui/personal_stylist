@@ -54,24 +54,28 @@ export function getProductImagePlaceholder(itemName: string): string {
  * Uses link-scraper.adwate.workers.dev to search and extract product data
  * Returns '#' if worker fails to ensure no Google search fallback
  */
-export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string }> {
+export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
     try {
         // Build search query with brand, product, and color
         const searchQuery = [brand, itemName, color].filter(Boolean).join(' ');
 
         // Use Cloudflare worker to search Google and extract product data
-        const workerResponse = await fetch('https://link-scraper.adwate.workers.dev/search-product', {
+        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
+        const workerResponse = await fetch(`${workerUrl}/search-product`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: searchQuery })
         });
 
         if (workerResponse.ok) {
-            const { url, imageUrl } = await workerResponse.json();
+            const data = await workerResponse.json();
             // CRITICAL: Return actual product URL or '#', NO Google search fallback
             return {
-                url: url || '#',
-                imageUrl: imageUrl || undefined
+                url: data.url || '#',
+                imageUrl: data.imageUrl || undefined,
+                title: data.title || undefined,
+                price: data.price || undefined,
+                brand: data.brand || undefined
             };
         }
 
