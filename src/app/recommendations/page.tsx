@@ -80,10 +80,11 @@ export default function RecommendationsPage() {
             const wardrobeItems = await fetchAllWardrobeItems(userId);
 
             // 2. Get API Key
-            const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+            const apiKey = profile?.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
             if (!apiKey) {
-                console.error("API Key not found in environment variables");
-                throw new Error("API Key missing. Please make sure NEXT_PUBLIC_GEMINI_API_KEY is set.");
+                console.error("API Key not found in profile or environment variables");
+                throw new Error("API Key missing. Please check your configuration.");
             }
 
             // 3. Generate
