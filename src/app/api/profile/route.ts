@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-static';
+
 export async function POST(request: Request) {
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
