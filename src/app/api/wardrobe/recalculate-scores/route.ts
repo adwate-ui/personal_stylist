@@ -1,11 +1,9 @@
-import { createServerClient } from "@/lib/supabase-server";
+import { supabase } from "@/lib/supabase";
 import { ratePurchase } from "@/lib/gemini";
 
 export const runtime = 'edge';
 
 export async function POST(request: Request) {
-    const supabase = createServerClient();
-
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
