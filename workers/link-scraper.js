@@ -51,23 +51,18 @@ export default {
                 }
 
                 const { url: targetUrl } = await request.json();
-
                 if (!targetUrl) {
                     return new Response(
-                        JSON.stringify({ error: 'URL parameter required' }),
+                        JSON.stringify({ error: 'URL required' }),
                         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
                     );
                 }
 
-                console.log(`[Worker] Extracting metadata from URL: ${targetUrl}`);
-
                 try {
-                    // Fetch the product page
                     const response = await fetch(targetUrl, {
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                        }
+                            'User-Agent': 'Mozilla/5.0 (compatible; PersonalStylistBot/1.0)',
+                        },
                     });
 
                     if (!response.ok) {
@@ -75,27 +70,22 @@ export default {
                     }
 
                     const html = await response.text();
+                    const metadata = { imageBase64: null, title: null, price: null, brand: null };
 
-                    // Extract metadata using simple regex (lightweight)
-                    const metadata = {
-                        url: targetUrl,
-                        imageUrl: null,
-                        title: null,
-                        price: null,
-                        brand: null
-                    };
-
-                    // Try Open Graph image first
+                    // Extract Open Graph image
                     const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
                     if (ogImageMatch) {
-                        metadata.imageUrl = ogImageMatch[1];
-                    }
-
-                    // Try Twitter card image as fallback
-                    if (!metadata.imageUrl) {
-                        const twitterImageMatch = html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-                        if (twitterImageMatch) {
-                            metadata.imageUrl = twitterImageMatch[1];
+                        const imageUrl = ogImageMatch[1];
+                        try {
+                            const imgResponse = await fetch(imageUrl);
+                            if (imgResponse.ok) {
+                                const blob = await imgResponse.blob();
+                                const arrayBuffer = await blob.arrayBuffer();
+                                const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+                                metadata.imageBase64 = `data:${blob.type};base64,${base64}`;
+                            }
+                        } catch (imgError) {
+                            console.error('[Worker] Failed to fetch og:image:', imgError);
                         }
                     }
 
@@ -138,9 +128,84 @@ export default {
                 }
             }
 
-        } catch (error) {
+            // Default GET endpoint for legacy link scraping
+            const targetUrl = url.searchParams.get('url');
+            if (!targetUrl) {
+                return new Response(
+                    JSON.stringify({ error: 'URL parameter required' }),
+                    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+            }
+
+            // Scrape the target URL
+            const response = await fetch(targetUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (compatible; PersonalStylistBot/1.0)',
+                },
+            });
+
+            if (!response.ok) {
+                return new Response(
+                    JSON.stringify({ error: `Failed to fetch URL: ${response.status}` }),
+                    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+            }
+
+            const html = await response.text();
+            const metadata = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
+
+            // Extract Open Graph image
+            const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+            if (ogImageMatch) {
+                const imageUrl = ogImageMatch[1];
+                metadata.imageUrl = imageUrl; // Always include the URL
+
+                // Try to fetch and convert to base64 (may fail due to CORS)
+                try {
+                    const imgResponse = await fetch(imageUrl);
+                    if (imgResponse.ok) {
+                        const blob = await imgResponse.blob();
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+                        metadata.imageBase64 = `data:${blob.type};base64,${base64}`;
+                    }
+                } catch (imgError) {
+                    console.error('[Worker] Failed to fetch og:image for base64 conversion:', imgError);
+                    // imageUrl is still available for client-side fetch
+                }
+            }
+
+            // Extract metadata using simple regex
+            const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+            const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+            metadata.title = ogTitleMatch ? ogTitleMatch[1] : (titleMatch ? titleMatch[1] : null);
+
+            const priceMatch = html.match(/["']price["']:\s*["']?(\d+(?:\.\d{2})?)/i);
+            if (priceMatch) {
+                metadata.price = priceMatch[1];
+            }
+
+            const brandMatch = html.match(/<meta\s+property=["']og:site_name["']\s+content=["']([^"']+)["']/i);
+            if (brandMatch) {
+                metadata.brand = brandMatch[1];
+            } else {
+                const domain = new URL(targetUrl).hostname;
+                metadata.brand = domain.replace(/^www\./, '').split('.')[0];
+            }
+
             return new Response(
-                JSON.stringify({ error: error.message }),
+                JSON.stringify(metadata),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+
+        } catch (error) {
+            console.error('[Worker] Unhandled error:', error);
+            return new Response(
+                JSON.stringify({
+                    error: 'Worker error',
+                    message: error.message || 'Unknown error occurred',
+                    stack: error.stack
+                }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }

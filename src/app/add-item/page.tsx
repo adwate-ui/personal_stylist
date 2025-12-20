@@ -110,8 +110,16 @@ export default function AddItemPage() {
                 throw new Error(data.error);
             }
 
-            if (!data.imageBase64 && !data.image) {
-                throw new Error("No product image found at this URL");
+            // Check if we got an image - if not, suggest upload instead
+            if (!data.imageBase64 && !data.image && !data.imageUrl) {
+                clearInterval(interval);
+                setLoading(false);
+                toast.error("Couldn't load product image", {
+                    description: "This site may block automated access. Try uploading a screenshot instead.",
+                    duration: 6000
+                });
+                setActiveTab('upload'); // Switch to upload tab
+                return;
             }
 
             // Convert base64 to blob for Gemini analysis
@@ -120,9 +128,9 @@ export default function AddItemPage() {
                 // Convert data URL to blob
                 const base64Response = await fetch(data.imageBase64);
                 imgBlob = await base64Response.blob();
-            } else if (data.image) {
-                // Fallback: fetch image directly (may fail due to CORS)
-                const imgResponse = await fetch(data.image);
+            } else if (data.imageUrl || data.image) {
+                // Fallback: fetch image directly using imageUrl
+                const imgResponse = await fetch(data.imageUrl || data.image);
                 imgBlob = await imgResponse.blob();
             } else {
                 throw new Error("Could not load product image");
@@ -133,9 +141,14 @@ export default function AddItemPage() {
             // Analyze with Gemini
             const apiKey = profile.gemini_api_key || localStorage.getItem("gemini_api_key");
             if (!apiKey) {
-                if (confirm("Gemini API Key missing. Go to Profile to set it?")) {
-                    router.push("/profile");
-                }
+                toast.error("API Key Required", {
+                    description: "Please set your Gemini API key in your profile.",
+                    duration: 6000,
+                    action: {
+                        label: "Go to Profile",
+                        onClick: () => router.push("/profile")
+                    }
+                });
                 throw new Error("API Key required");
             }
 
@@ -179,11 +192,16 @@ export default function AddItemPage() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('wardrobe_items')
                     .select('name, category, color')
                     .eq('user_id', user.id)
                     .limit(50); // Limit to prevent huge prompts
+
+                if (error) {
+                    console.error('Failed to fetch wardrobe:', error);
+                    return;
+                }
 
                 if (data) {
                     setWardrobeItems(data.map(item => ({
