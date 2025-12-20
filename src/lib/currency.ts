@@ -35,14 +35,17 @@ export function formatPrice(price: number | string, location?: string): string {
     const currency = getCurrencyByLocation(location);
 
     if (typeof price === 'string') {
-        // If it's already formatted (e.g., "$$"), return as is
-        if (price.includes('$') || price.includes('₹')) {
-            return price.replace(/\$/g, currency.symbol);
+        // If it already has a currency symbol, extract the number and reformat
+        if (price.includes('$') || price.includes('₹') || price.includes('£') || price.includes('€')) {
+            const parsed = parseFloat(price.replace(/[^0-9.]/g, ''));
+            if (isNaN(parsed)) return price; // Return original if can't parse
+            price = parsed;
+        } else {
+            // Try to parse as number
+            const parsed = parseFloat(price.replace(/[^0-9.]/g, ''));
+            if (isNaN(parsed)) return price;
+            price = parsed;
         }
-        // Try to parse as number
-        const parsed = parseFloat(price.replace(/[^0-9.]/g, ''));
-        if (isNaN(parsed)) return price;
-        price = parsed;
     }
 
     return `${currency.symbol}${price.toLocaleString()}`;

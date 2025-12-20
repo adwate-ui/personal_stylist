@@ -106,10 +106,10 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
     "neutrals": ["#hexcode1", "#hexcode2", "#hexcode3", "#hexcode4"],
     "accents": ["#hexcode1", "#hexcode2", "#hexcode3"],
     "avoid": [
-      { "color": "Color Name", "reason": "Why this color doesn't work for them" },
-      { "color": "Color Name", "reason": "Why this color doesn't work for them" }
+      { "color": "#hexcode", "reason": "Why this color doesn't work for them" },
+      { "color": "#hexcode", "reason": "Why this color doesn't work for them" }
     ],
-    "rationale": "2-3 sentences explaining WHY these colors were chosen based on their skin tone, lifestyle, and aesthetic preferences"
+    "rationale": "DETAILED explanation covering:\n    1) Why these specific colors were chosen based on skin tone, hair, and eye color\n    2) Specific product color recommendations (e.g., 'Navy blazer', 'Cream trousers', 'Burgundy accessories')\n    3) How to combine these colors effectively\n    4) Seasonal variations if applicable"
   },
   "must_have_staples": {
     "tops": {
@@ -134,6 +134,24 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
     "footwear": {
       "everyday": [...],
       "formal": [...]
+    },
+    "bags": {
+      "everyday": [...],
+      "formal": [...]
+    },
+    "watches": {
+      "casual": [...],
+      "formal": [...]
+    },
+    "sunglasses": {
+      "everyday": [...]
+    },
+    "belts": {
+      "casual": [...],
+      "formal": [...]
+    },
+    "jewelry": {
+      "everyday": [...]
     }
   },
   "brand_recommendations": [

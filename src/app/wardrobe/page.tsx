@@ -385,27 +385,57 @@ export default function WardrobePage() {
                                         const tier = getBrandTier(selectedItem.brand || '');
                                         const similarBrands = getSimilarBrands(selectedItem.brand || '', tier);
                                         const brands = Array.isArray(similarBrands) ? similarBrands : [];
+                                        const [similarItemsData, setSimilarItemsData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
 
-                                        return brands.slice(0, 6).map((brand, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={async () => {
-                                                    const data = await getFirstSearchResultUrl(brand, selectedItem.sub_category || selectedItem.category, '');
-                                                    if (data.url && data.url !== '#') {
-                                                        window.open(data.url, '_blank');
+                                        // Fetch images for similar items
+                                        useEffect(() => {
+                                            const fetchSimilarImages = async () => {
+                                                const dataMap = new Map();
+                                                for (const brand of brands.slice(0, 6)) {
+                                                    try {
+                                                        const data = await getFirstSearchResultUrl(brand, selectedItem.sub_category || selectedItem.category, '');
+                                                        dataMap.set(brand, data);
+                                                    } catch (error) {
+                                                        console.error(`Failed to fetch image for ${brand}:`, error);
                                                     }
-                                                }}
-                                                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group text-left w-full"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-medium text-sm">{brand}</span>
-                                                    <ExternalLink size={14} className="text-gray-400 group-hover:text-primary" />
-                                                </div>
-                                                <div className="text-xs text-gray-400 capitalize">
-                                                    {selectedItem.sub_category || selectedItem.category}
-                                                </div>
-                                            </button>
-                                        ))
+                                                }
+                                                setSimilarItemsData(dataMap);
+                                            };
+                                            fetchSimilarImages();
+                                        }, [selectedItem.id]);
+
+                                        return brands.slice(0, 6).map((brand, idx) => {
+                                            const itemData = similarItemsData.get(brand);
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        if (itemData?.url && itemData.url !== '#') {
+                                                            window.open(itemData.url, '_blank');
+                                                        }
+                                                    }}
+                                                    className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all group text-left w-full overflow-hidden"
+                                                >
+                                                    {/* Image Preview */}
+                                                    {itemData?.imageUrl && (
+                                                        <div className="w-full h-24 mb-2 bg-gray-800 rounded overflow-hidden">
+                                                            <img
+                                                                src={itemData.imageUrl}
+                                                                alt={brand}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="font-medium text-sm truncate pr-2">{brand}</span>
+                                                        <ExternalLink size={14} className="text-gray-400 group-hover:text-primary flex-shrink-0" />
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 capitalize truncate">
+                                                        {selectedItem.sub_category || selectedItem.category}
+                                                    </div>
+                                                </button>
+                                            );
+                                        });
                                     })()}
                                 </div>
                             </div>

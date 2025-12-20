@@ -216,24 +216,84 @@ async function searchGoogleForProduct(query, env) {
 
         // Extract first result that looks like a product page
         if (results.length > 0) {
-            // Filter for shopping/e-commerce URLs
+            // Comprehensive shopping site detection (50+ sites)
             const shoppingSites = [
-                'amazon', 'flipkart', 'myntra', 'ajio', 'nykaa', 'tatacliq', 'shoppers', 'westside',
-                'zara.com', 'hm.com', 'uniqlo.com', 'nike.com', 'adidas.co', 'mango.com'
+                // India e-commerce
+                'amazon.in', 'flipkart.com', 'myntra.com', 'ajio.com', 'nykaa.com', 'tatacliq',
+                'shoppers', 'westside.com', 'lifestyle.com', 'centralbrand', 'pantaloons',
+                // International e-commerce
+                'amazon.com', 'amazon', 'ebay.', '6pm.com', 'asos.com', 'zalando',
+                // Fashion brands
+                'zara.com', 'hm.com', 'h&m', 'uniqlo.com', 'nike.com', 'adidas.co', 'adidas.com',
+                'mango.com', 'massimodutti', 'cosstores', 'marksandspencer', 'gap.com', 'gapinc',
+                'levi.com', 'levis.', 'tommy', 'ralphlauren', 'calvinklein', 'puma.com',
+                'reebok.', 'vans.com', 'converse.', 'newbalance.', 'fila.', 'skechers.',
+                // Luxury
+                'gucci', 'louisvuitton', 'prada', 'hermes', 'dior', 'versace', 'armani',
+                // Activewear
+                'lululemon', 'athleta', 'underarmour', 'gymshark', 'fabletics',
+                // Others
+                'nordstrom', 'macys', 'kohls', 'target.com', 'walmart.com', 'jcpenney'
+            ];
+
+            // Exclude non-shopping content
+            const excludePatterns = [
+                '/blog', '/article', '/news', '/review', '/guide', '/how-to', '/blog-post',
+                'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'pinterest.com',
+                'wikipedia.org', 'reddit.com', 'quora.com'
+            ];
+
+            // Product page indicators
+            const productIndicators = [
+                '/product', '/p/', '/item', '-p-', '/pd/', '/products/',
+                '/dp/', '/buy/', '/shop/', '/clothing/', '/shoes/', '/accessories/'
             ];
 
             let productResult = null;
-            for (const result of results) {
-                const url = result.link || '';
-                const isShoppingSite = shoppingSites.some(site => url.toLowerCase().includes(site));
-                const isProductPage = url.includes('/product') || url.includes('/p/') ||
-                    url.includes('/item') || url.includes('-p-') ||
-                    isShoppingSite; // Any shopping site URL is likely a product
+            let bestScore = 0;
 
-                if (isProductPage && !url.includes('google.com')) {
-                    productResult = result;
-                    console.log(`[Worker] Found product URL: ${url}`);
-                    break;
+            for (const result of results.slice(0, 10)) { // Check top 10 results
+                const url = result.link || '';
+                const lowerUrl = url.toLowerCase();
+                const title = (result.title || '').toLowerCase();
+
+                // Skip excluded domains
+                if (excludePatterns.some(pattern => lowerUrl.includes(pattern))) {
+                    continue;
+                }
+
+                // Skip Google domains
+                if (lowerUrl.includes('google.com') || lowerUrl.includes('youtube.com')) {
+                    continue;
+                }
+
+                // Calculate relevance score
+                let score = 0;
+
+                // +10 points for known shopping site
+                const isShoppingSite = shoppingSites.some(site => lowerUrl.includes(site));
+                if (isShoppingSite) score += 10;
+
+                // +5 points for product page indicators in URL
+                const hasProductIndicator = productIndicators.some(indicator => lowerUrl.includes(indicator));
+                if (hasProductIndicator) score += 5;
+
+                // +3 points for "buy" or "shop" in title
+                if (title.includes('buy') || title.includes('shop')) score += 3;
+
+                // -5 points for review/blog keywords in URL or title
+                if (lowerUrl.includes('review') || title.includes('review') ||
+                    lowerUrl.includes('blog') || title.includes('guide')) {
+                    score -= 5;
+                }
+
+                // Accept if score >= 10 (shopping site) or score >= 8 (high confidence product page)
+                if (score >= 8) {
+                    if (score > bestScore) {
+                        bestScore = score;
+                        productResult = result;
+                        console.log(`[Worker] Found product URL (score: ${score}): ${url}`);
+                    }
                 }
             }
 

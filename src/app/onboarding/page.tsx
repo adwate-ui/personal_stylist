@@ -10,7 +10,7 @@ import { generateStyleDNAWithAI, StyleDNA } from "@/lib/style-dna-generator";
 function OnboardingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const mode = searchParams.get('mode'); // 'preferences' for returning users
+    const mode = searchParams.get('mode'); // 'preferences' for returning users, 'regenerate' for regenerating Style DNA
     const [avatarPreview, setAvatarPreview] = useState<string>("");
     const { profile, saveProfile, loading: profileLoading } = useProfile();
     const [step, setStep] = useState(mode === 'preferences' ? 2 : 1); // Skip basics if from preferences
@@ -121,7 +121,7 @@ function OnboardingContent() {
 
     // Check if returning user and redirect to wardrobe
     useEffect(() => {
-        if (!profileLoading && mode !== 'preferences') {
+        if (!profileLoading && mode !== 'preferences' && mode !== 'regenerate') {
             // If user has Style DNA, they've completed onboarding
             if (profile.styleDNA) {
                 router.push('/wardrobe');
@@ -132,8 +132,8 @@ function OnboardingContent() {
 
     // Load saved form data from localStorage on mount
     useEffect(() => {
-        if (mode === 'preferences' && !profileLoading) {
-            // Load existing profile data for preferences mode
+        if ((mode === 'preferences' || mode === 'regenerate') && !profileLoading) {
+            // Load existing profile data for preferences or regenerate mode
             setFormData(prev => ({
                 ...prev,
                 ...profile,
@@ -143,6 +143,15 @@ function OnboardingContent() {
             }));
             if (profile.avatar_url) {
                 setAvatarPreview(profile.avatar_url);
+            }
+
+            // Auto-trigger Style DNA generation for regenerate mode
+            if (mode === 'regenerate' && profile && !analyzing && !styleDNA) {
+                console.log('🔄 Regenerate mode detected - auto-generating Style DNA');
+                setAnalyzing(true);
+                setTimeout(() => {
+                    generateDNA();
+                }, 500); // Small delay to ensure data is loaded
             }
         } else {
             const saved = localStorage.getItem('onboarding_draft');

@@ -22,7 +22,7 @@ export default function Navigation() {
         { name: "Wardrobe", href: "/wardrobe", icon: Shirt },
         { name: "Add Item", href: "/add-item", icon: PlusCircle },
         { name: "Style DNA", href: "/style-dna", icon: Dna },
-        { name: "Preferences", href: "/preferences", icon: Settings },
+        // Preferences removed - use "Redo Onboarding" button in Style DNA page instead
     ];
 
     const handleSignOut = async () => {
