@@ -281,6 +281,7 @@ export async function generateOutfit(
     userLocation?: string,
     apiKey?: string,
     preSelectedIds?: string[]
+): Promise<{
     top?: any;
     bottom?: any;
     shoes?: any;
@@ -295,44 +296,52 @@ export async function generateOutfit(
     reasoning: string;
     style_tips: string[];
 }> {
-    if(!apiKey) throw new Error("API Key required");
+    if (!apiKey) throw new Error("API Key required");
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const context = `
-    WARDROBE ITEMS:
-    const instructions = preSelectedIds && preSelectedIds.length > 0 
-        ? `CRITICAL INSTRUCTION: You MUST include the following Item IDs in your outfit selection: ${ preSelectedIds.join(', ') }. Build the rest of the outfit around these items.`
+    const instructions = preSelectedIds && preSelectedIds.length > 0
+        ? `CRITICAL INSTRUCTION: You MUST include the following Item IDs in your outfit selection: ${preSelectedIds.join(', ')}. Build the rest of the outfit around these items.`
         : '';
 
+    const wardrobeList = wardrobeItems.map(item =>
+        `- ID: ${item.id}, ${item.name || item.sub_category} (${item.category}, ${item.primary_color || 'color N/A'})`
+    ).join('\n');
+
     const prompt = `
-Act as the world's most prestigious and talented personal stylist, known for impeccable taste and attention to detail. 
-    You are styling your most important client for a specific occasion.Your goal is perfection.
+    Act as the world's most prestigious and talented personal stylist, known for impeccable taste and attention to detail. 
+    You are styling your most important client for a specific occasion. Your goal is perfection.
 
-    OCCASION: ${ occasion }
-TIMING: ${ timing }
-LOCATION: ${ userLocation || "Unknown" }
+    OCCASION: ${occasion}
+    TIMING: ${timing}
+    LOCATION: ${userLocation || "Unknown"}
     
-    ${ context }
+    WARDROBE ITEMS:
+    ${wardrobeList}
 
-INSTRUCTIONS:
-1. Select the ABSOLUTE BEST combination of items from the provided WARDROBE ITEMS list.
+    INSTRUCTIONS:
+    1. Select the ABSOLUTE BEST combination of items from the provided WARDROBE ITEMS list.
     2. Ensure colors, textures, and styles harmonize perfectly.
     3. Respect the occasion deeply(e.g., ensure formal wear is truly formal).
     4. You MUST use the exact ID provided in the list.
-    5. ${ instructions }
+    5. ${instructions}
     
     Return verified JSON only:
-{
-    "top_id": "uuid",
+    {
+        "top_id": "uuid",
         "bottom_id": "uuid",
-            "shoes_id": "uuid",
-                "layering_id": "uuid",
-                    "bag_id": "uuid",
-                        "accessory_ids": ["uuid"],
-                            "reasoning": "Sophisticated styling advice explaining why this specific combination works flawlessly for the occasion.",
-                                "style_tips": ["Professional styling tip 1", "Tip 2"]
-}
-`;
+        "shoes_id": "uuid",
+        "layering_id": "uuid",
+        "bag_id": "uuid",
+        "sunglasses_id": "uuid",
+        "jewelry_id": "uuid",
+        "headwear_id": "uuid",
+        "belt_id": "uuid",
+        "scarf_id": "uuid",
+        "gloves_id": "uuid",
+        "reasoning": "Sophisticated styling advice explaining why this specific combination works flawlessly for the occasion.",
+        "style_tips": ["Professional styling tip 1", "Tip 2"]
+    }
+    `;
 
     const model = await createModelWithFallback(genAI);
     const result = await model.generateContent(prompt);
@@ -349,7 +358,12 @@ INSTRUCTIONS:
         shoes: findItem(selection.shoes_id),
         layering: findItem(selection.layering_id),
         bag: findItem(selection.bag_id),
-        accessories: (selection.accessory_ids || []).map((id: string) => findItem(id)).filter(Boolean),
+        sunglasses: findItem(selection.sunglasses_id),
+        jewelry: findItem(selection.jewelry_id),
+        headwear: findItem(selection.headwear_id),
+        belt: findItem(selection.belt_id),
+        scarf: findItem(selection.scarf_id),
+        gloves: findItem(selection.gloves_id),
         reasoning: selection.reasoning,
         style_tips: selection.style_tips
     };
@@ -364,32 +378,32 @@ export async function rateOutfit(
     if (!apiKey) throw new Error("API Key required");
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const context = outfitItems.map(item => 
-        `- ${ item.category } (${ item.sub_category }): ${ item.name } (${ item.primary_color }, ${ item.style_tags?.join(', ') })`
+    const context = outfitItems.map(item =>
+        `- ${item.category} (${item.sub_category}): ${item.name} (${item.primary_color}, ${item.style_tags?.join(', ')})`
     ).join('\n');
 
     const prompt = `
-Act as the world's best personal stylist. You are reviewing an outfit combination created by your client.
+    Act as the world's best personal stylist. You are reviewing an outfit combination created by your client.
     Be honest but constructive.Strict on style rules.
 
-    OCCASION: ${ occasion }
-TIMING: ${ timing }
+        OCCASION: ${occasion}
+    TIMING: ${timing}
     
     OUTFIT ITEMS:
-    ${ context }
+    ${context}
 
     Analyze this combination for:
-    1. Color coordination.
+        1. Color coordination.
     2. Style consistency(e.g.not mixing gym wear with formal wear unless intentional chic).
-3. Occasion appropriateness.
+    3. Occasion appropriateness.
 
     Return verified JSON only:
-{
-    "score": number(0 - 100),
-        "rationale": "One sentence summary of the outfit's coherence.",
-            "issues": ["Specific item X clashes with item Y because...", "Shoes are too casual for this occasion", etc.](Empty array if perfect)
+    {
+        "score": number(0 - 100),
+            "rationale": "One sentence summary of the outfit's coherence.",
+                "issues": ["Specific item X clashes with item Y because...", "Shoes are too casual for this occasion", etc.](Empty array if perfect)
     }
-`;
+    `;
 
     const model = await createModelWithFallback(genAI);
     const result = await model.generateContent(prompt);
@@ -413,7 +427,7 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 function cleanJsonString(text: string): string {
-    return text.replace(/```json / g, '').replace(/```/g, '').trim();
+    return text.replace(/```json/g, '').replace(/```/g, '').trim();
 }
 
 function handleGeminiError(error: any): Error {
