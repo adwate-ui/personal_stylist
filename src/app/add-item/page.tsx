@@ -316,6 +316,34 @@ export default function AddItemPage() {
         fetchWardrobe();
     }, []);
 
+    // Global Paste Listener
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            if (activeTab !== 'upload' || preview || loading) return;
+
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        const file = new File([blob], "pasted-image.png", { type: blob.type });
+                        const mockEvent = {
+                            target: { files: [file] }
+                        } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleFileUpload(mockEvent);
+                        toast.success("Image pasted from clipboard!");
+                    }
+                    break;
+                }
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [activeTab, preview, loading]);
+
     const saveDetails = async () => {
         if (!preview) return;
         setSaving(true);
@@ -436,27 +464,8 @@ export default function AddItemPage() {
                 {!preview && !loading && activeTab === 'upload' && (
                     <div className="w-full text-center max-w-md animate-fade-in">
                         <div
-                            className="border-2 border-dashed border-white/20 rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden focus:outline-none focus:border-primary"
+                            className="border-2 border-dashed border-white/20 rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden"
                             onClick={() => document.getElementById('file-input')?.click()}
-                            onPaste={(e) => {
-                                const items = e.clipboardData.items;
-                                for (let i = 0; i < items.length; i++) {
-                                    if (items[i].type.indexOf('image') !== -1) {
-                                        const blob = items[i].getAsFile();
-                                        if (blob) {
-                                            const file = new File([blob], "pasted-image.png", { type: blob.type });
-                                            // Mock event object for handleFileUpload compatibility
-                                            const mockEvent = {
-                                                target: { files: [file] }
-                                            } as unknown as React.ChangeEvent<HTMLInputElement>;
-                                            handleFileUpload(mockEvent);
-                                            toast.success("Image pasted!");
-                                        }
-                                        break;
-                                    }
-                                }
-                            }}
-                            tabIndex={0}
                         >
                             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <Upload size={32} className="text-gray-400 group-hover:text-primary transition-colors" />
@@ -465,7 +474,7 @@ export default function AddItemPage() {
                             <p className="text-gray-400 text-sm max-w-xs">Paste (Ctrl+V) or click to browse</p>
                             <p className="text-xs text-gray-500 mt-2">Supports JPG, PNG, WEBP up to 5MB</p>
 
-                            <input id="file-input" type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                            <input id="file-input" type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e)} />
                         </div>
                     </div>
                 )}

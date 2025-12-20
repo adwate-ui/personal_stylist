@@ -274,6 +274,76 @@ export async function rateImageWithGemini(file: File, apiKey: string): Promise<S
     throw new Error("All models failed");
 }
 
+export async function generateOutfit(
+    wardrobeItems: any[],
+    occasion: string,
+    timing: string,
+    userLocation?: string,
+    apiKey?: string
+): Promise<{
+    top?: any;
+    bottom?: any;
+    shoes?: any;
+    layering?: any;
+    accessories?: any[];
+    reasoning: string;
+    style_tips: string[];
+}> {
+    if (!apiKey) throw new Error("API Key required");
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const context = `
+    WARDROBE ITEMS:
+    ${wardrobeItems.map(item => `- ID: ${item.id}, Name: ${item.name || item.sub_category || item.category}, Category: ${item.category}, Color: ${item.primary_color || 'Unknown'}, Style: ${item.style_tags?.join(', ') || 'N/A'}`).join('\n')}
+    `;
+
+    const prompt = `
+    Act as a professional personal stylist. Create a complete "Outfit of the Day" for the user based on their wardrobe.
+    
+    OCCASION: ${occasion}
+    TIMING: ${timing}
+    LOCATION: ${userLocation || "Unknown"}
+    
+    ${context}
+
+    INSTRUCTIONS:
+    1. Select the BEST combination of items from the provided WARDROBE ITEMS list.
+    2. Ensure colors and styles match.
+    3. Respect the occasion (e.g., don't pick sweatpants for a formal dinner).
+    4. You MUST use the exact ID provided in the list.
+    
+    Return verified JSON only:
+    {
+        "top_id": "uuid of top",
+        "bottom_id": "uuid of bottom (optional if dress selected)",
+        "shoes_id": "uuid of shoes",
+        "layering_id": "uuid of jacket/coat (optional)",
+        "accessory_ids": ["uuid", "uuid"] (max 2),
+        "reasoning": "2 sentences explaining why this outfit works for the occasion.",
+        "style_tips": ["Tip 1", "Tip 2"]
+    }
+    `;
+
+    const model = await createModelWithFallback(genAI);
+    const result = await model.generateContent(prompt);
+    const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleanJson = cleanJsonString(text);
+    const selection = JSON.parse(cleanJson);
+
+    // Map back to actual objects
+    const findItem = (id: string) => wardrobeItems.find(i => i.id === id);
+
+    return {
+        top: findItem(selection.top_id),
+        bottom: findItem(selection.bottom_id),
+        shoes: findItem(selection.shoes_id),
+        layering: findItem(selection.layering_id),
+        accessories: (selection.accessory_ids || []).map((id: string) => findItem(id)).filter(Boolean),
+        reasoning: selection.reasoning,
+        style_tips: selection.style_tips
+    };
+}
+
 // Helpers
 async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
