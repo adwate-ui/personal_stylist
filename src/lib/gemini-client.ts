@@ -66,11 +66,12 @@ export async function analyzeImageWithGemini(
     const prompt = `Analyze this clothing item for a personal stylist app. Return ONLY a valid JSON object (no markdown, no backticks) with these fields:
     - category: string (Top, Bottom, Outerwear, Shoes, Accessory, Dress, Bag, Other)
     - sub_category: string (e.g., T-Shirt, Jeans, Blazer, Sneakers)
-    - primary_color: string (precise color name, e.g., "Navy Blue", "Charcoal Gray", "Crimson Red", NOT just "Blue" or "Red")
+    - primary_color: string (precise color name AND hex code, e.g., "Navy Blue #1A2B3C", "Charcoal Gray #36454F", "Crimson Red #DC143C")
     - style_tags: string[] (e.g., ["casual", "streetwear", "minimalist", "vintage"])
     - description: string (short, engaging description)
     - price_estimate: string (e.g., "${currencySymbol}${currencySymbol}", "${currencySymbol}${currencySymbol}${currencySymbol}", "${currencySymbol}") - use ${currencySymbol} symbol
     - style_score: number (1-100, purely objective style rating based on versatility and trend)
+    - style_reasoning: string (2-3 sentences explaining the style score and how this item fits into a wardrobe)
     - brand: string (brand name if visible, else empty)
     - styling_tips: string[] (3 short tips on how to style this item)
     - complementary_items: string[] (5 items that would pair well with this piece${wardrobeItems && wardrobeItems.length > 0 ? ' - ONLY from the user\'s wardrobe list above' : ''})
@@ -100,8 +101,11 @@ export async function analyzeImageWithGemini(
                 },
             ]);
 
-            const response = await result.response;
-            const text = response.text();
+            // Extract text from response - Gemini SDK structure
+            const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (!text) {
+                throw new Error('No text content in Gemini response');
+            }
             const cleanJson = cleanJsonString(text);
 
             return JSON.parse(cleanJson);
@@ -162,8 +166,12 @@ export async function rateImageWithGemini(file: File, apiKey: string): Promise<S
                 },
             ]);
 
-            const response = await result.response;
-            const cleanJson = cleanJsonString(response.text());
+            // Extract text from response - Gemini SDK structure
+            const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (!text) {
+                throw new Error('No text content in Gemini response');
+            }
+            const cleanJson = cleanJsonString(text);
             return JSON.parse(cleanJson);
         } catch (error: any) {
             const isQuotaError = error?.message?.includes("429") || error?.message?.includes("quota");

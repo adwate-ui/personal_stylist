@@ -341,7 +341,6 @@ export default function AddItemPage() {
                                 <LinkIcon size={32} className="text-primary" />
                             </div>
                             <h3 className="text-xl font-bold">Import from URL</h3>
-                            <p className="text-gray-400 text-sm">Paste a product link from Zara, H&M, Farfetch, etc.</p>
                         </div>
 
                         <div className="relative">
@@ -433,8 +432,20 @@ export default function AddItemPage() {
                                     <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                                         <div className="text-xs text-gray-500 uppercase mb-1">Color</div>
                                         <div className="font-medium text-sm flex items-center gap-2">
-                                            <span className="w-4 h-4 rounded-full border border-white/30 shadow-sm" style={{ backgroundColor: preview.color || preview.primary_color || '#FFFFFF' }}></span>
-                                            {preview.color || preview.primary_color}
+                                            {(() => {
+                                                const colorValue = preview.color || preview.primary_color || '#FFFFFF';
+                                                // Extract hex code if format is "ColorName #HEX"
+                                                const hexMatch = colorValue.match(/#[0-9A-Fa-f]{6}/);
+                                                const hexCode = hexMatch ? hexMatch[0] : colorValue.startsWith('#') ? colorValue : '#FFFFFF';
+                                                const colorName = colorValue.replace(/#[0-9A-Fa-f]{6}/, '').trim() || colorValue;
+
+                                                return (
+                                                    <>
+                                                        <span className="w-4 h-4 rounded-full border border-white/30 shadow-sm" style={{ backgroundColor: hexCode }}></span>
+                                                        {colorName}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

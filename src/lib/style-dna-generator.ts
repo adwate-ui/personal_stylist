@@ -227,7 +227,12 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         result = await model.generateContent(prompt);
       }
 
-      const text = await result.response.text();
+      // Extract text from response - Gemini SDK structure
+      const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) {
+        throw new Error('No text content in Gemini response');
+      }
+
       const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
       const parsed = JSON.parse(cleanJson);
