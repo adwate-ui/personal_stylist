@@ -57,7 +57,8 @@ export default function RecommendationsPage() {
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('week_start_date', weekStart)
-                .single();
+                .eq('week_start_date', weekStart)
+                .maybeSingle();
 
             if (data && data.recommendations) {
                 setRecommendations(data.recommendations);
@@ -80,7 +81,10 @@ export default function RecommendationsPage() {
 
             // 2. Get API Key
             const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-            if (!apiKey) throw new Error("API Key missing");
+            if (!apiKey) {
+                console.error("API Key not found in environment variables");
+                throw new Error("API Key missing. Please make sure NEXT_PUBLIC_GEMINI_API_KEY is set.");
+            }
 
             // 3. Generate
             const newRecs = await generateWeeklyRecommendations(
@@ -108,7 +112,8 @@ export default function RecommendationsPage() {
                         .select('recommendations')
                         .eq('user_id', userId)
                         .eq('week_start_date', weekStartDate)
-                        .single();
+                        .eq('week_start_date', weekStartDate)
+                        .maybeSingle();
                     if (data) setRecommendations(data.recommendations);
                 } else {
                     throw error;

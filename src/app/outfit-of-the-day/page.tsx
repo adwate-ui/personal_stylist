@@ -22,6 +22,7 @@ export default function OutfitOfTheDay() {
     // History
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
 
     // Feature: Build Around Items
     const [selectedForBuild, setSelectedForBuild] = useState<string[]>([]);
@@ -91,7 +92,7 @@ export default function OutfitOfTheDay() {
                 occasion,
                 timing,
                 profile.location,
-                profile.gemini_api_key,
+                profile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
                 selectedForBuild // Pass the anchor items
             );
             setOutfit(result);
@@ -186,7 +187,7 @@ export default function OutfitOfTheDay() {
     if (profileLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <main className="min-h-screen p-4 md:p-8 md:ml-64 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950 flex flex-col items-center">
+        <main className="min-h-screen p-4 md:p-8 md:ml-64 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950">
             <div className="max-w-7xl w-full mx-auto flex flex-col items-center">
 
                 <header className="mb-12 text-center">
@@ -394,13 +395,17 @@ export default function OutfitOfTheDay() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {history.map((saved: any) => (
-                                    <div key={saved.id} className="bg-[#090909] border border-white/5 rounded-2xl overflow-hidden hover:border-primary/30 transition-all hover:-translate-y-1 group">
+                                    <button
+                                        key={saved.id}
+                                        onClick={() => setSelectedHistoryItem(saved)}
+                                        className="bg-[#090909] border border-white/5 rounded-2xl overflow-hidden hover:border-primary/30 transition-all hover:-translate-y-1 group w-full text-left"
+                                    >
                                         <div className="p-4 border-b border-white/5 flex justify-between items-start">
                                             <div>
                                                 <div className="font-bold text-white">{saved.occasion}</div>
                                                 <div className="text-xs text-gray-500 mt-1">{new Date(saved.date).toLocaleDateString()}</div>
                                             </div>
-                                            <div className="text-xs bg-white/5 px-2 py-1 rounded text-primary">{saved.outfit_data.reasoning?.substring(0, 30)}...</div>
+                                            <div className="text-xs bg-white/5 px-2 py-1 rounded text-primary truncate max-w-[100px]">{saved.outfit_data.reasoning?.substring(0, 30)}...</div>
                                         </div>
                                         <div className="p-4 grid grid-cols-5 gap-1">
                                             {[
@@ -413,17 +418,15 @@ export default function OutfitOfTheDay() {
                                                 </div>
                                             ))}
                                             <div className="aspect-[3/4] bg-surface rounded overflow-hidden flex items-center justify-center text-xs text-gray-500 bg-white/5">
-                                                +{Object.keys(saved.outfit_data).length - 5}
+                                                <span className="text-[10px]">View all</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         )}
                     </div>
                 )}
-
-
             </div>
 
             {/* Build Modal */}
@@ -506,6 +509,81 @@ export default function OutfitOfTheDay() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Details Modal for History */}
+            {selectedHistoryItem && (
+                <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedHistoryItem(null)}>
+                    <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#1a1a1a] sticky top-0 z-10">
+                            <div>
+                                <h3 className="font-bold text-2xl text-white">{selectedHistoryItem.occasion}</h3>
+                                <p className="text-sm text-gray-400">{new Date(selectedHistoryItem.date).toLocaleDateString()}</p>
+                            </div>
+                            <button onClick={() => setSelectedHistoryItem(null)} className="text-gray-400 hover:text-white p-2">
+                                <X size={28} />
+                            </button>
+                        </div>
+
+                        <div className="p-8">
+                            {/* Rationale */}
+                            <div className="bg-primary/10 p-6 rounded-2xl mb-10 text-center border border-primary/20">
+                                <h3 className="text-primary font-bold mb-2 flex items-center justify-center gap-2 uppercase tracking-wide text-xs"><Sparkles size={14} /> Analysis</h3>
+                                <p className="text-white/90 text-lg font-serif italic leading-relaxed max-w-3xl mx-auto">"{selectedHistoryItem.outfit_data.reasoning}"</p>
+                            </div>
+
+                            {/* Outfit Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                                {[
+                                    { label: 'Top', item: selectedHistoryItem.outfit_data.top },
+                                    { label: 'Bottom', item: selectedHistoryItem.outfit_data.bottom },
+                                    { label: 'Shoes', item: selectedHistoryItem.outfit_data.shoes },
+                                    { label: 'Layering', item: selectedHistoryItem.outfit_data.layering },
+                                    { label: 'Bag', item: selectedHistoryItem.outfit_data.bag },
+                                    { label: 'Watch', item: selectedHistoryItem.outfit_data.watch },
+                                    { label: 'Wallet', item: selectedHistoryItem.outfit_data.wallet },
+                                    { label: 'Headwear', item: selectedHistoryItem.outfit_data.headwear },
+                                    { label: 'Belt', item: selectedHistoryItem.outfit_data.belt },
+                                    { label: 'Sunglasses', item: selectedHistoryItem.outfit_data.sunglasses },
+                                    { label: 'Jewelry', item: selectedHistoryItem.outfit_data.jewelry },
+                                    { label: 'Scarf', item: selectedHistoryItem.outfit_data.scarf },
+                                    { label: 'Gloves', item: selectedHistoryItem.outfit_data.gloves },
+                                    ...(selectedHistoryItem.outfit_data.accessories || []).map((item: any, i: number) => ({ label: `Accessory ${i + 1}`, item }))
+                                ].filter(x => x.item).map((slot, idx) => (
+                                    <div key={idx} className="bg-surface rounded-2xl overflow-hidden border border-white/5">
+                                        <div className="aspect-[3/4] bg-gray-800 relative">
+                                            <img
+                                                src={slot.item.image_url}
+                                                alt={slot.item.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-[10px] text-gray-300 uppercase tracking-wider font-bold">
+                                                {slot.label}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 text-center">
+                                            <div className="text-xs text-primary font-bold uppercase tracking-wider mb-1">{slot.item.brand}</div>
+                                            <div className="font-medium text-white truncate w-full text-sm">{slot.item.name || slot.item.sub_category}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Tips */}
+                            <div className="bg-[#090909] rounded-2xl p-8 border border-white/5 max-w-4xl mx-auto">
+                                <h3 className="font-bold text-white mb-6 text-center uppercase tracking-widest text-sm">Styling Tips</h3>
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {(selectedHistoryItem.outfit_data.style_tips || []).map((tip: string, i: number) => (
+                                        <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                            <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 text-sm font-bold mb-3">{i + 1}</span>
+                                            <p className="text-sm text-gray-300 leading-relaxed">{tip}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
