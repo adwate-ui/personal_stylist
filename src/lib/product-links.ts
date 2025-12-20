@@ -76,14 +76,19 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
                     let finalImageUrl = data.imageUrl;
 
                     try {
-                        const authResponse = await fetch(`https://authentiqc-worker.adwate.workers.dev/fetch-metadata?url=${encodeURIComponent(data.url)}`);
-                        if (authResponse.ok) {
-                            const authData = await authResponse.json();
-                            const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
-                            if (authImage) finalImageUrl = authImage;
+                        // Skip AuthentiQC for Google Search URLs or if URL is missing
+                        if (data.url && !data.url.includes('google.com/search')) {
+                            const authResponse = await fetch(`https://authentiqc-worker.adwate.workers.dev/fetch-metadata?url=${encodeURIComponent(data.url)}`);
+                            if (authResponse.ok) {
+                                const authData = await authResponse.json();
+                                const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
+                                if (authImage) finalImageUrl = authImage;
+                            } else {
+                                // 502s are common for protected sites (Farfetch, etc.), silent fallback is fine
+                            }
                         }
                     } catch (e) {
-                        console.warn('AuthentiQC image fetch failed:', e);
+                        // Network errors, silent fallback
                     }
 
                     return {
