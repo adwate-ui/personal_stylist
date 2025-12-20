@@ -6,7 +6,7 @@ import { Upload, ChevronRight, Check, ArrowLeft, ArrowRight, Ruler, Palette, Bri
 import { useProfile } from "@/hooks/useProfile";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { generateStyleDNAWithAI, StyleDNA } from "@/lib/style-dna-generator";
-import { validCities } from "@/data/cities";
+import validCities from "@/data/cities";
 import { toast } from "sonner";
 
 // Body shape visual mapping - professional images
