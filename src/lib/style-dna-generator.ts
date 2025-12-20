@@ -285,8 +285,19 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
             continue;
           }
 
+
           for (const type in categoryData) {
-            const items = categoryData[type];
+            let items = categoryData[type];
+
+            // FIX: Convert object-based arrays to real arrays (e.g. { "0": item, "1": item })
+            if (typeof items === 'object' && items !== null && !Array.isArray(items)) {
+              const values = Object.values(items);
+              // Check if values look like items (have 'item' or 'brand' properties)
+              if (values.length > 0 && (values[0] as any).item) {
+                console.log(`[Style DNA] ⚠️ Converted object-array for ${category}/${type}`);
+                items = values;
+              }
+            }
 
             // CRITICAL: Validate items is an array before iterating
             if (!Array.isArray(items)) {
@@ -322,6 +333,36 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
             categoryData[type] = updatedItems;
           }
         }
+      }
+
+      // Final normalization pass: Ensure critical arrays are actually arrays
+      // Gemini 1.5 Pro sometimes returns arrays as objects { "0": ... }
+      const normalizeArray = (arr: any) => {
+        if (Array.isArray(arr)) return arr;
+        if (typeof arr === 'object' && arr !== null) {
+          const values = Object.values(arr);
+          // Heuristic: if keys are indices "0", "1", etc, it's an array
+          const keys = Object.keys(arr);
+          if (keys.every(k => !isNaN(parseInt(k)))) return values;
+          // Fallback: If it looks like a list of items
+          if (values.length > 0 && typeof values[0] === 'object') return values;
+        }
+        return [];
+      };
+
+      if (parsed.color_palette) {
+        parsed.color_palette.neutrals = normalizeArray(parsed.color_palette.neutrals);
+        parsed.color_palette.accents = normalizeArray(parsed.color_palette.accents);
+        parsed.color_palette.avoid = normalizeArray(parsed.color_palette.avoid);
+
+        if (parsed.color_palette.seasonal_variations) {
+          parsed.color_palette.seasonal_variations.spring_summer = normalizeArray(parsed.color_palette.seasonal_variations.spring_summer);
+          parsed.color_palette.seasonal_variations.fall_winter = normalizeArray(parsed.color_palette.seasonal_variations.fall_winter);
+        }
+      }
+
+      if (parsed.brand_recommendations) {
+        parsed.brand_recommendations = normalizeArray(parsed.brand_recommendations);
       }
 
       // Store which model generated this DNA
