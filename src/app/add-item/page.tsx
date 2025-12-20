@@ -122,14 +122,34 @@ export default function AddItemPage() {
                 console.warn('[Add Item] No image found in direct scrape, attempting fallback search...');
 
                 // FALLBACK: Try searching for the URL itself using our search worker
-                // This often finds the product image via Google Images even if the site blocks scraping
+                // If that fails, try constructing a query from the URL path
                 try {
-                    const fallbackData = await getFirstSearchResultUrl('', url, ''); // Use URL as "item name" query
+                    console.log('[Add Item] Attempting fallback search with URL...');
+                    let fallbackData = await getFirstSearchResultUrl('', url, '');
+
+                    if (!fallbackData.imageUrl) {
+                        // Strategy 2: Extract keywords from URL path
+                        try {
+                            const urlObj = new URL(url);
+                            const pathSegments = urlObj.pathname.split('/').filter(p => p.length > 2 && !['p', 'product', 'item', 'shop', 'en', 'in'].includes(p.toLowerCase()));
+                            const slug = pathSegments.pop() || '';
+                            const keywords = slug.replace(/[-_]/g, ' ').replace(/\d+/g, '').trim();
+
+                            const brand = data.brand || urlObj.hostname.replace('www.', '').split('.')[0];
+                            const smartQuery = `${brand} ${keywords}`.trim();
+
+                            if (keywords.length > 3) {
+                                console.log('[Add Item] Attempting smart fallback search:', smartQuery);
+                                fallbackData = await getFirstSearchResultUrl(smartQuery, '', '');
+                            }
+                        } catch (e) {
+                            console.warn('Smart query generation failed:', e);
+                        }
+                    }
 
                     if (fallbackData.imageUrl) {
                         console.log('[Add Item] ✅ Fallback search found image:', fallbackData.imageUrl);
-                        data.imageUrl = fallbackData.imageUrl; // Use the found image
-                        // Continue execution...
+                        data.imageUrl = fallbackData.imageUrl;
                     } else {
                         throw new Error('Fallback search failed');
                     }

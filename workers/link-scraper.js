@@ -397,9 +397,20 @@ async function searchGoogleForProduct(query, env) {
             }
 
             if (productResult) {
+                // Enhancing image detection:
+                // If the organic result doesn't have an image, try to find one from 'images' or 'inlineImages'
+                let bestImage = productResult.image || productResult.thumbnail;
+
+                if (!bestImage && data.images && data.images.length > 0) {
+                    bestImage = data.images[0].imageUrl;
+                }
+                if (!bestImage && data.inlineImages && data.inlineImages.length > 0) {
+                    bestImage = data.inlineImages[0].imageUrl;
+                }
+
                 return {
                     url: productResult.link,
-                    imageUrl: productResult.image || null,
+                    imageUrl: bestImage || null,
                     title: productResult.title,
                     price: productResult.price || null,
                     source: productResult.source || new URL(productResult.link).hostname
