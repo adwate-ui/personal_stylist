@@ -362,48 +362,57 @@ export default function WardrobePage() {
 
                                 {/* Pairs Well With - From Inventory */}
                                 {(() => {
-                                    'Dresses': ['Shoes', 'Accessories', 'Jackets', 'Coats'],
-                                'Skirts': ['Shirts', 'Jackets', 'Shoes', 'Accessories'],
-                                'Accessories': ['Dresses', 'Suits', 'Shirts'],
-                                'Other': ['Trousers', 'Jeans', 'Shirts'] // Generic fallback
-                                        };
-                                const category = getMasterCategory(selectedItem.category, selectedItem.sub_category);
-                                        const pairsWith = items.filter(item => {
-                                            if (item.id === selectedItem.id) return false;
-                                const cat = getMasterCategory(item.category, item.sub_category);
-                                const compatibleCats = complementaryMap[category] || complementaryMap['Other'];
-                                return compatibleCats.includes(cat);
-                                        }).slice(0, 4); // Limit to 4 to save space
+                                    const complementaryMap: Record<string, string[]> = {
+                                        'Shirts': ['Trousers', 'Jeans', 'Suits', 'Ties', 'Belts'],
+                                        'Suits': ['Shirts', 'Ties', 'Belts', 'Shoes'],
+                                        'Trousers': ['Shirts', 'Jackets', 'Belts', 'Shoes'],
+                                        'Jeans': ['Shirts', 'Jackets', 'Shoes'],
+                                        'Jackets': ['Shirts', 'Trousers', 'Jeans'],
+                                        'Shoes': ['Trousers', 'Jeans', 'Suits'],
+                                        'Ties': ['Shirts', 'Suits', 'Jackets'],
+                                        'Belts': ['Trousers', 'Jeans', 'Suits'],
+                                        'Dresses': ['Shoes', 'Accessories', 'Jackets', 'Coats'],
+                                        'Skirts': ['Shirts', 'Jackets', 'Shoes', 'Accessories'],
+                                        'Accessories': ['Dresses', 'Suits', 'Shirts'],
+                                        'Other': ['Trousers', 'Jeans', 'Shirts'] // Generic fallback
+                                    };
+                                    const category = getMasterCategory(selectedItem.category, selectedItem.sub_category);
+                                    const pairsWith = items.filter(item => {
+                                        if (item.id === selectedItem.id) return false;
+                                        const cat = getMasterCategory(item.category, item.sub_category);
+                                        const compatibleCats = complementaryMap[category] || complementaryMap['Other'];
+                                        return compatibleCats.includes(cat);
+                                    }).slice(0, 4); // Limit to 4 to save space
 
-                                if (pairsWith.length === 0) return (
-                                <div className="text-sm text-gray-500 italic pb-4">
-                                    Add more items to your wardrobe to see styling combinations.
-                                </div>
-                                );
+                                    if (pairsWith.length === 0) return (
+                                        <div className="text-sm text-gray-500 italic pb-4">
+                                            Add more items to your wardrobe to see styling combinations.
+                                        </div>
+                                    );
 
-                                return (
-                                <div>
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <span className="text-primary">✨</span> Pairs Well With
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {pairsWith.map((item) => (
-                                            <div key={item.id} onClick={() => setSelectedItem(item)} className="bg-white/5 border border-white/10 rounded-lg p-2 hover:bg-white/10 hover:border-primary/30 transition-all cursor-pointer">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-12 h-16 bg-gray-800 rounded overflow-hidden flex-shrink-0">
-                                                        <img src={item.image_url || "/placeholder-garment.jpg"} alt={item.name} className="w-full h-full object-cover" />
+                                    return (
+                                        <div>
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <span className="text-primary">✨</span> Pairs Well With
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {pairsWith.map((item) => (
+                                                    <div key={item.id} onClick={() => setSelectedItem(item)} className="bg-white/5 border border-white/10 rounded-lg p-2 hover:bg-white/10 hover:border-primary/30 transition-all cursor-pointer">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-12 h-16 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                                                                <img src={item.image_url || "/placeholder-garment.jpg"} alt={item.name} className="w-full h-full object-cover" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-xs font-medium text-white truncate">{item.name || item.sub_category}</div>
+                                                                <div className="text-xs text-gray-400 truncate">{item.brand || item.category}</div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-medium text-white truncate">{item.name || item.sub_category}</div>
-                                                        <div className="text-xs text-gray-400 truncate">{item.brand || item.category}</div>
-                                                    </div>
-                                                </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                );
-                                    })()}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Wardrobe Compatibility Section - AI Generated */}
