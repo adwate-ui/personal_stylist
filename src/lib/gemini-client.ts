@@ -296,39 +296,37 @@ export async function generateOutfit(
 
     const context = `
     WARDROBE ITEMS:
-    ${wardrobeItems.map(item => `- ID: ${item.id}, Name: ${item.name || item.sub_category || item.category}, Category: ${item.category}, Color: ${item.primary_color || 'Unknown'}, Style: ${item.style_tags?.join(', ') || 'N/A'}`).join('\n')}
-    `;
-
-    const instructions = preSelectedIds && preSelectedIds.length > 0
-        ? `CRITICAL INSTRUCTION: You MUST include the following Item IDs in your outfit selection: ${preSelectedIds.join(', ')}. Build the rest of the outfit around these items.`
+    const instructions = preSelectedIds && preSelectedIds.length > 0 
+        ? `CRITICAL INSTRUCTION: You MUST include the following Item IDs in your outfit selection: ${ preSelectedIds.join(', ') }. Build the rest of the outfit around these items.`
         : '';
 
     const prompt = `
-    Act as a professional personal stylist. Create a complete "Outfit of the Day" for the user based on their wardrobe.
+    Act as the world's most prestigious and talented personal stylist, known for impeccable taste and attention to detail. 
+    You are styling your most important client for a specific occasion.Your goal is perfection.
+
+        OCCASION: ${ occasion }
+    TIMING: ${ timing }
+    LOCATION: ${ userLocation || "Unknown" }
     
-    OCCASION: ${occasion}
-    TIMING: ${timing}
-    LOCATION: ${userLocation || "Unknown"}
-    
-    ${context}
+    ${ context }
 
     INSTRUCTIONS:
-    1. Select the BEST combination of items from the provided WARDROBE ITEMS list.
-    2. Ensure colors and styles match.
-    3. Respect the occasion (e.g., don't pick sweatpants for a formal dinner).
+    1. Select the ABSOLUTE BEST combination of items from the provided WARDROBE ITEMS list.
+    2. Ensure colors, textures, and styles harmonize perfectly.
+    3. Respect the occasion deeply(e.g., ensure formal wear is truly formal).
     4. You MUST use the exact ID provided in the list.
-    5. ${instructions}
+    5. ${ instructions }
     
     Return verified JSON only:
     {
-        "top_id": "uuid of top",
-        "bottom_id": "uuid of bottom (optional if dress selected)",
-        "shoes_id": "uuid of shoes",
-        "layering_id": "uuid of jacket/coat (optional)",
-        "bag_id": "uuid of bag (optional)",
-        "accessory_ids": ["uuid", "uuid"] (max 2),
-        "reasoning": "2 sentences explaining why this outfit works for the occasion.",
-        "style_tips": ["Tip 1", "Tip 2"]
+        "top_id": "uuid",
+            "bottom_id": "uuid",
+                "shoes_id": "uuid",
+                    "layering_id": "uuid",
+                        "bag_id": "uuid",
+                            "accessory_ids": ["uuid"],
+                                "reasoning": "Sophisticated styling advice explaining why this specific combination works flawlessly for the occasion.",
+                                    "style_tips": ["Professional styling tip 1", "Tip 2"]
     }
     `;
 
@@ -353,6 +351,49 @@ export async function generateOutfit(
     };
 }
 
+export async function rateOutfit(
+    outfitItems: any[],
+    occasion: string,
+    timing: string,
+    apiKey: string
+): Promise<{ score: number; rationale: string; issues: string[] }> {
+    if (!apiKey) throw new Error("API Key required");
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const context = outfitItems.map(item => 
+        `- ${ item.category } (${ item.sub_category }): ${ item.name } (${ item.primary_color }, ${ item.style_tags?.join(', ') })`
+    ).join('\n');
+
+    const prompt = `
+    Act as the world's best personal stylist. You are reviewing an outfit combination created by your client.
+    Be honest but constructive.Strict on style rules.
+
+        OCCASION: ${ occasion }
+    TIMING: ${ timing }
+    
+    OUTFIT ITEMS:
+    ${ context }
+
+    Analyze this combination for:
+        1. Color coordination.
+    2. Style consistency(e.g.not mixing gym wear with formal wear unless intentional chic).
+    3. Occasion appropriateness.
+
+    Return verified JSON only:
+    {
+        "score": number(0 - 100),
+            "rationale": "One sentence summary of the outfit's coherence.",
+                "issues": ["Specific item X clashes with item Y because...", "Shoes are too casual for this occasion", etc.](Empty array if perfect)
+    }
+    `;
+
+    const model = await createModelWithFallback(genAI);
+    const result = await model.generateContent(prompt);
+    const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleanJson = cleanJsonString(text);
+    return JSON.parse(cleanJson);
+}
+
 // Helpers
 async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -368,7 +409,7 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 function cleanJsonString(text: string): string {
-    return text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return text.replace(/```json / g, '').replace(/```/g, '').trim();
 }
 
 function handleGeminiError(error: any): Error {
