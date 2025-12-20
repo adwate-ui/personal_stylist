@@ -441,79 +441,81 @@ export default function StyleDNAPage() {
 
                                 // Handle object format (new)
                                 if (typeof essentials === 'object' && essentials !== null) {
-                                    return Object.entries(essentials).map(([category, productTypes]: [string, any]) => {
-                                        if (!productTypes || typeof productTypes !== 'object') return null;
-                                        const isCollapsed = collapsedCategories.has(category);
+                                    return Object.entries(essentials)
+                                        .map(([category, productTypes]: [string, any]) => {
+                                            if (!productTypes || typeof productTypes !== 'object') return null;
+                                            const isCollapsed = collapsedCategories.has(category);
 
-                                        return (
-                                            <div key={category} className="mb-8 last:mb-0">
-                                                <h4
-                                                    className="text-lg font-semibold mb-4 capitalize border-b border-white/10 pb-2 cursor-pointer flex justify-between items-center hover:text-primary transition-colors"
-                                                    onClick={() => {
-                                                        const newSet = new Set(collapsedCategories);
-                                                        if (isCollapsed) {
-                                                            newSet.delete(category);
-                                                        } else {
-                                                            newSet.add(category);
-                                                        }
-                                                        setCollapsedCategories(newSet);
-                                                    }}
-                                                >
-                                                    {category.replace(/_/g, ' ')}
-                                                    <span className="text-sm">{isCollapsed ? '▶' : '▼'}</span>
-                                                </h4>
+                                            return (
+                                                <div key={category} className="mb-8 last:mb-0">
+                                                    <h4
+                                                        className="text-lg font-semibold mb-4 capitalize border-b border-white/10 pb-2 cursor-pointer flex justify-between items-center hover:text-primary transition-colors"
+                                                        onClick={() => {
+                                                            const newSet = new Set(collapsedCategories);
+                                                            if (isCollapsed) {
+                                                                newSet.delete(category);
+                                                            } else {
+                                                                newSet.add(category);
+                                                            }
+                                                            setCollapsedCategories(newSet);
+                                                        }}
+                                                    >
+                                                        {category.replace(/_/g, ' ')}
+                                                        <span className="text-sm">{isCollapsed ? '▶' : '▼'}</span>
+                                                    </h4>
 
-                                                {!isCollapsed && Object.entries(productTypes).map(([type, items]: [string, any]) => {
-                                                    if (!Array.isArray(items)) return null;
+                                                    {!isCollapsed && Object.entries(productTypes).map(([type, items]: [string, any]) => {
+                                                        if (!Array.isArray(items)) return null;
 
-                                                    return (
-                                                        <div key={type} className="mb-6 last:mb-0">
-                                                            <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                                                                {type.replace(/_/g, ' ')}
-                                                            </h5>
+                                                        return (
+                                                            <div key={type} className="mb-6 last:mb-0">
+                                                                <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
+                                                                    {type.replace(/_/g, ' ')}
+                                                                </h5>
 
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                                {items.map((item: any, i: number) => {
-                                                                    const key = `${item.brand || ''}-${item.item}`;
-                                                                    const data = productData.get(key);
-                                                                    const productUrl = data?.url || item.product_url || '#';
-                                                                    const imageUrl = data?.imageUrl || item.image_url;
-                                                                    const icon = getProductImagePlaceholder(item.item);
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                    {items.map((item: any, i: number) => {
+                                                                        const key = `${item.brand || ''}-${item.item}`;
+                                                                        const data = productData.get(key);
+                                                                        const productUrl = data?.url || item.product_url || '#';
+                                                                        const imageUrl = data?.imageUrl || item.image_url;
+                                                                        const icon = getProductImagePlaceholder(item.item);
 
-                                                                    // Debug logging
-                                                                    if (!imageUrl) console.log('Missing image for:', key, data);
+                                                                        // Debug logging
+                                                                        if (!imageUrl) console.log('Missing image for:', key, data);
 
-                                                                    return (
-                                                                        <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
-                                                                            <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
-                                                                                {imageUrl ? (
-                                                                                    <img src={imageUrl} alt={item.item} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                                                ) : (
-                                                                                    <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
-                                                                                )}
-                                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                    <span className="text-xs text-white font-medium">Shop at {item.brand || 'stores'} →</span>
-                                                                                </div>
-                                                                            </a>
-                                                                            <div className="p-3">
-                                                                                <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
-                                                                                {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
-                                                                                {item.color && <div className="text-xs text-gray-500 mb-1">Color: {item.color}</div>}
-                                                                                {item.why && <div className="text-xs text-gray-400 line-clamp-2 mb-2">{item.why}</div>}
-                                                                                <a href={productUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
-                                                                                    Shop Now →
+                                                                        return (
+                                                                            <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
+                                                                                <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
+                                                                                    {imageUrl ? (
+                                                                                        <img src={imageUrl} alt={item.item} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                                                    ) : (
+                                                                                        <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
+                                                                                    )}
+                                                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                        <span className="text-xs text-white font-medium">Shop at {item.brand || 'stores'} →</span>
+                                                                                    </div>
                                                                                 </a>
+                                                                                <div className="p-3">
+                                                                                    <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
+                                                                                    {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
+                                                                                    {item.color && <div className="text-xs text-gray-500 mb-1">Color: {item.color}</div>}
+                                                                                    {item.why && <div className="text-xs text-gray-400 line-clamp-2 mb-2">{item.why}</div>}
+                                                                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                                                                                        Shop Now →
+                                                                                    </a>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    });
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })
+                                        .filter(Boolean);
                                 }
 
                                 return null;

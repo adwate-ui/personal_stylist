@@ -106,34 +106,58 @@ export default function AddItemPage() {
 
             const data = await response.json();
 
+            console.log('[Add Item] Worker response:', {
+                hasImageBase64: !!data.imageBase64,
+                hasImageUrl: !!data.imageUrl,
+                hasImage: !!data.image,
+                error: data.error
+            });
+
             if (data.error) {
                 throw new Error(data.error);
             }
 
-            // Check if we got an image - if not, suggest upload instead
+            // Check if we got an image URL
             if (!data.imageBase64 && !data.image && !data.imageUrl) {
+                console.error('[Add Item] No image found in response:', data);
                 clearInterval(interval);
                 setLoading(false);
                 toast.error("Couldn't load product image", {
                     description: "This site may block automated access. Try uploading a screenshot instead.",
                     duration: 6000
                 });
-                setActiveTab('upload'); // Switch to upload tab
+                setActiveTab('upload');
                 return;
             }
 
-            // Convert base64 to blob for Gemini analysis
+            // Convert to blob for Gemini analysis
             let imgBlob: Blob;
-            if (data.imageBase64) {
-                // Convert data URL to blob
-                const base64Response = await fetch(data.imageBase64);
-                imgBlob = await base64Response.blob();
-            } else if (data.imageUrl || data.image) {
-                // Fallback: fetch image directly using imageUrl
-                const imgResponse = await fetch(data.imageUrl || data.image);
-                imgBlob = await imgResponse.blob();
-            } else {
-                throw new Error("Could not load product image");
+            try {
+                if (data.imageBase64) {
+                    // Best case: worker converted to base64
+                    const base64Response = await fetch(data.imageBase64);
+                    imgBlob = await base64Response.blob();
+                    console.log('[Add Item] Using imageBase64');
+                } else if (data.imageUrl || data.image) {
+                    // Fallback: Try fetching image directly (may fail due to CORS)
+                    const imageUrlToFetch = data.imageUrl || data.image;
+                    console.log('[Add Item] Trying to fetch imageUrl:', imageUrlToFetch);
+                    const imgResponse = await fetch(imageUrlToFetch);
+                    imgBlob = await imgResponse.blob();
+                    console.log('[Add Item] Successfully fetched imageUrl');
+                } else {
+                    throw new Error("No image data available");
+                }
+            } catch (fetchError) {
+                console.error('[Add Item] Image fetch failed:', fetchError);
+                clearInterval(interval);
+                setLoading(false);
+                toast.error("Couldn't load product image", {
+                    description: `Failed to fetch image: ${(fetchError as Error).message}. Try uploading a screenshot.`,
+                    duration: 6000
+                });
+                setActiveTab('upload');
+                return;
             }
 
             const imgFile = new File([imgBlob], "product.jpg", { type: imgBlob.type });
