@@ -97,7 +97,8 @@ export default function AddItemPage() {
 
         try {
             // Use Cloudflare Worker for server-side scraping
-            const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
+            // SWITCHED to AuthentiqC Worker for robust scraping (supports Rolex, etc.)
+            const workerUrl = 'https://authentiqc-worker.adwate.workers.dev/fetch-metadata';
 
             let data: any = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
             let fetchFailed = false;
@@ -105,7 +106,14 @@ export default function AddItemPage() {
             try {
                 const response = await fetch(`${workerUrl}?url=${encodeURIComponent(url)}`);
                 if (response.ok) {
-                    data = await response.json();
+                    const rawData = await response.json();
+
+                    // Adapt AuthentiqC structure to our app structure
+                    data.imageUrl = rawData.image || (rawData.images && rawData.images.length > 0 ? rawData.images[0] : null);
+                    data.title = rawData.title || null;
+                    data.price = rawData.price || null;
+                    data.brand = rawData.site_name || rawData.brand || null;
+                    // AuthentiqC typically returns valid public URLs, so base64 isn't needed usually
                 } else {
                     console.warn('[Add Item] Worker returned error status:', response.status);
                     fetchFailed = true;

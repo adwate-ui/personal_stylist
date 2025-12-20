@@ -56,35 +56,25 @@ export function getProductImagePlaceholder(itemName: string): string {
  */
 export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
     try {
-        // Build search query with brand, product, and color
+        // AuthentiqC worker replaces link-scraper, but doesn't support generic search.
+        // So we fallback to generating a direct Google Shopping Search URL.
         const searchQuery = [brand, itemName, color].filter(Boolean).join(' ');
+        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=shop`;
 
-        // Use Cloudflare worker to search Google and extract product data
+        return {
+            url: googleSearchUrl,
+            // imageUrl is undefined since we aren't scraping search results anymore
+        };
+
+        /* 
+        // Logic removed: Old link-scraper usage
         const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://link-scraper.adwate.workers.dev';
-        const workerResponse = await fetch(`${workerUrl}/search-product`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: searchQuery })
-        });
-
-        if (workerResponse.ok) {
-            const data = await workerResponse.json();
-            // CRITICAL: Return actual product URL or '#', NO Google search fallback
-            return {
-                url: data.url || '#',
-                imageUrl: data.imageUrl || undefined,
-                title: data.title || undefined,
-                price: data.price || undefined,
-                brand: data.brand || undefined
-            };
-        }
-
-        // Worker failed - return '#' instead of Google search
-        console.warn(`Worker failed for: ${searchQuery}`);
-        return { url: '#' };
+        const workerResponse = await fetch(`${workerUrl}/search-product`, ...)
+        */
     } catch (error) {
         console.error('Error fetching product data:', error);
-        // Error - return '#' instead of Google search
         return { url: '#' };
     }
 }
+
+
