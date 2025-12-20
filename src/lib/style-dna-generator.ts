@@ -279,37 +279,50 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         for (const category in parsed.must_have_staples) {
           const categoryData = parsed.must_have_staples[category];
 
-          // Validate category is an object
-          if (typeof categoryData !== 'object' || categoryData === null) {
-            console.warn(`[Style DNA] ⚠️ Skipping category ${category} - not an object`);
-            continue;
-          }
+          if (typeof categoryData !== 'object' || categoryData === null) continue;
 
+          // FIX: Handle case where Gemini returns { "0": item, "1": item } directly under category
+          // instead of { "Type": [items] }
+          const keys = Object.keys(categoryData);
+          const isDirectItemList = keys.every(k => !isNaN(parseInt(k)) || k === 'quantity_recommendation');
 
-          for (const type in categoryData) {
-            let items = categoryData[type];
-
-            // FIX: Convert object-based arrays to real arrays (e.g. { "0": item, "1": item })
-            if (typeof items === 'object' && items !== null && !Array.isArray(items)) {
-              const values = Object.values(items);
-              // Check if values look like items (have 'item' or 'brand' properties)
-              if (values.length > 0 && (values[0] as any).item) {
-                console.log(`[Style DNA] ⚠️ Converted object-array for ${category}/${type}`);
-                items = values;
+          if (isDirectItemList) {
+            console.log(`[Style DNA] ⚠️ Detected direct item list for category ${category}, normalizing...`);
+            const collectedItems = [];
+            for (const key of keys) {
+              if (key === 'quantity_recommendation') continue;
+              const item = categoryData[key];
+              if (typeof item === 'object' && item !== null) {
+                collectedItems.push(item);
               }
             }
+            // Reconstruct as { "Essential": [items] }
+            parsed.must_have_staples[category] = { "Essentials": collectedItems };
+          }
 
-            // CRITICAL: Validate items is an array before iterating
+          // Re-fetch category data after potential normalization
+          const normalizedCategoryData = parsed.must_have_staples[category];
+
+          for (const type in normalizedCategoryData) {
+            let items = normalizedCategoryData[type];
+
+            // Filter out non-array stuff like quantity_recommendation if it wasn't caught above
             if (!Array.isArray(items)) {
-              console.warn(`[Style DNA] ⚠️ Skipping ${category}/${type} - not an array:`, typeof items);
-              continue;
+              // Try one last rescue: is `items` actually a single item object?
+              if (typeof items === 'object' && items !== null && (items as any).item) {
+                items = [items]; // Wrap single item in array
+                normalizedCategoryData[type] = items;
+              } else {
+                console.warn(`[Style DNA] ⚠️ Skipping ${category}/${type} - not an array and not a recognized item`);
+                delete normalizedCategoryData[type]; // Remove bad key to prevent UI crash
+                continue;
+              }
             }
 
             const updatedItems = [];
 
             for (const item of items) {
               try {
-                // Fetch actual product URL using worker
                 const productData = await getFirstSearchResultUrl(
                   item.brand || '',
                   item.item || '',
