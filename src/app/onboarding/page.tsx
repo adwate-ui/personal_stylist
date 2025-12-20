@@ -558,19 +558,7 @@ function OnboardingContent() {
                             </div>
                         </div>
 
-                        {/* Column 3: Brands */}
-                        <div className="card glass p-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Briefcase className="text-primary" /> Recommended Brands</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {styleDNA.brand_recommendations.map((brand, i) => (
-                                    <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                        <div className="font-bold text-lg mb-1">{brand.name}</div>
-                                        <div className="text-xs text-primary mb-2 uppercase tracking-wider">{brand.tier}</div>
-                                        <div className="text-sm text-gray-400">{brand.why}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+
                     </div>
 
                     {/* Action Button */}
