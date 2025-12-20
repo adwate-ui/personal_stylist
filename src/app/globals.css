@@ -75,13 +75,18 @@
     /* gray-700 */
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     @apply bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all;
-    font-size: 16px !important; /* Prevent iOS zoom on focus */
+    font-size: 16px !important;
+    /* Prevent iOS zoom on focus */
   }
 
-  button, .btn {
-    @apply min-h-[44px] px-6 py-3; /* Touch-friendly sizing */
+  button,
+  .btn {
+    @apply min-h-[44px] px-6 py-3;
+    /* Touch-friendly sizing */
   }
 
   select {
@@ -136,12 +141,20 @@
   @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4;
 }
 
-.grid-gallery-5x5 {
-  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4;
-}
-
 .grid-gallery-6x6 {
   @apply grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3;
+}
+
+.grid-gallery-8x8 {
+  @apply grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2;
+}
+
+.grid-gallery-10x10 {
+  @apply grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2;
+}
+
+.grid-gallery-12x12 {
+  @apply grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 lg:grid-cols-12 gap-1;
 }
 
 /* UI Polish - Smooth Transitions & Animations */

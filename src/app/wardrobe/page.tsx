@@ -37,7 +37,8 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
     'Jackets': ['jacket', 'coat', 'outerwear', 'parka', 'bomber'],
     'Coats': ['coat', 'overcoat', 'trench'],
     'Shoes': ['shoe', 'sneaker', 'boot', 'loafer', 'oxford', 'heel', 'flat', 'sandal'],
-    'Accessories': ['accessory', 'pocket square', 'scarf', 'hat', 'cap', 'glove'],
+    'Bags': ['bag', 'handbag', 'tote', 'clutch', 'purse', 'backpack', 'wallet', 'luggage'],
+    'Accessories': ['accessory', 'pocket square', 'scarf', 'hat', 'cap', 'glove', 'sunglasses', 'jewelry', 'necklace', 'ring', 'bracelet'],
     'Ties': ['tie', 'bow tie', 'necktie'],
     'Belts': ['belt'],
     'Watches': ['watch', 'timepiece'],
@@ -55,7 +56,7 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
     const orderedGroups = [
         'Watches', 'Socks', 'Ties', 'Belts', 'Suits', 'Jeans',
         'Trousers', 'Shirts', 'Dresses', 'Skirts', 'Coats',
-        'Jackets', 'Shoes', 'Accessories', 'Activewear'
+        'Jackets', 'Shoes', 'Bags', 'Accessories', 'Activewear'
     ];
 
     for (const group of orderedGroups) {
@@ -65,8 +66,9 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
         }
     }
 
-    // Fallback to 'Other'
-    return 'Other';
+    // Fallback: Use the item's own category or sub-category, ensuring it's capitalized
+    const fallback = itemCategory || itemSubCategory || 'Uncategorized';
+    return fallback.charAt(0).toUpperCase() + fallback.slice(1);
 };
 
 
@@ -75,11 +77,8 @@ export default function WardrobePage() {
     const [items, setItems] = useState<WardrobeItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [gridSize, setGridSize] = useState<'4x4' | '5x5' | '6x6'>('4x4');
+    const [gridSize, setGridSize] = useState<'4x4' | '6x6' | '8x8' | '10x10' | '12x12'>('4x4');
     const [showGridSizePopup, setShowGridSizePopup] = useState(false);
 
     const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
@@ -97,8 +96,8 @@ export default function WardrobePage() {
         if (savedView === 'grid' || savedView === 'list') {
             setViewMode(savedView);
         }
-        if (savedGrid === '4x4' || savedGrid === '5x5' || savedGrid === '6x6') {
-            setGridSize(savedGrid as '4x4' | '5x5' | '6x6');
+        if (savedGrid && ['4x4', '6x6', '8x8', '10x10', '12x12'].includes(savedGrid)) {
+            setGridSize(savedGrid as any);
         }
     }, []);
 
@@ -108,81 +107,49 @@ export default function WardrobePage() {
         localStorage.setItem('wardrobe_view_mode', mode);
     }
 
-    const handleSetGridSize = (size: '4x4' | '5x5' | '6x6') => {
+    const handleSetGridSize = (size: '4x4' | '6x6' | '8x8' | '10x10' | '12x12') => {
         setGridSize(size);
         localStorage.setItem('wardrobe_grid_size', size);
     }
 
-    const fetchItems = async (pageNum = 1, isLoadMore = false) => {
-        if (!isLoadMore) {
-            setLoading(true);
-            setError(null);
-        } else {
-            setLoadingMore(true);
-        }
+    const fetchItems = async () => {
+        setLoading(true);
+        setError(null);
 
         try {
             // Check authentication first
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                if (isLoadMore) {
-                    setHasMore(false);
-                    return;
-                }
                 setItems([]);
                 setLoading(false);
                 return;
             }
 
-            const limit = 20;
-            const from = (pageNum - 1) * limit;
-            const to = from + limit - 1;
-
-            const { data, error: dbError, count } = await supabase
+            const { data, error: dbError } = await supabase
                 .from('wardrobe_items')
-                .select('*', { count: 'exact' })
+                .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
-                .range(from, to);
+                .limit(1000);
 
             if (dbError) throw new Error(dbError.message);
 
             const fetchedItems = data || [];
+            setItems(fetchedItems);
 
-            if (isLoadMore) {
-                setItems(prev => [...prev, ...fetchedItems]);
-            } else {
-                setItems(fetchedItems);
-                if (fetchedItems.length > 0 && !isLoadMore && pageNum === 1) {
-                    // toast.success("Wardrobe updated"); // Optional: removed to reduce noise
-                }
-            }
-
-            setHasMore((count || 0) > to + 1);
-            setPage(pageNum);
         } catch (err) {
             console.error(err);
-            if (!isLoadMore) {
-                setError((err as Error).message || "Failed to load wardrobe items");
-            } else {
-                toast.error("Failed to load more items", { description: (err as Error).message });
-            }
+            setError((err as Error).message || "Failed to load wardrobe items");
         } finally {
             setLoading(false);
-            setLoadingMore(false);
         }
     };
 
     useEffect(() => {
-        // Separate effect for initial fetch to avoid double-firing if we were using StrictMode (though we are likely not)
         fetchItems();
     }, []);
 
     const handleRetry = () => fetchItems();
-
-    const handleLoadMore = () => {
-        fetchItems(page + 1, true);
-    };
 
     const handleDeleteItem = async (id: string) => {
         if (!confirm("Are you sure you want to delete this item?")) return;
@@ -360,33 +327,86 @@ export default function WardrobePage() {
                                     </div>
                                 )}
 
-                                {/* Pairs Well With - From Inventory */}
+                                {/* Pairs Well With - Expert System */}
                                 {(() => {
-                                    const complementaryMap: Record<string, string[]> = {
-                                        'Shirts': ['Trousers', 'Jeans', 'Suits', 'Ties', 'Belts'],
-                                        'Suits': ['Shirts', 'Ties', 'Belts', 'Shoes'],
-                                        'Trousers': ['Shirts', 'Jackets', 'Belts', 'Shoes'],
-                                        'Jeans': ['Shirts', 'Jackets', 'Shoes'],
-                                        'Jackets': ['Shirts', 'Trousers', 'Jeans'],
-                                        'Shoes': ['Trousers', 'Jeans', 'Suits'],
-                                        'Ties': ['Shirts', 'Suits', 'Jackets'],
-                                        'Belts': ['Trousers', 'Jeans', 'Suits'],
-                                        'Dresses': ['Shoes', 'Accessories', 'Jackets', 'Coats'],
-                                        'Skirts': ['Shirts', 'Jackets', 'Shoes', 'Accessories'],
-                                        'Accessories': ['Dresses', 'Suits', 'Shirts'],
-                                        'Other': ['Trousers', 'Jeans', 'Shirts'] // Generic fallback
+                                    const getCompatibilityScore = (item1: WardrobeItem, item2: WardrobeItem): number => {
+                                        let score = 0;
+                                        const cat1 = getMasterCategory(item1.category, item1.sub_category);
+                                        const cat2 = getMasterCategory(item2.category, item2.sub_category);
+                                        const sub1 = (item1.sub_category || item1.name || "").toLowerCase();
+                                        const sub2 = (item2.sub_category || item2.name || "").toLowerCase();
+
+                                        // Formality & Type Flags
+                                        const isFormal1 = sub1.includes('suit') || sub1.includes('blazer') || sub1.includes('dress') || sub1.includes('formal') || cat1 === 'Ties' || cat1 === 'Suits';
+                                        const isFormal2 = sub2.includes('suit') || sub2.includes('blazer') || sub2.includes('dress') || sub2.includes('formal') || cat2 === 'Ties' || cat2 === 'Suits';
+                                        const isAthletic1 = cat1 === 'Activewear' || sub1.includes('gym') || sub1.includes('sport') || sub1.includes('run') || sub1.includes('jogger');
+                                        const isAthletic2 = cat2 === 'Activewear' || sub2.includes('gym') || sub2.includes('sport') || sub2.includes('run') || sub2.includes('jogger');
+                                        const isTee1 = sub1.includes('t-shirt') || sub1.includes('tee') || sub1.includes('tank') || sub1.includes('polo');
+                                        const isTee2 = sub2.includes('t-shirt') || sub2.includes('tee') || sub2.includes('tank') || sub2.includes('polo');
+
+                                        // 0. CRITICAL FASHION FAILS (Immediate Block)
+                                        // No Ties with casual tees/polos
+                                        if (cat1 === 'Ties' && isTee2) return -1;
+                                        if (cat2 === 'Ties' && isTee1) return -1;
+
+                                        // No Suits with gym wear
+                                        if ((cat1 === 'Suits' && isAthletic2) || (cat2 === 'Suits' && isAthletic1)) return -1;
+
+                                        // 1. SPECIFIC HIGH-VALUE PAIRINGS
+                                        // Suits <-> Formal
+                                        if (cat1 === 'Suits' || cat2 === 'Suits') {
+                                            if (cat1 === 'Ties' || cat2 === 'Ties') score += 5;
+                                            if (sub1.includes('dress shirt') || sub2.includes('dress shirt')) score += 5;
+                                            if ((cat1 === 'Shoes' || cat2 === 'Shoes') && (sub1.includes('oxford') || sub1.includes('loafer') || sub2.includes('oxford') || sub2.includes('loafer'))) score += 4;
+                                        }
+
+                                        // Jeans <-> Casual
+                                        if (cat1 === 'Jeans' || cat2 === 'Jeans') {
+                                            if (isTee1 || isTee2) score += 3;
+                                            if ((cat1 === 'Shoes' || cat2 === 'Shoes') && (sub1.includes('sneaker') || sub1.includes('boot') || sub2.includes('sneaker') || sub2.includes('boot'))) score += 3;
+                                            if (sub1.includes('leather jacket') || sub2.includes('leather jacket')) score += 4;
+                                        }
+
+                                        // T-Shirts <-> Bottoms
+                                        if (isTee1 || isTee2) {
+                                            if (cat1 === 'Jeans' || cat2 === 'Jeans' || sub1.includes('chino') || sub2.includes('chino') || sub1.includes('short') || sub2.includes('short')) score += 3;
+                                            if (cat1 === 'Activewear' || cat2 === 'Activewear') score += 2;
+                                        }
+
+                                        // 2. BASELINE COMPATIBILITY MAP (Fallback)
+                                        const complementaryMap: Record<string, string[]> = {
+                                            'Shirts': ['Trousers', 'Jeans', 'Suits', 'Ties', 'Belts', 'Jackets', 'Shorts', 'Skirts'],
+                                            'Suits': ['Shirts', 'Ties', 'Belts', 'Shoes', 'Watches'],
+                                            'Trousers': ['Shirts', 'Jackets', 'Belts', 'Shoes', 'Polos'],
+                                            'Jeans': ['Shirts', 'Jackets', 'Shoes', 'Belts'],
+                                            'Jackets': ['Shirts', 'Trousers', 'Jeans', 'Scarves', 'Dresses'],
+                                            'Shoes': ['Trousers', 'Jeans', 'Suits', 'Shorts', 'Skirts', 'Dresses', 'Activewear'],
+                                            'Ties': ['Shirts', 'Suits', 'Jackets'],
+                                            'Belts': ['Trousers', 'Jeans', 'Suits', 'Shorts'],
+                                            'Accessories': ['Shirts', 'Suits', 'Dresses', 'Jackets'],
+                                            'Activewear': ['Shoes', 'Shirts'],
+                                            'Other': ['Trousers', 'Jeans', 'Shirts']
+                                        };
+
+                                        const baseCat1 = getMasterCategory(item1.category, item1.sub_category);
+                                        const baseCat2 = getMasterCategory(item2.category, item2.sub_category);
+
+                                        if (complementaryMap[baseCat1]?.includes(baseCat2)) score += 1;
+                                        if (complementaryMap[baseCat2]?.includes(baseCat1)) score += 1;
+
+                                        return score;
                                     };
-                                    const category = getMasterCategory(selectedItem.category, selectedItem.sub_category);
-                                    const pairsWith = items.filter(item => {
-                                        if (item.id === selectedItem.id) return false;
-                                        const cat = getMasterCategory(item.category, item.sub_category);
-                                        const compatibleCats = complementaryMap[category] || complementaryMap['Other'];
-                                        return compatibleCats.includes(cat);
-                                    }).slice(0, 4); // Limit to 4 to save space
+
+                                    const pairsWith = items
+                                        .filter(item => item.id !== selectedItem.id)
+                                        .map(item => ({ item, score: getCompatibilityScore(selectedItem, item) }))
+                                        .filter(x => x.score > 0)
+                                        .sort((a, b) => b.score - a.score)
+                                        .slice(0, 4);
 
                                     if (pairsWith.length === 0) return (
                                         <div className="text-sm text-gray-500 italic pb-4">
-                                            Add more items to your wardrobe to see styling combinations.
+                                            No highly compatible items found. Add more wardrobe basics!
                                         </div>
                                     );
 
@@ -396,7 +416,7 @@ export default function WardrobePage() {
                                                 <span className="text-primary">✨</span> Pairs Well With
                                             </h3>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {pairsWith.map((item) => (
+                                                {pairsWith.map(({ item }) => (
                                                     <div key={item.id} onClick={() => setSelectedItem(item)} className="bg-white/5 border border-white/10 rounded-lg p-2 hover:bg-white/10 hover:border-primary/30 transition-all cursor-pointer">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-12 h-16 bg-gray-800 rounded overflow-hidden flex-shrink-0">
@@ -515,7 +535,7 @@ export default function WardrobePage() {
                         <div className="absolute top-full left-0 mt-2 bg-gray-900 rounded-lg p-2 border border-white/20 shadow-xl z-50">
                             <div className="flex flex-col gap-1 min-w-[120px]">
                                 <div className="text-xs text-gray-400 px-2 py-1">Grid Size</div>
-                                {(['4x4', '5x5', '6x6'] as const).map((size) => (
+                                {(['4x4', '6x6', '8x8', '10x10', '12x12'] as const).map((size) => (
                                     <button
                                         key={size}
                                         onClick={() => {
@@ -677,24 +697,7 @@ export default function WardrobePage() {
                         </div>
                     )}
 
-                    {hasMore && !loading && (
-                        <div className="flex justify-center mt-12">
-                            <button
-                                onClick={handleLoadMore}
-                                disabled={loadingMore}
-                                className="btn btn-secondary min-w-[150px]"
-                            >
-                                {loadingMore ? (
-                                    <>
-                                        <Loader2 className="animate-spin mr-2" size={18} />
-                                        Loading...
-                                    </>
-                                ) : (
-                                    "Load More"
-                                )}
-                            </button>
-                        </div>
-                    )}
+
                 </>
             )}
         </div>
