@@ -770,7 +770,7 @@ function OnboardingContent() {
                                             <button
                                                 key={shape.name}
                                                 type="button"
-                                                className={`p - 3 rounded - lg border text - left transition - all ${formData.bodyShape === shape.name ? 'border-primary bg-primary/10 ring-1 ring-primary/50' : 'border-white/10 hover:border-white/30 hover:bg-white/5'} `}
+                                                className={`p-3 rounded-lg border text-left transition-all ${formData.bodyShape === shape.name ? 'border-primary bg-primary/10 ring-1 ring-primary/50' : 'border-white/10 hover:border-white/30 hover:bg-white/5'} `}
                                                 onClick={() => setFormData({ ...formData, bodyShape: shape.name })}
                                             >
                                                 <div className="text-center mb-2">
@@ -787,7 +787,7 @@ function OnboardingContent() {
                                                     )}
                                                 </div>
                                                 <div className="flex items-start justify-between mb-1">
-                                                    <span className={`font - semibold text - sm ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'} `}>{shape.name}</span>
+                                                    <span className={`font - semibold text-sm ${formData.bodyShape === shape.name ? 'text-primary' : 'text-white'} `}>{shape.name}</span>
                                                     {formData.bodyShape === shape.name && <Check size={16} className="text-primary shrink-0" />}
                                                 </div>
                                                 <p className="text-xs text-gray-400">{shape.desc}</p>
@@ -808,7 +808,7 @@ function OnboardingContent() {
                                         {['tight', 'regular', 'loose'].map(fit => (
                                             <button
                                                 key={fit}
-                                                className={`flex - 1 py - 2 rounded - lg text - sm capitalize transition - all ${formData.fitPreference === fit ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'
+                                                className={`flex - 1 py-2 rounded-lg text-sm capitalize transition-all ${formData.fitPreference === fit ? 'bg-primary text-black shadow-lg' : 'text-gray-400 hover:text-white'
                                                     } `}
                                                 onClick={() => setFormData({ ...formData, fitPreference: fit })}
                                             >
@@ -856,13 +856,13 @@ function OnboardingContent() {
                                                                 setFormData({ ...formData, skinTone: `${tone.id}_${skinToneUndertone} `, skinToneUndertone });
                                                             }
                                                         }}
-                                                        className={`p - 2 rounded - lg border text - center transition - all ${skinToneBase === tone.id ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
+                                                        className={`p-2 rounded-lg border text-center transition-all ${skinToneBase === tone.id ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
                                                     >
                                                         <div
                                                             className="w-full h-12 rounded mb-1"
                                                             style={{ backgroundColor: tone.color }}
                                                         />
-                                                        <span className={`text - xs font - medium ${skinToneBase === tone.id ? 'text-primary' : 'text-gray-300'} `}>{tone.label}</span>
+                                                        <span className={`text - xs font-medium ${skinToneBase === tone.id ? 'text-primary' : 'text-gray-300'} `}>{tone.label}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -875,7 +875,7 @@ function OnboardingContent() {
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                     {[
                                                         { id: 'cool', label: 'Cool', desc: 'Pink/blue tones', color: '#FFB6C1' },
-                                                        { id: 'warm', label: 'Warm', desc: 'Golden/yellow tones', color: '#FFD700' },
+                                                        { id: 'warm', label: 'Warm', desc: 'Golden tones', color: '#FFD700' },
                                                         { id: 'neutral', label: 'Neutral', desc: 'Balanced tones', color: '#D2B48C' },
                                                         { id: 'olive', label: 'Olive', desc: 'Greenish tones', color: '#90A955' }
                                                     ].map(undertone => (
@@ -890,7 +890,7 @@ function OnboardingContent() {
                                                                     skinToneUndertone: undertone.id
                                                                 });
                                                             }}
-                                                            className={`p - 3 rounded - lg border text - left transition - all ${skinToneUndertone === undertone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'} `}
+                                                            className={`p-3 rounded-lg border text-left transition-all ${skinToneUndertone === undertone.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:bg-white/5'} `}
                                                         >
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div
@@ -899,7 +899,7 @@ function OnboardingContent() {
                                                                 />
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className={`font - semibold text - sm ${skinToneUndertone === undertone.id ? 'text-primary' : 'text-white'} `}>{undertone.label}</span>
+                                                                        <span className={`font - semibold text-sm ${skinToneUndertone === undertone.id ? 'text-primary' : 'text-white'} `}>{undertone.label}</span>
                                                                         {skinToneUndertone === undertone.id && <Check size={14} className="text-primary" />}
                                                                     </div>
                                                                 </div>
@@ -938,7 +938,7 @@ function OnboardingContent() {
                                                         key={hair.name}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, hairColor: hair.name })}
-                                                        className={`flex flex - col items - center gap - 1 p - 2 rounded - lg border transition - all ${formData.hairColor === hair.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'} `}
+                                                        className={`flex flex-col items-center gap - 1 p - 2 rounded-lg border transition-all ${formData.hairColor === hair.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'} `}
                                                     >
                                                         <div
                                                             className="w-10 h-10 rounded-full border-2 border-white/20"
@@ -965,7 +965,7 @@ function OnboardingContent() {
                                                         key={eye.name}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, eyeColor: eye.name })}
-                                                        className={`flex flex - col items - center gap - 1 p - 2 rounded - lg border transition - all ${formData.eyeColor === eye.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'} `}
+                                                        className={`flex flex-col items-center gap - 1 p - 2 rounded-lg border transition-all ${formData.eyeColor === eye.name ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'} `}
                                                     >
                                                         <div
                                                             className="w-10 h-10 rounded-full border-2 border-white/20 shadow-inner"
@@ -1006,14 +1006,14 @@ function OnboardingContent() {
                                                 ...prev,
                                                 lifestyle: { ...prev.lifestyle, [item.id]: !prev.lifestyle[item.id as keyof typeof prev.lifestyle] }
                                             }))}
-                                            className={`rounded - xl border text - left transition - all h - 40 flex flex - col justify - end relative overflow - hidden group ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'} `}
+                                            className={`rounded - xl border text-left transition-all h-40 flex flex-col justify-end relative overflow - hidden group ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'} `}
                                         >
                                             <div className="absolute inset-0">
                                                 <img src={item.img} alt={item.label} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                                <div className={`absolute inset - 0 bg - black / 60 transition - opacity ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'opacity-40' : 'opacity-60 group-hover:opacity-50'} `} />
+                                                <div className={`absolute inset - 0 bg - black / 60 transition-opacity ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'opacity-40' : 'opacity-60 group-hover:opacity-50'} `} />
                                             </div>
                                             <div className="relative z-10 p-4">
-                                                <span className={`font - bold text - lg ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'text-primary' : 'text-white'} `}>{item.label}</span>
+                                                <span className={`font - bold text-lg ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'text-primary' : 'text-white'} `}>{item.label}</span>
                                             </div>
                                         </button>
                                     ))}
@@ -1042,7 +1042,7 @@ function OnboardingContent() {
                                             <button
                                                 key={opt.id}
                                                 onClick={() => setFormData({ ...formData, priceRange: opt.id })}
-                                                className={`p - 4 rounded - lg border text - left flex justify - between items - center ${formData.priceRange === opt.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:bg-white/5'} `}
+                                                className={`p-4 rounded-lg border text-left flex justify-between items-center ${formData.priceRange === opt.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:bg-white/5'} `}
                                             >
                                                 <span className="font-medium">{opt.label}</span>
                                                 <span className="text-sm opacity-70">{opt.range}</span>
@@ -1085,7 +1085,7 @@ function OnboardingContent() {
                                                             brands: current.includes(brand) ? current.filter(b => b !== brand) : [...current, brand]
                                                         });
                                                     }}
-                                                    className={`px - 3 py - 1 rounded - full text - sm border transition - colors ${formData.brands?.includes(brand) ? 'bg-primary text-black border-primary' : 'border-white/20 hover:border-white/40'} `}
+                                                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${formData.brands?.includes(brand) ? 'bg-primary text-black border-primary' : 'border-white/20 hover:border-white/40'} `}
                                                 >
                                                     {brand}
                                                 </button>
@@ -1118,7 +1118,7 @@ function OnboardingContent() {
                                                 key={archetype.name}
                                                 onClick={() => toggleArchetype(archetype.name)}
                                                 type="button"
-                                                className={`p - 0 rounded - xl border text - left transition - all relative overflow - hidden group min - h - [140px] flex flex - col justify - end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
+                                                className={`p-0 rounded-xl border text-left transition-all relative overflow - hidden group min - h-[140px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
                                             >
                                                 <div className="absolute inset-0 z-0">
                                                     {/* Fallback gradient background */}
@@ -1138,7 +1138,7 @@ function OnboardingContent() {
                                                     <div className={`absolute inset - 0 bg - gradient - to - t from - black via - black / 50 to - transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'} `} />
                                                 </div>
                                                 <div className="relative z-10 p-3">
-                                                    <div className={`font - bold text - lg leading - tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'} `}>{archetype.name}</div>
+                                                    <div className={`font - bold text-lg leading - tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'} `}>{archetype.name}</div>
                                                     <div className="text-xs text-gray-300 mt-1 line-clamp-2">{archetype.desc}</div>
                                                 </div>
                                             </button>

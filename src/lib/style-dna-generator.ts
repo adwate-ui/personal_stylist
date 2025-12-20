@@ -254,10 +254,10 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
           text = result.response.text;
           console.log('[Style DNA] ✅ Extracted text via text property');
         }
-      } catch (extractError) {
+      } catch (extractError: any) {
         console.error('[Style DNA] Text extraction error:', extractError);
         console.error('[Style DNA] Response structure:', JSON.stringify(result.response, null, 2));
-        throw new Error(`Failed to extract text from Gemini response: ${extractError.message}`);
+        throw new Error(`Failed to extract text from Gemini response: ${extractError?.message || 'Unknown error'}`);
       }
 
       if (!text) {
