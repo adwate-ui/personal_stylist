@@ -75,10 +75,13 @@
     /* gray-700 */
   }
 
-  input,
-  select,
-  textarea {
-    @apply bg-black/50 border border-white/20 rounded-lg px-4 py-2 text-white placeholder:text-gray-500 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-all;
+  input, select, textarea {
+    @apply bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all;
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+
+  button, .btn {
+    @apply min-h-[44px] px-6 py-3; /* Touch-friendly sizing */
   }
 
   select {

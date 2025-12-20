@@ -209,8 +209,8 @@ export default function StyleDNAPage() {
                     </div>
                 )}
 
-                {/* 3-Column Layout for Main Sections */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Responsive Layout for Main Sections */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {/* Column 1: Color Palette */}
                     {styleDNA.color_palette && (
                         <div className="card glass p-8">

@@ -1,7 +1,5 @@
 import { supabase } from "@/lib/supabase";
 
-export const runtime = 'edge';
-
 export async function POST(request: Request) {
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
