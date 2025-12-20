@@ -152,12 +152,26 @@ export default {
             }
 
             const html = await response.text();
+
+            // Helper to extract meta content flexibly (handles any attribute order)
+            const getMetaContent = (property) => {
+                // Matches <meta ... property="og:image" ... content="url" ... > OR content first
+                const regex = new RegExp(`<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']+)["']`, 'i');
+                const match1 = html.match(regex);
+                if (match1) return match1[1];
+
+                // Try reverse order: content="..." property="..."
+                const regex2 = new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*property=["']${property}["']`, 'i');
+                const match2 = html.match(regex2);
+                return match2 ? match2[1] : null;
+            };
+
             const metadata = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
 
             // Extract Open Graph image
-            const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-            if (ogImageMatch) {
-                const imageUrl = ogImageMatch[1];
+            const imageUrl = getMetaContent('og:image');
+
+            if (imageUrl) {
                 metadata.imageUrl = imageUrl; // Always include the URL
 
                 // Try to fetch and convert to base64 (may fail due to CORS)
@@ -175,19 +189,21 @@ export default {
                 }
             }
 
-            // Extract metadata using simple regex
-            const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+            // Extract metadata
+            const ogTitle = getMetaContent('og:title');
             const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-            metadata.title = ogTitleMatch ? ogTitleMatch[1] : (titleMatch ? titleMatch[1] : null);
+            metadata.title = ogTitle || (titleMatch ? titleMatch[1] : null);
 
-            const priceMatch = html.match(/["']price["']:\s*["']?(\d+(?:\.\d{2})?)/i);
+            // Extract price using various patterns
+            const priceMatch = html.match(/["']price["']:\s*["']?(\d+(?:\.\d{2})?)/i) ||
+                html.match(/price\s*=\s*["'](\d+(?:\.\d{2})?)["']/i);
             if (priceMatch) {
                 metadata.price = priceMatch[1];
             }
 
-            const brandMatch = html.match(/<meta\s+property=["']og:site_name["']\s+content=["']([^"']+)["']/i);
-            if (brandMatch) {
-                metadata.brand = brandMatch[1];
+            const brandName = getMetaContent('og:site_name');
+            if (brandName) {
+                metadata.brand = brandName;
             } else {
                 const domain = new URL(targetUrl).hostname;
                 metadata.brand = domain.replace(/^www\./, '').split('.')[0];

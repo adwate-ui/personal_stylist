@@ -119,15 +119,31 @@ export default function AddItemPage() {
 
             // Check if we got an image URL
             if (!data.imageBase64 && !data.image && !data.imageUrl) {
-                console.error('[Add Item] No image found in response:', data);
-                clearInterval(interval);
-                setLoading(false);
-                toast.error("Couldn't load product image", {
-                    description: "This site may block automated access. Try uploading a screenshot instead.",
-                    duration: 6000
-                });
-                setActiveTab('upload');
-                return;
+                console.warn('[Add Item] No image found in direct scrape, attempting fallback search...');
+
+                // FALLBACK: Try searching for the URL itself using our search worker
+                // This often finds the product image via Google Images even if the site blocks scraping
+                try {
+                    const fallbackData = await getFirstSearchResultUrl('', url, ''); // Use URL as "item name" query
+
+                    if (fallbackData.imageUrl) {
+                        console.log('[Add Item] ✅ Fallback search found image:', fallbackData.imageUrl);
+                        data.imageUrl = fallbackData.imageUrl; // Use the found image
+                        // Continue execution...
+                    } else {
+                        throw new Error('Fallback search failed');
+                    }
+                } catch (fallbackError) {
+                    console.error('[Add Item] Fallback failed:', fallbackError);
+                    clearInterval(interval);
+                    setLoading(false);
+                    toast.error("Couldn't load product image", {
+                        description: "This site has strict security blocks. Please upload a screenshot instead.",
+                        duration: 6000
+                    });
+                    setActiveTab('upload');
+                    return;
+                }
             }
 
             // Convert to blob for Gemini analysis

@@ -157,7 +157,7 @@ export default function StyleDNAPage() {
 
     return (
         <div className="min-h-screen bg-background p-6 lg:p-12 overflow-y-auto pb-20">
-            <div className="w-full mx-auto space-y-8 animate-fade-in">
+            <div className="w-full max-w-[1600px] mx-auto space-y-8 animate-fade-in">
                 {/* Header Section - Full Width */}
                 <div className="text-center space-y-4 pt-10">
                     <Sparkles size={48} className="text-primary mx-auto animate-pulse" />
@@ -467,13 +467,19 @@ export default function StyleDNAPage() {
                                                     {!isCollapsed && Object.entries(productTypes).map(([type, items]: [string, any]) => {
                                                         if (!Array.isArray(items)) return null;
 
+                                                        // valid types to show as headers (skip 'Essentials' or numeric indices)
+                                                        const showHeader = type !== 'Essentials' && isNaN(parseInt(type));
+
                                                         return (
                                                             <div key={type} className="mb-6 last:mb-0">
-                                                                <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                                                                    {type.replace(/_/g, ' ')}
-                                                                </h5>
+                                                                {showHeader && (
+                                                                    <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
+                                                                        {type.replace(/_/g, ' ')}
+                                                                    </h5>
+                                                                )}
 
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                {/* Use single column on lg screens to avoid squashed cards, 2 cols on mobile/tablet/xl */}
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                                                                     {items.map((item: any, i: number) => {
                                                                         const key = `${item.brand || ''}-${item.item}`;
                                                                         const data = productData.get(key);
