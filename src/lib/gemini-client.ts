@@ -279,7 +279,8 @@ export async function generateOutfit(
     occasion: string,
     timing: string,
     userLocation?: string,
-    apiKey?: string
+    apiKey?: string,
+    preSelectedIds?: string[]
 ): Promise<{
     top?: any;
     bottom?: any;
@@ -298,6 +299,10 @@ export async function generateOutfit(
     ${wardrobeItems.map(item => `- ID: ${item.id}, Name: ${item.name || item.sub_category || item.category}, Category: ${item.category}, Color: ${item.primary_color || 'Unknown'}, Style: ${item.style_tags?.join(', ') || 'N/A'}`).join('\n')}
     `;
 
+    const instructions = preSelectedIds && preSelectedIds.length > 0
+        ? `CRITICAL INSTRUCTION: You MUST include the following Item IDs in your outfit selection: ${preSelectedIds.join(', ')}. Build the rest of the outfit around these items.`
+        : '';
+
     const prompt = `
     Act as a professional personal stylist. Create a complete "Outfit of the Day" for the user based on their wardrobe.
     
@@ -312,6 +317,7 @@ export async function generateOutfit(
     2. Ensure colors and styles match.
     3. Respect the occasion (e.g., don't pick sweatpants for a formal dinner).
     4. You MUST use the exact ID provided in the list.
+    5. ${instructions}
     
     Return verified JSON only:
     {
