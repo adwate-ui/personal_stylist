@@ -29,11 +29,7 @@ export interface StyleDNA {
       }>;
     };
   };
-  brand_recommendations: Array<{
-    name: string;
-    tier: string;
-    why: string;
-  }>;
+
   styling_wisdom: string[];
   style_pillars?: string[];
   generated_by_model?: string; // Track which model generated this DNA
@@ -159,13 +155,7 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
       "everyday": [...]
     }
   },
-  "brand_recommendations": [
-    {
-      "name": "Brand Name (MUST be from ${priceInfo.tier} tier)",
-      "tier": "${priceInfo.tier}",
-      "why": "Why this brand aligns with their style and needs"
-    }
-  ],
+
   "styling_wisdom": [
     "Actionable styling tip 1",
     "Actionable styling tip 2",
@@ -178,7 +168,7 @@ IMPORTANT REQUIREMENTS:
 2. Color palette should be based on their skin tone (${profile.skinTone}) and complement their hair (${profile.hairColor}) and eyes (${profile.eyeColor})
 3. Must-have staples should include 10-15 items total across all categories
 4. Each staple must specify a brand strictly from the ${priceInfo.tier} tier. Use client's Admired Brands only if they match this tier.
-5. Brand recommendations must strictly belong to the ${priceInfo.tier} tier. If client's Admired Brands match this tier, prioritize them.
+
 6. Ensure recommended brands are generally accessible in ${profile.location}.
 7. Consider their body shape (${profile.bodyShape}) and fit preference (${profile.fitPreference}) in recommendations
 8. Styling wisdom should be specific to their lifestyle needs
@@ -377,9 +367,7 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         }
       }
 
-      if (parsed.brand_recommendations) {
-        parsed.brand_recommendations = normalizeArray(parsed.brand_recommendations);
-      }
+
 
       // Store which model generated this DNA
       parsed.generated_by_model = modelName;

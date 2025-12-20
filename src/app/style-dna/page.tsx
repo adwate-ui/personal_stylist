@@ -531,25 +531,7 @@ export default function StyleDNAPage() {
 
                     {/* Column 3: Brand Recommendations + Styling Wisdom */}
                     <div className="space-y-8">
-                        {/* Brand Recommendations */}
-                        {styleDNA.brand_recommendations && Array.isArray(styleDNA.brand_recommendations) && styleDNA.brand_recommendations.length > 0 && (
-                            <div className="card glass p-8">
-                                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                    <Briefcase className="text-primary" /> Recommended Brands
-                                </h3>
-                                <div className="space-y-4">
-                                    {styleDNA.brand_recommendations.map((brand: { name: string; tier: string; why?: string }, i: number) => (
-                                        <div key={i} className="bg-white/5 p-4 rounded-lg border border-white/10 hover:border-primary/30 transition-all">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="font-bold">{brand.name}</div>
-                                                <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full">{brand.tier}</span>
-                                            </div>
-                                            {brand.why && <p className="text-sm text-gray-400">{brand.why}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+
 
                         {/* Styling Wisdom */}
                         {styleDNA.styling_wisdom && Array.isArray(styleDNA.styling_wisdom) && styleDNA.styling_wisdom.length > 0 && (
