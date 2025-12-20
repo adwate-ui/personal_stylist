@@ -20,7 +20,7 @@ export default {
         try {
             const url = new URL(request.url);
 
-            // NEW: Product search endpoint - searches Google and returns first result + image
+            // NEW: Product search endpoint - searches Google Shopping using Serper API
             if (url.pathname === '/search-product') {
                 if (request.method !== 'POST') {
                     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -35,7 +35,7 @@ export default {
                     );
                 }
 
-                const searchResult = await searchGoogleForProduct(query);
+                const searchResult = await searchGoogleForProduct(query, env);
 
                 return new Response(
                     JSON.stringify(searchResult),
@@ -153,75 +153,113 @@ export default {
 };
 
 /**
- * Search Google for a product and return the first result URL + image
+ * Search Google Shopping using Serper API and return the first result URL + image
+ * Serper API provides clean JSON results without HTML scraping
  */
-async function searchGoogleForProduct(query) {
+async function searchGoogleForProduct(query, env) {
     try {
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`;
+        // Remove duplicate color mentions from query
+        // e.g., "Zara white shirt white" -> "Zara white shirt"
+        const words = query.toLowerCase().split(' ');
+        const uniqueWords = [];
+        const seenWords = new Set();
 
-        const response = await fetch(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
+        for (const word of words) {
+            if (!seenWords.has(word)) {
+                uniqueWords.push(word);
+                seenWords.add(word);
             }
+        }
+        const cleanQuery = uniqueWords.join(' ');
+
+        console.log(`[Worker] Searching Serper for: "${cleanQuery}" (original: "${query}")`);
+
+        // Get API key from environment
+        const apiKey = env.SERPER_API_KEY;
+        if (!apiKey) {
+            console.error('[Worker] SERPER_API_KEY not configured!');
+            throw new Error('Serper API key not configured');
+        }
+
+        // Call Serper regular Google Search API (not shopping mode)
+        // Regular search with shopping query often provides better direct links
+        const response = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                q: `${cleanQuery} buy online`, // Add "buy online" to get shopping results
+                gl: 'in',          // India location
+                hl: 'en',          // English language
+                num: 10            // Get top 10 results
+            })
         });
 
         if (!response.ok) {
-            throw new Error(`Google search failed: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`[Worker] Serper API error: ${response.status}`, errorText);
+            throw new Error(`Serper API failed: ${response.status}`);
         }
 
-        const html = await response.text();
+        const data = await response.json();
 
-        // Extract first shopping result URL
-        // Google Shopping results are in <a> tags with specific patterns
-        const urlPatterns = [
-            // Shopping result pattern
-            /<a[^>]+href="(\/url\?q=([^&"]+)[^"]*)"[^>]*>/gi,
-            // Direct link pattern
-            /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>/gi
-        ];
+        // Regular search returns 'organic' results instead of 'shopping'
+        const results = data.organic || [];
+        console.log(`[Worker] Serper returned ${results.length} search results`);
 
-        let productUrl = null;
+        // DEBUG: Log full first result to understand structure
+        if (results.length > 0) {
+            console.log('[Worker] First result structure:', JSON.stringify(results[0], null, 2));
+        }
 
-        for (const pattern of urlPatterns) {
-            const matches = html.matchAll(pattern);
-            for (const match of matches) {
-                let url = match[2] || match[1];
+        // Extract first result that looks like a product page
+        if (results.length > 0) {
+            // Filter for shopping/e-commerce URLs
+            const shoppingSites = [
+                'amazon', 'flipkart', 'myntra', 'ajio', 'nykaa', 'tatacliq', 'shoppers', 'westside',
+                'zara.com', 'hm.com', 'uniqlo.com', 'nike.com', 'adidas.co', 'mango.com'
+            ];
 
-                // Decode URL-encoded characters
-                url = decodeURIComponent(url);
+            let productResult = null;
+            for (const result of results) {
+                const url = result.link || '';
+                const isShoppingSite = shoppingSites.some(site => url.toLowerCase().includes(site));
+                const isProductPage = url.includes('/product') || url.includes('/p/') ||
+                    url.includes('/item') || url.includes('-p-') ||
+                    isShoppingSite; // Any shopping site URL is likely a product
 
-                // Skip Google's internal URLs
-                if (url.includes('google.com') || url.startsWith('/')) {
-                    continue;
-                }
-
-                // Check if it's a shopping site
-                const shoppingSites = ['amazon', 'flipkart', 'myntra', 'ajio', 'nykaa', 'tatacliq', 'shoppers', 'westside'];
-                if (shoppingSites.some(site => url.toLowerCase().includes(site))) {
-                    productUrl = url;
+                if (isProductPage && !url.includes('google.com')) {
+                    productResult = result;
+                    console.log(`[Worker] Found product URL: ${url}`);
                     break;
                 }
             }
-            if (productUrl) break;
+
+            if (productResult) {
+                return {
+                    url: productResult.link,
+                    imageUrl: productResult.image || null,
+                    title: productResult.title,
+                    price: productResult.price || null,
+                    source: productResult.source || new URL(productResult.link).hostname
+                };
+            }
         }
 
-        // If we found a product URL, try to extract its image
-        let imageUrl = null;
-        if (productUrl) {
-            imageUrl = await extractProductImage(productUrl);
-        }
-
+        // No results found
+        console.log('[Worker] No shopping results found in Serper response');
         return {
-            url: productUrl || `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`,
-            imageUrl: imageUrl
+            url: `https://www.google.com/search?q=${encodeURIComponent(cleanQuery)}&tbm=shop`,
+            imageUrl: null
         };
     } catch (error) {
-        console.error('Google search error:', error);
+        console.error('[Worker] Serper search error:', error);
         return {
             url: `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`,
-            imageUrl: null
+            imageUrl: null,
+            error: error.message
         };
     }
 }
