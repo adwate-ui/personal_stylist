@@ -227,7 +227,7 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         result = await model.generateContent(prompt);
       }
 
-      const text = result.response.text();
+      const text = await result.response.text();
       const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
       const parsed = JSON.parse(cleanJson);

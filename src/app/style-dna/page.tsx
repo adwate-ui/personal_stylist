@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { getBrandSearchUrl, getProductImagePlaceholder, getFirstSearchResultUrl } from "@/lib/product-links";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // Helper function to convert hex to approximate color name
 function hexToColorName(hex: string): string {
@@ -14,31 +16,58 @@ function hexToColorName(hex: string): string {
         '#FFFF00': 'Yellow', '#FF00FF': 'Magenta', '#00FFFF': 'Cyan',
         '#FFA500': 'Orange', '#800080': 'Purple', '#FFC0CB': 'Pink',
         '#A52A2A': 'Brown', '#FFD700': 'Gold', '#C0C0C0': 'Silver',
-        '#8B4513': 'SaddleBrown', '#2E8B57': 'SeaGreen', '#4B0082': 'Indigo',
+        '#8B4513': 'Saddle Brown', '#2E8B57': 'Sea Green', '#4B0082': 'Indigo',
         '#FF6347': 'Tomato', '#40E0D0': 'Turquoise', '#EE82EE': 'Violet',
-        '#F0E68C': 'Khaki', '#E6E6FA': 'Lavender', '#FAEBD7': 'AntiqueWhite',
-        '#F5F5DC': 'Beige', '#DEB887': 'BurlyWood', '#5F9EA0': 'CadetBlue',
+        '#F0E68C': 'Khaki', '#E6E6FA': 'Lavender', '#FAEBD7': 'Antique White',
+        '#F5F5DC': 'Beige', '#DEB887': 'Burlywood', '#5F9EA0': 'Cadet Blue',
         '#7FFF00': 'Chartreuse', '#D2691E': 'Chocolate', '#FF7F50': 'Coral',
-        '#6495ED': 'CornflowerBlue', '#DC143C': 'Crimson', '#00008B': 'DarkBlue',
-        '#008B8B': 'DarkCyan', '#B8860B': 'DarkGoldenrod', '#A9A9A9': 'DarkGray',
-        '#006400': 'DarkGreen', '#BDB76B': 'DarkKhaki', '#8B008B': 'DarkMagenta',
-        '#556B2F': 'DarkOliveGreen', '#FF8C00': 'DarkOrange', '#9932CC': 'DarkOrchid'
+        '#6495ED': 'Cornflower Blue', '#DC143C': 'Crimson', '#00008B': 'Dark Blue',
+        '#008B8B': 'Dark Cyan', '#B8860B': 'Dark Goldenrod', '#A9A9A9': 'Dark Gray',
+        '#006400': 'Dark Green', '#BDB76B': 'Dark Khaki', '#8B008B': 'Dark Magenta',
+        '#556B2F': 'Dark Olive Green', '#FF8C00': 'Dark Orange', '#9932CC': 'Dark Orchid'
     };
 
     const upperHex = hex.toUpperCase();
     if (colorMap[upperHex]) return colorMap[upperHex];
 
-    // Simple approximation based on RGB values
+    // Enhanced approximation based on RGB values
     if (hex.startsWith('#') && hex.length === 7) {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
 
-        if (r < 50 && g < 50 && b < 50) return 'Dark';
-        if (r > 200 && g > 200 && b > 200) return 'Light';
-        if (r > g && r > b) return 'Reddish';
-        if (g > r && g > b) return 'Greenish';
-        if (b > r && b > g) return 'Bluish';
+        // Determine brightness
+        const brightness = (r + g + b) / 3;
+        const isDark = brightness < 85;
+        const isLight = brightness > 170;
+
+        // Determine dominant color
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const saturation = max === 0 ? 0 : (max - min) / max;
+
+        // Low saturation = grayscale
+        if (saturation < 0.1) {
+            if (isDark) return 'Charcoal';
+            if (isLight) return 'Light Gray';
+            return 'Gray';
+        }
+
+        // Determine hue-based color with brightness modifier
+        const prefix = isDark ? 'Dark ' : isLight ? 'Light ' : '';
+
+        if (r > g && r > b) {
+            if (g > b) return prefix + 'Orange';
+            return prefix + 'Red';
+        }
+        if (g > r && g > b) {
+            if (b > r) return prefix + 'Teal';
+            return prefix + 'Green';
+        }
+        if (b > r && b > g) {
+            if (r > g) return prefix + 'Purple';
+            return prefix + 'Blue';
+        }
     }
 
     return hex; // Fallback to hex
@@ -166,28 +195,31 @@ export default function StyleDNAPage() {
                                 if (!confirm('This will clear your Style DNA and restart onboarding. Continue?')) return;
 
                                 try {
-                                    // Clear Style DNA from profile
-                                    const response = await fetch('/api/profile', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ styleDNA: null })
-                                    });
-
-                                    if (response.ok) {
-                                        // Navigate to onboarding
-                                        router.push('/onboarding');
-                                    } else {
-                                        alert('Failed to reset. Please try again.');
+                                    // Direct Supabase update (for static export compatibility)
+                                    const { data: { user } } = await supabase.auth.getUser();
+                                    if (!user) {
+                                        toast.error('Please sign in to continue');
+                                        return;
                                     }
+
+                                    const { error } = await supabase
+                                        .from('profiles')
+                                        .update({ style_dna: null })
+                                        .eq('id', user.id);
+
+                                    if (error) throw error;
+
+                                    toast.success('Style DNA cleared');
+                                    router.push('/onboarding');
                                 } catch (error) {
                                     console.error('Failed to reset onboarding:', error);
-                                    alert('Failed to reset. Please try again.');
+                                    toast.error('Failed to reset. Please try again.');
                                 }
                             }}
-                            className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full transition-colors inline-flex items-center gap-1.5"
-                            title="Clear all data and start onboarding from scratch"
+                            className="text-xs px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-full transition-colors inline-flex items-center gap-1.5"
+                            title="Clear Style DNA and restart from scratch"
                         >
-                            Redo Onboarding →
+                            Redo Onboarding ⟳
                         </button>
                     </div>
                 </div>
@@ -530,6 +562,6 @@ export default function StyleDNAPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
