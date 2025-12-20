@@ -395,7 +395,7 @@ function OnboardingContent() {
 
             setAvatarPreview(avatarUrl);
             setFormData(prev => {
-                const updated = { ...prev, avatar_url: avatarUrl };
+                const updated = { ...prev, avatar_url: avatarUrl.trim() };
                 console.log('💾 Updated formData:', updated.avatar_url);
                 return updated;
             });

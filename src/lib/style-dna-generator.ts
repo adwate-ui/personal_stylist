@@ -203,10 +203,15 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
       const model = genAI.getGenerativeModel({ model: modelName });
 
       let result;
-      if (profile.avatar_url) {
+      const avatarUrl = profile.avatar_url?.trim();
+
+      if (avatarUrl) {
         // Include photo in analysis
         try {
-          const imageResponse = await fetch(profile.avatar_url);
+          const imageResponse = await fetch(avatarUrl);
+          if (!imageResponse.ok) {
+            throw new Error(`Avatar fetch failed: ${imageResponse.status}`);
+          }
           const imageBuffer = await imageResponse.arrayBuffer();
           const base64Image = Buffer.from(imageBuffer).toString('base64');
 
@@ -220,7 +225,7 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
             }
           ]);
         } catch (imgError) {
-          console.warn('Could not load photo, continuing without it:', imgError);
+          console.warn(`Could not load avatar from ${avatarUrl}:`, imgError);
           result = await model.generateContent(prompt);
         }
       } else {

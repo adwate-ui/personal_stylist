@@ -274,7 +274,7 @@ export default function StyleDNAPage() {
                                         </div>
                                     </div>
                                 )}
-                                {styleDNA.color_palette.accents && Array.isArray(styleDNA.color_palette.accents) && (
+                                {styleDNA.color_palette.accents && Array.isArray(styleDNA.color_palette.accents) && styleDNA.color_palette.accents.length > 0 && (
                                     <div>
                                         <label className="text-sm text-gray-400 block mb-3">Accent Colors</label>
                                         <div className="flex gap-3 flex-wrap">
