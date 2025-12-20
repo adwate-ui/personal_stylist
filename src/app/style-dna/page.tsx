@@ -234,7 +234,7 @@ export default function StyleDNAPage() {
                                                             style={{ backgroundColor: hexCode }}
                                                             title={`${colorName} (${hexCode})`}
                                                         />
-                                                        <span className="text-xs text-gray-300 font-medium">{colorName}</span>
+                                                        <span className="text-xs text-gray-300 font-medium text-center max-w-20 break-words">{colorName}</span>
                                                         <span className="text-[10px] text-gray-500 font-mono">{hexCode}</span>
                                                     </div>
                                                 );
@@ -256,7 +256,7 @@ export default function StyleDNAPage() {
                                                             style={{ backgroundColor: hexCode }}
                                                             title={`${colorName} (${hexCode})`}
                                                         />
-                                                        <span className="text-xs text-gray-300 font-medium">{colorName}</span>
+                                                        <span className="text-xs text-gray-300 font-medium text-center max-w-20 break-words">{colorName}</span>
                                                         <span className="text-[10px] text-gray-500 font-mono">{hexCode}</span>
                                                     </div>
                                                 );

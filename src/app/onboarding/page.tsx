@@ -502,7 +502,7 @@ function OnboardingContent() {
                                         {Object.entries(types as Record<string, Array<{ item: string; brand: string; why: string; product_url: string }>>).map(([type, items]) => (
                                             <div key={type} className="mb-4">
                                                 <h5 className="text-xs text-gray-500 uppercase tracking-wider mb-2">{type.replace(/_/g, ' ')}</h5>
-                                                <div className="grid grid-cols-1 gap-2">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                                     {items.map((item: { item: string; brand: string; why: string; product_url: string }, i: number) => (
                                                         <div key={i} className="flex gap-3 items-start bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors">
                                                             <Check size={18} className="text-primary mt-1 shrink-0" />
@@ -598,15 +598,15 @@ function OnboardingContent() {
                                 <h1 className="text-4xl font-serif font-bold">Introduction</h1>
                                 <p className="text-gray-400">Let&apos;s start with the essentials to address you properly and understand your environment.</p>
 
-                                <div className="space-y-4 pt-4">
-                                    <div>
-                                        <label>Full Name</label>
-                                        <input type="text" placeholder="Your Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        <label className="block text-sm font-medium">Full Name</label>
+                                        <input type="text" placeholder="Your Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full" />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label>Gender Identity</label>
-                                            <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium">Gender Identity</label>
+                                            <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="w-full">
                                                 <option value="">Select...</option>
                                                 <option value="female">Female</option>
                                                 <option value="male">Male</option>
@@ -633,7 +633,7 @@ function OnboardingContent() {
                                                         setShowCitySuggestions(true);
                                                     }
                                                 }}
-                                                className={`w - full px - 4 py - 3 bg - white / 5 border rounded - lg focus: outline - none focus: ring - 2 focus: ring - primary transition - all ${cityError ? 'border-red-500 focus:ring-red-500' : 'border-white/10'} `}
+                                                className={`w-full px-4 py-3 bg-white/5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all ${cityError ? 'border-red-500 focus:ring-red-500' : 'border-white/10'} `}
                                                 autoComplete="off"
                                             />
 
@@ -664,13 +664,14 @@ function OnboardingContent() {
                                             )}
                                         </div>
                                     </div>
-                                    <div>
-                                        <label>Age</label>
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium">Age</label>
                                         <input
                                             type="number"
                                             placeholder="25"
                                             value={formData.age}
                                             onChange={e => setFormData({ ...formData, age: e.target.value })}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all appearance-none"
                                         />
                                     </div>
                                 </div>
@@ -711,19 +712,19 @@ function OnboardingContent() {
                                 <h1 className="text-4xl font-serif font-bold">Body & Fit</h1>
                                 <p className="text-gray-400">Help us find clothes that flatter your unique geometry.</p>
 
-                                <div className="grid grid-cols-2 gap-6 pt-4">
-                                    <div>
-                                        <label>Height (cm)</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium">Height (cm)</label>
                                         <input
                                             type="number"
                                             placeholder="175"
                                             value={formData.height}
                                             onChange={e => setFormData({ ...formData, height: e.target.value })}
-                                            className="appearance-none" // Remove spinner
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all appearance-none" // Remove spinner
                                         />
                                     </div>
-                                    <div>
-                                        <label>Weight (kg)</label>
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium">Weight (kg)</label>
                                         <input
                                             type="number"
                                             placeholder="70"
@@ -836,7 +837,7 @@ function OnboardingContent() {
                                         {/* Step 1: Base Skin Tone */}
                                         <div className="space-y-2">
                                             <p className="text-sm text-gray-400">1. Select your base skin tone:</p>
-                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                                                 {[
                                                     { id: 'very_fair', label: 'Very Fair', color: '#fef5e7' },
                                                     { id: 'fair', label: 'Fair', color: '#f8e1d0' },
@@ -949,9 +950,9 @@ function OnboardingContent() {
                                                 ))}
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-base font-semibold mb-3">Eye Color</label>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div className="space-y-6">
+                                            <label className="block text-lg font-bold">Style Archetypes (Select 1-3)</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                                 {[
                                                     { name: 'Brown', color: '#5C4033' },
                                                     { name: 'Hazel', color: '#8E7618' },
