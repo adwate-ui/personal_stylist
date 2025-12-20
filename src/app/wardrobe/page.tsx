@@ -38,7 +38,11 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
     'Coats': ['coat', 'overcoat', 'trench'],
     'Shoes': ['shoe', 'sneaker', 'boot', 'loafer', 'oxford', 'heel', 'flat', 'sandal'],
     'Bags': ['bag', 'handbag', 'tote', 'clutch', 'purse', 'backpack', 'wallet', 'luggage'],
-    'Accessories': ['accessory', 'pocket square', 'scarf', 'hat', 'cap', 'glove', 'sunglasses', 'jewelry', 'necklace', 'ring', 'bracelet'],
+    'Sunglasses': ['sunglasses', 'shades', 'aviator', 'wayfarer'],
+    'Jewelry': ['jewelry', 'necklace', 'ring', 'bracelet', 'earring', 'cufflink'],
+    'Headwear': ['hat', 'cap', 'beanie', 'fedora', 'beret'],
+    'Scarves': ['scarf', 'shawl', 'pocket square'],
+    'Gloves': ['glove', 'mittens'],
     'Ties': ['tie', 'bow tie', 'necktie'],
     'Belts': ['belt'],
     'Watches': ['watch', 'timepiece'],
@@ -54,9 +58,10 @@ const getMasterCategory = (itemCategory: string, itemSubCategory?: string) => {
 
     // Check specific lists first - order matters for specificity
     const orderedGroups = [
-        'Watches', 'Socks', 'Ties', 'Belts', 'Suits', 'Jeans',
+        'Watches', 'Socks', 'Ties', 'Belts', 'Sunglasses', 'Jewelry',
+        'Headwear', 'Scarves', 'Gloves', 'Suits', 'Jeans',
         'Trousers', 'Shirts', 'Dresses', 'Skirts', 'Coats',
-        'Jackets', 'Shoes', 'Bags', 'Accessories', 'Activewear'
+        'Jackets', 'Shoes', 'Bags', 'Activewear'
     ];
 
     for (const group of orderedGroups) {
@@ -383,7 +388,11 @@ export default function WardrobePage() {
                                             'Shoes': ['Trousers', 'Jeans', 'Suits', 'Shorts', 'Skirts', 'Dresses', 'Activewear'],
                                             'Ties': ['Shirts', 'Suits', 'Jackets'],
                                             'Belts': ['Trousers', 'Jeans', 'Suits', 'Shorts'],
-                                            'Accessories': ['Shirts', 'Suits', 'Dresses', 'Jackets'],
+                                            'Sunglasses': ['Shirts', 'Suits', 'Dresses', 'Jackets', 'Activewear'],
+                                            'Jewelry': ['Shirts', 'Suits', 'Dresses', 'Jackets'],
+                                            'Headwear': ['Shirts', 'Jackets', 'Activewear', 'Coats'],
+                                            'Scarves': ['Jackets', 'Coats', 'Suits', 'Shirts'],
+                                            'Gloves': ['Jackets', 'Coats', 'Suits'],
                                             'Activewear': ['Shoes', 'Shirts'],
                                             'Other': ['Trousers', 'Jeans', 'Shirts']
                                         };
@@ -702,4 +711,16 @@ export default function WardrobePage() {
             )}
         </div>
     );
+}
+
+export async function fetchAllWardrobeItems(userId: string) {
+    const { data, error } = await supabase
+        .from('wardrobe_items')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+    if (error) throw new Error(error.message);
+    return data || [];
 }

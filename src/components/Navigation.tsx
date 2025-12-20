@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shirt, PlusCircle, Settings, LogOut, Sparkles, Dna, ChevronLeft, ChevronRight } from "lucide-react";
+import { Shirt, PlusCircle, Settings, LogOut, Sparkles, Dna, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,8 @@ export default function Navigation() {
         { name: "Wardrobe", href: "/wardrobe", icon: Shirt },
         { name: "Add Item", href: "/add-item", icon: PlusCircle },
         { name: "Style DNA", href: "/style-dna", icon: Dna },
-        { name: "Outfit of the Day", href: "/outfit-of-the-day", icon: Sparkles },
+        { name: "Daily Outfit", href: "/outfit-of-the-day", icon: Sparkles },
+        { name: "Weekly Picks", href: "/recommendations", icon: ShoppingBag },
     ];
 
     const handleSignOut = async () => {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { generateOutfit } from "@/lib/gemini-client";
-import { Loader2, Sparkles, Calendar, Clock, RotateCcw, Save, X, PlusCircle, Check } from "lucide-react";
+import { Loader2, Sparkles, Calendar, Clock, RotateCcw, Save, X, PlusCircle, Check, History, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -19,6 +19,10 @@ export default function OutfitOfTheDay() {
     const [outfit, setOutfit] = useState<any>(null);
     const [saving, setSaving] = useState(false);
 
+    // History
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+
     // Feature: Build Around Items
     const [selectedForBuild, setSelectedForBuild] = useState<string[]>([]);
     const [isBuildModalOpen, setIsBuildModalOpen] = useState(false);
@@ -28,18 +32,30 @@ export default function OutfitOfTheDay() {
     const [swapOptions, setSwapOptions] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchWardrobe = async () => {
+        const fetchData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data } = await supabase
+            // Fetch Wardrobe
+            const { data: wardrobe } = await supabase
                 .from('wardrobe_items')
                 .select('*')
                 .eq('user_id', user.id);
 
-            if (data) setWardrobeItems(data);
+            if (wardrobe) setWardrobeItems(wardrobe);
+
+            // Fetch History
+            const { data: savedOutfits } = await supabase
+                .from('outfits')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (savedOutfits) setHistory(savedOutfits);
+            setLoadingHistory(false);
         };
-        fetchWardrobe();
+        fetchData();
     }, []);
 
     const toggleBuildSelection = (id: string) => {
@@ -93,7 +109,7 @@ export default function OutfitOfTheDay() {
 
         if (!user || !outfit) return;
 
-        const { error } = await supabase
+        const { error, data } = await supabase
             .from('outfits')
             .insert({
                 user_id: user.id,
@@ -101,14 +117,21 @@ export default function OutfitOfTheDay() {
                 date: new Date().toISOString().split('T')[0],
                 outfit_data: outfit,
                 feedback: null
-            });
+            })
+            .select() // Return the saved row to update UI
+            .single();
 
         setSaving(false);
         if (error) {
             toast.error("Failed to save outfit");
         } else {
             toast.success("Outfit saved to history!");
-            router.push('/wardrobe');
+            // Add to history list immediately
+            if (data) setHistory(prev => [data, ...prev]);
+            setStep('input');
+            setOccasion("");
+            setOutfit(null);
+            setSelectedForBuild([]);
         }
     };
 
@@ -116,9 +139,12 @@ export default function OutfitOfTheDay() {
         const targetCategory = currentItem?.category || slotLabel;
         const options = wardrobeItems.filter(item =>
             item.id !== currentItem?.id && (
-                item.category === targetCategory ||
-                item.sub_category === currentItem?.sub_category ||
-                (slotLabel.includes('Accessory') && item.category === 'Accessories')
+                item.category === targetCategory || // Match exact category
+                item.sub_category === currentItem?.sub_category || // Match exact sub-category
+                (slotLabel === 'Layering' && ['Jackets', 'Coats', 'Suits'].includes(item.category)) || // Smart fallback for layering
+                (slotLabel.includes('Accessory') && item.category === 'Accessories') ||
+                (slotLabel === 'Watch' && (item.category === 'Watches' || item.category === 'Accessories')) ||
+                (slotLabel === 'Wallet' && (item.category === 'Bags' || item.category === 'Accessories'))
             )
         );
         setSwapOptions(options);
@@ -134,6 +160,14 @@ export default function OutfitOfTheDay() {
         else if (swappingSlot === 'Shoes') newOutfit.shoes = newItem;
         else if (swappingSlot === 'Layering') newOutfit.layering = newItem;
         else if (swappingSlot === 'Bag') newOutfit.bag = newItem;
+        else if (swappingSlot === 'Watch') newOutfit.watch = newItem;
+        else if (swappingSlot === 'Wallet') newOutfit.wallet = newItem;
+        else if (swappingSlot === 'Headwear') newOutfit.headwear = newItem;
+        else if (swappingSlot === 'Belt') newOutfit.belt = newItem;
+        else if (swappingSlot === 'Scarf') newOutfit.scarf = newItem;
+        else if (swappingSlot === 'Gloves') newOutfit.gloves = newItem;
+        else if (swappingSlot === 'Sunglasses') newOutfit.sunglasses = newItem;
+        else if (swappingSlot === 'Jewelry') newOutfit.jewelry = newItem;
         else if (swappingSlot.startsWith('Accessory')) {
             const index = parseInt(swappingSlot.split(' ')[1]) - 1;
             if (newOutfit.accessories && newOutfit.accessories[index]) {
@@ -152,44 +186,47 @@ export default function OutfitOfTheDay() {
     if (profileLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-4 md:p-8 md:ml-64 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950">
-            <div className="max-w-4xl w-full mx-auto">
-                <header className="mb-8 text-center md:text-left">
-                    <h1 className="text-4xl font-serif font-bold text-white mb-2 flex items-center justify-center md:justify-start gap-3">
-                        <Sparkles className="text-primary" /> Outfit of the Day
+        <main className="min-h-screen p-4 md:p-8 md:ml-64 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950 flex flex-col items-center">
+            <div className="max-w-7xl w-full mx-auto flex flex-col items-center">
+
+                <header className="mb-12 text-center">
+                    <h1 className="text-5xl font-serif font-bold text-white mb-3 flex items-center justify-center gap-3">
+                        <Sparkles className="text-primary" size={40} /> Outfit of the Day
                     </h1>
-                    <p className="text-gray-400">AI-styled looks customized for you.</p>
+                    <p className="text-gray-400 text-lg">AI-styled looks customized for you.</p>
                 </header>
 
                 {step === 'input' && (
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-xl mx-auto animate-fade-in text-center shadow-2xl backdrop-blur-sm">
+                    <div className="w-full max-w-2xl bg-[#090909] border border-white/5 rounded-3xl p-8 md:p-12 animate-fade-in shadow-2xl backdrop-blur-sm relative overflow-hidden group">
+                        {/* Decorative background glow */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 group-hover:bg-primary/10 transition-colors duration-1000" />
 
                         {/* Occasion Input */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-400 mb-2 text-left">Occasion</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-4 top-3.5 text-gray-500" size={20} />
+                        <div className="mb-8">
+                            <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 text-center">Where are you going?</label>
+                            <div className="relative max-w-md mx-auto">
+                                <Calendar className="absolute left-4 top-4 text-gray-500" size={20} />
                                 <input
                                     type="text"
                                     placeholder="e.g., Casual Office, Dinner Date..."
                                     value={occasion}
                                     onChange={(e) => setOccasion(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:border-primary focus:ring-1 outline-none transition-all placeholder:text-gray-600"
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-lg focus:border-primary focus:ring-1 outline-none transition-all placeholder:text-gray-600 text-center"
                                 />
                             </div>
                         </div>
 
                         {/* Timing Input */}
-                        <div className="mb-8">
-                            <label className="block text-sm font-medium text-gray-400 mb-2 text-left">Timing</label>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="mb-10 text-center">
+                            <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">When is it?</label>
+                            <div className="inline-flex bg-black/40 p-1 rounded-2xl border border-white/5">
                                 {['Daytime', 'Evening'].map((t) => (
                                     <button
                                         key={t}
                                         onClick={() => setTiming(t)}
-                                        className={`py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${timing === t
-                                                ? 'bg-primary text-black border-primary font-bold'
-                                                : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
+                                        className={`py-3 px-8 rounded-xl transition-all flex items-center gap-2 font-medium ${timing === t
+                                            ? 'bg-primary text-black shadow-lg shadow-primary/20 scale-100'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         <Clock size={16} />
@@ -200,33 +237,38 @@ export default function OutfitOfTheDay() {
                         </div>
 
                         {/* Feature: Build Around Items */}
-                        <div className="mb-8">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="text-sm font-medium text-gray-400">Anchor Items (Optional)</label>
-                                <button onClick={() => setIsBuildModalOpen(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
-                                    <PlusCircle size={12} /> Select Items
-                                </button>
+                        <div className="mb-10 text-center">
+                            <div className="flex justify-center items-center gap-2 mb-4">
+                                <label className="text-sm font-bold text-gray-400 uppercase tracking-wider">Start with Specific Items</label>
                             </div>
 
                             {selectedForBuild.length > 0 ? (
-                                <div className="flex gap-2 flex-wrap justify-center">
+                                <div className="flex gap-3 flex-wrap justify-center">
                                     {selectedForBuild.map(id => {
                                         const item = wardrobeItems.find(i => i.id === id);
                                         return (
-                                            <div key={id} className="bg-primary/20 border border-primary/40 rounded-lg px-3 py-1 flex items-center gap-2 text-sm text-primary">
-                                                <img src={item?.image_url} className="w-6 h-6 rounded object-cover" alt="" />
-                                                <span className="truncate max-w-[100px]">{item?.name || item?.category}</span>
-                                                <button onClick={() => toggleBuildSelection(id)}><X size={14} /></button>
+                                            <div key={id} className="bg-surface border border-white/10 rounded-xl pl-2 pr-3 py-2 flex items-center gap-3 text-sm text-white shadow-lg animate-scale-in">
+                                                <img src={item?.image_url} className="w-10 h-10 rounded-lg object-cover bg-gray-800" alt="" />
+                                                <div className="text-left">
+                                                    <div className="font-bold text-xs truncate max-w-[100px]">{item?.name || item?.category}</div>
+                                                    <div className="text-[10px] text-gray-500">{item?.brand}</div>
+                                                </div>
+                                                <button onClick={() => toggleBuildSelection(id)} className="text-gray-400 hover:text-red-400 ml-1"><X size={16} /></button>
                                             </div>
                                         );
                                     })}
+                                    {selectedForBuild.length < 2 && (
+                                        <button onClick={() => setIsBuildModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-white/20 flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary transition-colors">
+                                            <PlusCircle size={24} />
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <button
                                     onClick={() => setIsBuildModalOpen(true)}
-                                    className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-500 hover:text-white hover:border-white/40 transition-colors text-sm"
+                                    className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center gap-2 mx-auto border border-primary/20 px-4 py-2 rounded-full hover:bg-primary/10"
                                 >
-                                    + Select items to build outfit around
+                                    <PlusCircle size={16} /> Build around Wardrobe Item
                                 </button>
                             )}
                         </div>
@@ -234,134 +276,193 @@ export default function OutfitOfTheDay() {
                         <button
                             onClick={handleGenerate}
                             disabled={!occasion}
-                            className="w-full bg-gradient-to-r from-primary to-amber-200 text-black font-bold py-4 rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                            className="w-full bg-gradient-to-r from-primary to-amber-200 text-black font-bold py-5 rounded-2xl text-xl hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-xl shadow-primary/20"
                         >
-                            <Sparkles size={20} /> Generate Outfit
+                            <Sparkles size={24} /> Generate Outfit
                         </button>
                     </div>
                 )}
 
                 {step === 'generating' && (
-                    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+                    <div className="flex flex-col items-center justify-center py-32 animate-fade-in w-full max-w-2xl bg-[#090909] border border-white/5 rounded-3xl">
                         <div className="relative mb-8">
                             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
-                            <Sparkles size={64} className="text-primary relative z-10 animate-bounce" />
+                            <Sparkles size={80} className="text-primary relative z-10 animate-bounce" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Styling your look...</h2>
-                        <p className="text-gray-400">Analyzing {wardrobeItems.length} items for "{occasion}"</p>
+                        <h2 className="text-3xl font-serif font-bold text-white mb-2">Styling your look...</h2>
+                        <p className="text-gray-400 text-lg">Applying world-class styling rules...</p>
                     </div>
                 )}
 
                 {step === 'result' && outfit && (
-                    <div className="w-full animate-fade-in">
+                    <div className="w-full animate-fade-in max-w-6xl">
                         {/* Reasoning */}
-                        <div className="bg-gradient-to-br from-primary/10 to-transparent p-6 rounded-2xl border border-primary/20 mb-8 text-center md:text-left backdrop-blur-sm">
-                            <h3 className="text-primary font-bold mb-2 flex items-center justify-center md:justify-start gap-2"><Sparkles size={16} /> Stylist's Note</h3>
-                            <p className="text-white/90 italic leading-relaxed">"{outfit.reasoning}"</p>
+                        <div className="bg-gradient-to-r from-primary/10 via-transparent to-transparent p-6 mb-10 text-center border-l-4 border-primary/50">
+                            <h3 className="text-primary font-bold mb-2 flex items-center justify-center gap-2 uppercase tracking-wide text-xs"><Sparkles size={14} /> Stylist's Rationale</h3>
+                            <p className="text-white/90 text-xl font-serif italic leading-relaxed max-w-3xl mx-auto">"{outfit.reasoning}"</p>
                         </div>
 
                         {/* Outfit Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
                             {[
                                 { label: 'Top', item: outfit.top },
                                 { label: 'Bottom', item: outfit.bottom },
                                 { label: 'Shoes', item: outfit.shoes },
                                 { label: 'Layering', item: outfit.layering },
                                 { label: 'Bag', item: outfit.bag },
+                                { label: 'Watch', item: outfit.watch },
+                                { label: 'Wallet', item: outfit.wallet },
+                                { label: 'Headwear', item: outfit.headwear },
+                                { label: 'Belt', item: outfit.belt },
+                                { label: 'Sunglasses', item: outfit.sunglasses },
+                                { label: 'Jewelry', item: outfit.jewelry },
+                                { label: 'Scarf', item: outfit.scarf },
+                                { label: 'Gloves', item: outfit.gloves },
                                 ...(outfit.accessories || []).map((item: any, i: number) => ({ label: `Accessory ${i + 1}`, item }))
                             ].filter(x => x.item).map((slot, idx) => (
                                 <div
                                     key={idx}
                                     onClick={() => openSwapModal(slot.label, slot.item)}
-                                    className="bg-white/5 rounded-xl p-3 border border-white/10 flex flex-col items-center group relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all hover:scale-[1.02]"
+                                    className="group relative cursor-pointer"
                                 >
-                                    <div className="w-full aspect-[3/4] rounded-lg overflow-hidden bg-black/40 mb-3 relative">
+                                    <div className="aspect-[3/4] bg-surface rounded-2xl overflow-hidden mb-3 relative border border-white/5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                                         <img
                                             src={slot.item.image_url}
                                             alt={slot.item.name}
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                         />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            <span className="text-white font-medium flex items-center gap-1"><RotateCcw size={14} /> Swap</span>
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            <span className="text-white font-medium flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"><RotateCcw size={16} /> Swap</span>
+                                        </div>
+                                        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-[10px] text-gray-300 uppercase tracking-wider font-bold">
+                                            {slot.label}
                                         </div>
                                     </div>
-                                    <span className="text-xs text-primary font-bold uppercase tracking-wider mb-1">{slot.item.brand}</span>
-                                    <span className="text-sm font-medium text-center truncate w-full">{slot.item.name || slot.item.sub_category}</span>
-                                    <span className="text-xs text-gray-500 absolute top-2 right-2 bg-black/60 px-2 py-1 rounded backdrop-blur-sm">{slot.label}</span>
+                                    <div className="text-center px-2">
+                                        <div className="text-xs text-primary font-bold uppercase tracking-wider mb-1">{slot.item.brand}</div>
+                                        <div className="font-medium text-white truncate w-full">{slot.item.name || slot.item.sub_category}</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
                         {/* Tips */}
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mb-8">
-                            <h3 className="font-bold text-white mb-4">✨ Styling Tips</h3>
-                            <ul className="space-y-2">
+                        <div className="bg-[#090909] rounded-2xl p-8 border border-white/5 mb-10 max-w-4xl mx-auto">
+                            <h3 className="font-bold text-white mb-6 text-center uppercase tracking-widest text-sm">Styling Tips</h3>
+                            <div className="grid md:grid-cols-3 gap-6">
                                 {(outfit.style_tips || []).map((tip: string, i: number) => (
-                                    <li key={i} className="flex gap-3 text-sm text-gray-300">
-                                        <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0 text-xs font-bold">{i + 1}</span>
-                                        {tip}
-                                    </li>
+                                    <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 text-sm font-bold mb-3">{i + 1}</span>
+                                        <p className="text-sm text-gray-300 leading-relaxed">{tip}</p>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
 
                         {/* Actions */}
                         <div className="flex gap-4 justify-center">
                             <button
                                 onClick={() => setStep('input')}
-                                className="px-6 py-3 rounded-xl border border-white/20 text-white hover:bg-white/5 flex items-center gap-2 font-medium"
+                                className="px-8 py-4 rounded-xl border border-white/10 text-white hover:bg-white/5 flex items-center gap-2 font-bold transition-all hover:scale-105"
                             >
-                                <RotateCcw size={18} /> Try Another
+                                <RotateCcw size={20} /> Discard & Try Again
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="px-8 py-3 rounded-xl bg-primary text-black font-bold hover:opacity-90 flex items-center gap-2 shadow-lg shadow-primary/20"
+                                className="px-10 py-4 rounded-xl bg-primary text-black font-bold hover:brightness-110 flex items-center gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40"
                             >
-                                {saving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
-                                Confirm & Save Outfit
+                                {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+                                Confirm & Save to History
                             </button>
                         </div>
                     </div>
                 )}
+
+                {/* SAVED OUTFITS HISTORY */}
+                {step === 'input' && (
+                    <div className="mt-20 w-full max-w-7xl border-t border-white/10 pt-10">
+                        <div className="flex items-center gap-3 mb-8">
+                            <History className="text-primary" size={24} />
+                            <h2 className="text-2xl font-bold text-white">Recent Looks</h2>
+                        </div>
+
+                        {loadingHistory ? (
+                            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-gray-500" /></div>
+                        ) : history.length === 0 ? (
+                            <div className="text-gray-500 italic">No saved outfits yet. Create your first look above!</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {history.map((saved: any) => (
+                                    <div key={saved.id} className="bg-[#090909] border border-white/5 rounded-2xl overflow-hidden hover:border-primary/30 transition-all hover:-translate-y-1 group">
+                                        <div className="p-4 border-b border-white/5 flex justify-between items-start">
+                                            <div>
+                                                <div className="font-bold text-white">{saved.occasion}</div>
+                                                <div className="text-xs text-gray-500 mt-1">{new Date(saved.date).toLocaleDateString()}</div>
+                                            </div>
+                                            <div className="text-xs bg-white/5 px-2 py-1 rounded text-primary">{saved.outfit_data.reasoning?.substring(0, 30)}...</div>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-5 gap-1">
+                                            {[
+                                                saved.outfit_data.top,
+                                                saved.outfit_data.bottom,
+                                                saved.outfit_data.shoes,
+                                            ].filter(Boolean).map((item: any, i: number) => (
+                                                <div key={i} className="aspect-[3/4] bg-surface rounded overflow-hidden">
+                                                    <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                            <div className="aspect-[3/4] bg-surface rounded overflow-hidden flex items-center justify-center text-xs text-gray-500 bg-white/5">
+                                                +{Object.keys(saved.outfit_data).length - 5}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+
             </div>
 
             {/* Build Modal */}
             {isBuildModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in">
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="font-bold text-lg text-white">Select Items to Build Around</h3>
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setIsBuildModalOpen(false)}>
+                    <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#1a1a1a]">
+                            <h3 className="font-bold text-xl text-white">Select Anchor Items</h3>
                             <button onClick={() => setIsBuildModalOpen(false)} className="text-gray-400 hover:text-white p-2">
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 grid grid-cols-3 md:grid-cols-4 gap-4">
-                            {wardrobeItems.map((item) => {
-                                const isSelected = selectedForBuild.includes(item.id);
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => toggleBuildSelection(item.id)}
-                                        className={`relative rounded-xl overflow-hidden aspect-[3/4] border-2 group transition-all ${isSelected ? 'border-primary opacity-100' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                                    >
-                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                                        {isSelected && (
-                                            <div className="absolute top-2 right-2 bg-primary text-black p-1 rounded-full shadow-lg">
-                                                <Check size={14} strokeWidth={3} />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-white truncate text-center">
-                                            {item.name || item.sub_category}
-                                        </div>
-                                    </button>
-                                );
-                            })}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                                {wardrobeItems.map((item) => {
+                                    const isSelected = selectedForBuild.includes(item.id);
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => toggleBuildSelection(item.id)}
+                                            className={`relative rounded-xl overflow-hidden aspect-[3/4] border-2 group transition-all duration-200 ${isSelected ? 'border-primary ring-2 ring-primary/20 opacity-100 scale-95' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'}`}
+                                        >
+                                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                            {isSelected && (
+                                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px]">
+                                                    <div className="bg-primary text-black p-2 rounded-full shadow-lg">
+                                                        <Check size={20} strokeWidth={3} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div className="p-4 border-t border-white/10 flex justify-between items-center">
-                            <span className="text-sm text-gray-400">{selectedForBuild.length}/2 selected</span>
-                            <button onClick={() => setIsBuildModalOpen(false)} className="bg-primary text-black px-6 py-2 rounded-lg font-bold hover:opacity-90">
-                                Done
+                        <div className="p-6 border-t border-white/10 flex justify-between items-center bg-[#1a1a1a]">
+                            <span className="text-sm text-gray-400 font-medium">{selectedForBuild.length}/2 selected</span>
+                            <button onClick={() => setIsBuildModalOpen(false)} className="bg-primary text-black px-8 py-3 rounded-xl font-bold hover:brightness-110 shadow-lg shadow-primary/20">
+                                Confirm Selection
                             </button>
                         </div>
                     </div>
@@ -370,33 +471,40 @@ export default function OutfitOfTheDay() {
 
             {/* Swap Modal */}
             {swappingSlot && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl animate-fade-in">
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="font-bold text-lg text-white">Select {swappingSlot}</h3>
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSwappingSlot(null)}>
+                    <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#1a1a1a]">
+                            <h3 className="font-bold text-xl text-white">Select {swappingSlot}</h3>
                             <button onClick={() => setSwappingSlot(null)} className="text-gray-400 hover:text-white p-2">
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-4">
+                        <div className="flex-1 overflow-y-auto p-6">
                             {swapOptions.length === 0 ? (
-                                <div className="col-span-2 text-center text-gray-500 py-8">
-                                    No compatible items found in your wardrobe.
+                                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 space-y-4">
+                                    <Sparkles size={40} className="opacity-20" />
+                                    <p>No other compatible items found in your wardrobe.</p>
+                                    <button onClick={() => setSwappingSlot(null)} className="text-primary hover:underline">Close</button>
                                 </div>
                             ) : (
-                                swapOptions.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => confirmSwap(item)}
-                                        className="bg-black/40 rounded-xl p-3 border border-white/10 hover:border-primary text-left group transition-all"
-                                    >
-                                        <div className="aspect-[3/4] w-full rounded-lg overflow-hidden mb-2 bg-gray-800">
-                                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                        </div>
-                                        <p className="font-medium text-sm truncate text-white">{item.name || item.sub_category}</p>
-                                        <p className="text-xs text-gray-500">{item.brand}</p>
-                                    </button>
-                                ))
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    {swapOptions.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => confirmSwap(item)}
+                                            className="bg-[#090909] rounded-xl overflow-hidden border border-white/10 hover:border-primary text-left group transition-all hover:-translate-y-1 hover:shadow-xl"
+                                        >
+                                            <div className="aspect-[3/4] w-full bg-gray-800 relative">
+                                                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-primary/10 transition-colors" />
+                                            </div>
+                                            <div className="p-3">
+                                                <p className="font-bold text-sm truncate text-white">{item.name || item.sub_category}</p>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wider">{item.brand}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>

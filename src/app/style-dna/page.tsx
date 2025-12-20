@@ -393,141 +393,48 @@ export default function StyleDNAPage() {
                         </div>
                     )}
 
-                    {/* Column 2: Wardrobe Essentials */}
-                    {styleDNA.must_have_staples && (
-                        <div className="card glass p-8 lg:col-span-1">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <ShoppingBag className="text-primary" /> Wardrobe Essentials
-                            </h3>
 
-                            {(() => {
-                                const essentials = styleDNA.must_have_staples;
+                    {/* Column 2: Recommended Brands */}
+                    <div className="card glass p-8 lg:col-span-1">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <Briefcase className="text-primary" /> Recommended Brands
+                        </h3>
+                        {styleDNA.recommended_brands && Array.isArray(styleDNA.recommended_brands) && (
+                            <div className="space-y-4">
+                                {styleDNA.recommended_brands.map((brand: any, i: number) => {
+                                    const brandName = typeof brand === 'string' ? brand : brand.name;
+                                    const reason = typeof brand === 'object' ? brand.reason : '';
 
-                                // Handle array format (old)
-                                if (Array.isArray(essentials)) {
                                     return (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {essentials.map((item: any, i: number) => {
-                                                const key = `${item.brand || ''}-${item.item}`;
-                                                const data = productData.get(key);
-                                                const productUrl = data?.url || '#';
-                                                const imageUrl = data?.imageUrl;
-                                                const icon = getProductImagePlaceholder(item.item);
-
-                                                // Debug logging
-                                                if (!imageUrl) console.log('Missing image for:', key, data);
-
-                                                return (
-                                                    <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
-                                                        <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
-                                                            {imageUrl ? (
-                                                                <img src={imageUrl} alt={item.item} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                            ) : (
-                                                                <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
-                                                            )}
-                                                        </a>
-                                                        <div className="p-3">
-                                                            <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
-                                                            {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
-                                                            {item.color && <div className="text-xs text-gray-500 mb-1">Color: {item.color}</div>}
-                                                            {item.why && <div className="text-xs text-gray-400 line-clamp-2">{item.why}</div>}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                        <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-all group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{brandName}</h4>
+                                                <a
+                                                    href={`https://www.google.com/search?q=${encodeURIComponent(brandName + ' fashion brand')}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                                >
+                                                    View ↗
+                                                </a>
+                                            </div>
+                                            {reason && <p className="text-sm text-gray-400">{reason}</p>}
                                         </div>
                                     );
-                                }
+                                })}
+                                {styleDNA.recommended_brands.length === 0 && (
+                                    <p className="text-gray-400 italic">No specific brand recommendations generated yet.</p>
+                                )}
+                            </div>
+                        )}
+                        {(!styleDNA.recommended_brands || styleDNA.recommended_brands.length === 0) && (
+                            <div className="text-center p-6 bg-white/5 rounded-xl border border-dashed border-white/20">
+                                <p className="text-gray-400 mb-2">Brands not found in your DNA.</p>
+                                <a href="/onboarding?mode=regenerate" className="text-primary text-sm hover:underline">Regenerate Style DNA</a>
+                            </div>
+                        )}
+                    </div>
 
-                                // Handle object format (new)
-                                if (typeof essentials === 'object' && essentials !== null) {
-                                    return Object.entries(essentials)
-                                        .map(([category, productTypes]: [string, any]) => {
-                                            if (!productTypes || typeof productTypes !== 'object') return null;
-                                            const isCollapsed = collapsedCategories.has(category);
-
-                                            return (
-                                                <div key={category} className="mb-8 last:mb-0">
-                                                    <h4
-                                                        className="text-lg font-semibold mb-4 capitalize border-b border-white/10 pb-2 cursor-pointer flex justify-between items-center hover:text-primary transition-colors"
-                                                        onClick={() => {
-                                                            const newSet = new Set(collapsedCategories);
-                                                            if (isCollapsed) {
-                                                                newSet.delete(category);
-                                                            } else {
-                                                                newSet.add(category);
-                                                            }
-                                                            setCollapsedCategories(newSet);
-                                                        }}
-                                                    >
-                                                        {category.replace(/_/g, ' ')}
-                                                        <span className="text-sm">{isCollapsed ? '▶' : '▼'}</span>
-                                                    </h4>
-
-                                                    {!isCollapsed && Object.entries(productTypes).map(([type, items]: [string, any]) => {
-                                                        if (!Array.isArray(items)) return null;
-
-                                                        // valid types to show as headers (skip 'Essentials' or numeric indices)
-                                                        const showHeader = type !== 'Essentials' && isNaN(parseInt(type));
-
-                                                        return (
-                                                            <div key={type} className="mb-6 last:mb-0">
-                                                                {showHeader && (
-                                                                    <h5 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                                                                        {type.replace(/_/g, ' ')}
-                                                                    </h5>
-                                                                )}
-
-                                                                {/* Use single column on lg screens to avoid squashed cards, 2 cols on mobile/tablet/xl */}
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                                                                    {items.map((item: any, i: number) => {
-                                                                        const key = `${item.brand || ''}-${item.item}`;
-                                                                        const data = productData.get(key);
-                                                                        const productUrl = data?.url || item.product_url || '#';
-                                                                        const imageUrl = data?.imageUrl || item.image_url;
-                                                                        const icon = getProductImagePlaceholder(item.item);
-
-                                                                        // Debug logging
-                                                                        if (!imageUrl) console.log('Missing image for:', key, data);
-
-                                                                        return (
-                                                                            <div key={i} className="bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
-                                                                                <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block relative overflow-hidden bg-white/10 aspect-square">
-                                                                                    {imageUrl ? (
-                                                                                        <img src={imageUrl} alt={item.item} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                                                    ) : (
-                                                                                        <div className="absolute inset-0 flex items-center justify-center text-5xl">{icon}</div>
-                                                                                    )}
-                                                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                        <span className="text-xs text-white font-medium">Shop at {item.brand || 'stores'} →</span>
-                                                                                    </div>
-                                                                                </a>
-                                                                                <div className="p-3">
-                                                                                    <div className="font-bold text-sm mb-1 line-clamp-1">{item.item}</div>
-                                                                                    {item.brand && <div className="text-xs text-primary mb-1">@ {item.brand}</div>}
-                                                                                    {item.color && <div className="text-xs text-gray-500 mb-1">Color: {item.color}</div>}
-                                                                                    {item.why && <div className="text-xs text-gray-400 line-clamp-2 mb-2">{item.why}</div>}
-                                                                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
-                                                                                        Shop Now →
-                                                                                    </a>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })
-                                        .filter(Boolean);
-                                }
-
-                                return null;
-                            })()}
-                        </div>
-                    )}
 
                     {/* Column 3: Brand Recommendations + Styling Wisdom */}
                     <div className="space-y-8">

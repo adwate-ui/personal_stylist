@@ -293,6 +293,8 @@ export async function generateOutfit(
     belt?: any;
     scarf?: any;
     gloves?: any;
+    watch?: any;
+    wallet?: any;
     reasoning: string;
     style_tips: string[];
 }> {
@@ -338,6 +340,8 @@ export async function generateOutfit(
         "belt_id": "uuid",
         "scarf_id": "uuid",
         "gloves_id": "uuid",
+        "watch_id": "uuid",
+        "wallet_id": "uuid",
         "reasoning": "Sophisticated styling advice explaining why this specific combination works flawlessly for the occasion.",
         "style_tips": ["Professional styling tip 1", "Tip 2"]
     }
@@ -364,9 +368,64 @@ export async function generateOutfit(
         belt: findItem(selection.belt_id),
         scarf: findItem(selection.scarf_id),
         gloves: findItem(selection.gloves_id),
+        watch: findItem(selection.watch_id),
+        wallet: findItem(selection.wallet_id),
         reasoning: selection.reasoning,
         style_tips: selection.style_tips
     };
+}
+
+
+export async function generateWeeklyRecommendations(
+    styleDNA: any,
+    wardrobeItems: any[],
+    apiKey: string
+): Promise<any[]> {
+    if (!apiKey) throw new Error("API Key required");
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const wardrobeContext = wardrobeItems.map(item =>
+        `- ${item.category} (${item.sub_category}): ${item.name} (${item.primary_color}, ${item.style_tags?.join(', ')})`
+    ).join('\n');
+
+    // truncate styleDNA if it's too large, but usually it's fine
+    const styleContext = JSON.stringify(styleDNA, null, 2);
+
+    const prompt = `
+    Act as a world-class personal stylist. Analyze the user's Style DNA and current Wardrobe to identify the top 5-6 MISSING items (gaps) that would elevate their style.
+
+    STYLE DNA:
+    ${styleContext}
+
+    CURRENT WARDROBE:
+    ${wardrobeContext}
+
+    TASK:
+    1. Identify 5-6 key items missing from the wardrobe that are CRITICAL to fulfilling the Style DNA archetypes.
+    2. Suggest SPECIFIC items (e.g. "Camel Wool Trench Coat" instead of just "Coat").
+    3. For EACH recommendation, provide exactly 3 "Shopping Options" with varying price points or styles (e.g. one Classic, one Modern, one Budget/Premium).
+    4. Ensure specific Brand names are real and relevant to the user's style.
+
+    Return verified JSON only (Array of objects):
+    [
+      {
+        "item_name": "Detailed Item Name",
+        "priority": "High",
+        "reason": "Explanation of why this is a critical gap based on their archetype...",
+        "options": [
+          { "brand": "Brand A", "color": "Specific Color", "price_range_text": "$100-200" },
+          { "brand": "Brand B", "color": "Specific Color", "price_range_text": "$200-500" },
+          { "brand": "Brand C", "color": "Specific Color", "price_range_text": "$50+" }
+        ]
+      }
+    ]
+    `;
+
+    const model = await createModelWithFallback(genAI);
+    const result = await model.generateContent(prompt);
+    const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleanJson = cleanJsonString(text);
+    return JSON.parse(cleanJson);
 }
 
 export async function rateOutfit(
