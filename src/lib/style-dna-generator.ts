@@ -194,6 +194,8 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
     const modelName = modelsToTry[i];
     const isLastModel = i === modelsToTry.length - 1;
 
+    console.log(`[Style DNA] Attempting model ${i + 1}/${modelsToTry.length}: ${modelName}`);
+
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
 
@@ -265,17 +267,20 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
       // Store which model generated this DNA
       parsed.generated_by_model = modelName;
 
+      console.log(`[Style DNA] ✅ Successfully generated with ${modelName}`);
       return parsed as StyleDNA;
     } catch (error: any) {
+      console.error(`[Style DNA] ❌ Model ${modelName} failed:`, error.message);
+
       const isQuotaError = error?.message?.includes("429") || error?.message?.includes("quota");
 
       if (isQuotaError && !isLastModel) {
-        console.warn(`Model ${modelName} quota exceeded, trying next model...`);
+        console.warn(`[Style DNA] Quota exceeded for ${modelName}, trying next model...`);
         continue;
       }
 
       if (isLastModel) {
-        console.error("Style DNA generation failed:", error);
+        console.error("[Style DNA] All models failed. Last error:", error);
         throw new Error(
           error?.message?.includes("API key")
             ? "Invalid Gemini API Key. Please check your settings."
@@ -283,7 +288,8 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         );
       }
 
-      console.warn(`Model ${modelName} failed: ${error?.message}`);
+      // For any other error on non-last model, try next model
+      console.warn(`[Style DNA] Trying next model due to error in ${modelName}...`);
       continue;
     }
   }

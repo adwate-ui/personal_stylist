@@ -1,9 +1,47 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette } from "lucide-react";
+import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { getBrandSearchUrl, getProductImagePlaceholder, getFirstSearchResultUrl } from "@/lib/product-links";
+
+// Helper function to convert hex to approximate color name
+function hexToColorName(hex: string): string {
+    const colorMap: Record<string, string> = {
+        '#000000': 'Black', '#FFFFFF': 'White', '#808080': 'Gray',
+        '#FF0000': 'Red', '#00FF00': 'Green', '#0000FF': 'Blue',
+        '#FFFF00': 'Yellow', '#FF00FF': 'Magenta', '#00FFFF': 'Cyan',
+        '#FFA500': 'Orange', '#800080': 'Purple', '#FFC0CB': 'Pink',
+        '#A52A2A': 'Brown', '#FFD700': 'Gold', '#C0C0C0': 'Silver',
+        '#8B4513': 'SaddleBrown', '#2E8B57': 'SeaGreen', '#4B0082': 'Indigo',
+        '#FF6347': 'Tomato', '#40E0D0': 'Turquoise', '#EE82EE': 'Violet',
+        '#F0E68C': 'Khaki', '#E6E6FA': 'Lavender', '#FAEBD7': 'AntiqueWhite',
+        '#F5F5DC': 'Beige', '#DEB887': 'BurlyWood', '#5F9EA0': 'CadetBlue',
+        '#7FFF00': 'Chartreuse', '#D2691E': 'Chocolate', '#FF7F50': 'Coral',
+        '#6495ED': 'CornflowerBlue', '#DC143C': 'Crimson', '#00008B': 'DarkBlue',
+        '#008B8B': 'DarkCyan', '#B8860B': 'DarkGoldenrod', '#A9A9A9': 'DarkGray',
+        '#006400': 'DarkGreen', '#BDB76B': 'DarkKhaki', '#8B008B': 'DarkMagenta',
+        '#556B2F': 'DarkOliveGreen', '#FF8C00': 'DarkOrange', '#9932CC': 'DarkOrchid'
+    };
+
+    const upperHex = hex.toUpperCase();
+    if (colorMap[upperHex]) return colorMap[upperHex];
+
+    // Simple approximation based on RGB values
+    if (hex.startsWith('#') && hex.length === 7) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+
+        if (r < 50 && g < 50 && b < 50) return 'Dark';
+        if (r > 200 && g > 200 && b > 200) return 'Light';
+        if (r > g && r > b) return 'Reddish';
+        if (g > r && g > b) return 'Greenish';
+        if (b > r && b > g) return 'Bluish';
+    }
+
+    return hex; // Fallback to hex
+}
 
 export default function StyleDNAPage() {
     const { profile, loading } = useProfile();
@@ -88,7 +126,7 @@ export default function StyleDNAPage() {
 
     return (
         <div className="min-h-screen bg-background p-6 lg:p-12 overflow-y-auto pb-20">
-            <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+            <div className="w-full mx-auto space-y-8 animate-fade-in">
                 {/* Header Section - Full Width */}
                 <div className="text-center space-y-4 pt-10">
                     <Sparkles size={48} className="text-primary mx-auto animate-pulse" />
@@ -198,7 +236,7 @@ export default function StyleDNAPage() {
                                                         </div>
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="text-sm font-medium text-white">{colorName}</div>
+                                                        <div className="text-sm font-medium text-white">{hexToColorName(colorName)}</div>
                                                         {reason && <div className="text-xs text-gray-400 mt-0.5">{reason}</div>}
                                                     </div>
                                                 </div>

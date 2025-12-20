@@ -43,7 +43,8 @@ export default {
                 );
             }
 
-            // EXISTING: Image extraction endpoint for wardrobe essentials
+            // EXISTING: Extract image from a product URL (for add-item page)
+            // This endpoint works with direct product URLs, not search queries
             if (url.pathname === '/extract-image') {
                 if (request.method !== 'POST') {
                     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -53,100 +54,94 @@ export default {
 
                 if (!targetUrl) {
                     return new Response(
-                        JSON.stringify({ error: 'URL required' }),
+                        JSON.stringify({ error: 'URL parameter required' }),
                         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
                     );
                 }
 
-                const imageUrl = await extractProductImage(targetUrl);
+                console.log(`[Worker] Extracting metadata from URL: ${targetUrl}`);
 
-                return new Response(
-                    JSON.stringify({ imageUrl: imageUrl || '' }),
-                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-                );
-            }
-
-            // EXISTING: Link scraper functionality
-            const targetUrl = url.searchParams.get('url');
-
-            if (!targetUrl) {
-                return new Response(
-                    JSON.stringify({ error: 'Missing url parameter' }),
-                    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-                );
-            }
-
-            // Fetch the target URL
-            const response = await fetch(targetUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch URL: ${response.status}`);
-            }
-
-            const html = await response.text();
-
-            // Parse Open Graph and meta tags
-            const metadata = parseMetadata(html);
-
-            // Fetch product image if found
-            let imageBase64 = null;
-            if (metadata.image) {
                 try {
-                    // Resolve relative URLs
-                    const imageUrl = new URL(metadata.image, targetUrl).href;
-
-                    const imageResponse = await fetch(imageUrl, {
+                    // Fetch the product page
+                    const response = await fetch(targetUrl, {
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                            'Referer': targetUrl,
-                        },
+                            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                        }
                     });
 
-                    if (imageResponse.ok) {
-                        const imageBuffer = await imageResponse.arrayBuffer();
-                        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-                        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-                        imageBase64 = `data:${contentType};base64,${base64}`;
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch URL: ${response.status}`);
                     }
-                } catch (imgError) {
-                    console.error('Image fetch failed:', imgError);
-                    // Continue without image
+
+                    const html = await response.text();
+
+                    // Extract metadata using simple regex (lightweight)
+                    const metadata = {
+                        url: targetUrl,
+                        imageUrl: null,
+                        title: null,
+                        price: null,
+                        brand: null
+                    };
+
+                    // Try Open Graph image first
+                    const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+                    if (ogImageMatch) {
+                        metadata.imageUrl = ogImageMatch[1];
+                    }
+
+                    // Try Twitter card image as fallback
+                    if (!metadata.imageUrl) {
+                        const twitterImageMatch = html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
+                        if (twitterImageMatch) {
+                            metadata.imageUrl = twitterImageMatch[1];
+                        }
+                    }
+
+                    // Extract title
+                    const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+                    const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+                    metadata.title = ogTitleMatch ? ogTitleMatch[1] : (titleMatch ? titleMatch[1] : null);
+
+                    // Extract price
+                    const priceMatch = html.match(/["']price["']:\s*["']?(\d+(?:\.\d{2})?)/i);
+                    if (priceMatch) {
+                        metadata.price = priceMatch[1];
+                    }
+
+                    // Extract brand from meta tags or domain
+                    const brandMatch = html.match(/<meta\s+property=["']og:site_name["']\s+content=["']([^"']+)["']/i);
+                    if (brandMatch) {
+                        metadata.brand = brandMatch[1];
+                    } else {
+                        const domain = new URL(targetUrl).hostname;
+                        metadata.brand = domain.replace(/^www\./, '').split('.')[0];
+                    }
+
+                    console.log('[Worker] Metadata extracted:', metadata);
+
+                    return new Response(
+                        JSON.stringify(metadata),
+                        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    );
+                } catch (error) {
+                    console.error('[Worker] Error extracting metadata:', error);
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Failed to extract metadata',
+                            message: error.message,
+                            url: targetUrl
+                        }),
+                        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    );
                 }
             }
-
-            return new Response(
-                JSON.stringify({
-                    title: metadata.title,
-                    description: metadata.description,
-                    image: metadata.image,
-                    imageBase64: imageBase64,
-                    price: metadata.price,
-                    brand: metadata.brand,
-                }),
-                {
-                    headers: {
-                        ...corsHeaders,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
 
         } catch (error) {
             return new Response(
                 JSON.stringify({ error: error.message }),
-                {
-                    status: 500,
-                    headers: {
-                        ...corsHeaders,
-                        'Content-Type': 'application/json',
-                    },
-                }
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
     },
