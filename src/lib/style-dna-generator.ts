@@ -103,49 +103,52 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
   "archetype_name": "A unique 2-3 word style archetype name that captures their essence",
   "summary": "2-3 sentences describing their style identity and what makes them unique",
   "color_palette": {
-    "neutrals": ["#hexcode1", "#hexcode2", "#hexcode3", "#hexcode4"],
-    "accents": ["#hexcode1", "#hexcode2", "#hexcode3"],
+    "neutrals": [
+      { "hex": "#hexcode", "name": "Color Name" },
+      { "hex": "#hexcode", "name": "Color Name" },
+      { "hex": "#hexcode", "name": "Color Name" },
+      { "hex": "#hexcode", "name": "Color Name" }
+    ],
+    "accents": [
+      { "hex": "#hexcode", "name": "Color Name" },
+      { "hex": "#hexcode", "name": "Color Name" },
+      { "hex": "#hexcode", "name": "Color Name" }
+    ],
     "avoid": [
       { "color": "#hexcode", "reason": "Why this color doesn't work for them" },
       { "color": "#hexcode", "reason": "Why this color doesn't work for them" }
     ],
-    "rationale": "DETAILED explanation covering:\n    1) Why these specific colors were chosen based on skin tone, hair, and eye color\n    2) Specific product color recommendations (e.g., 'Navy blazer', 'Cream trousers', 'Burgundy accessories')\n    3) How to combine these colors effectively\n    4) Seasonal variations if applicable"
+    "rationale": "DETAILED explanation covering:\\n    1) Why these specific colors were chosen based on skin tone, hair, and eye color\\n    2) Specific product color recommendations (e.g., 'Navy blazer', 'Cream trousers', 'Burgundy accessories')\\n    3) How to combine these colors effectively\\n    4) Seasonal variations if applicable"
   },
   "must_have_staples": {
     "tops": {
+      "quantity_recommendation": {
+        "total": "Number based on lifestyle (e.g., '12-15 tops total')",
+        "breakdown": "Breakdown by type (e.g., '5 shirts, 4 t-shirts, 3 polos')",
+        "color_split": "Color distribution (e.g., '40% neutrals, 40% core colors, 20% accents')"
+      },
       "shirts": [
         {
           "item": "Specific item description",
-          "brand": "Specific brand from their tier",
+          "brand": "Specific OFFICIAL brand website or high-end retailer (NO eBay, Mercari, Poshmark, or reseller sites)",
           "why": "Why this item is essential for them",
-          "product_url": "leave empty, will be generated"
+          "color": "Recommended color from their palette with quantity (e.g., '2 white, 1 navy')"
         }
       ],
-      "sweaters": [...same structure as shirts]
+      "t_shirts": [],
+      "polos": []
     },
     "bottoms": {
-      "trousers": [...],
-      "jeans": [...]
+      "quantity_recommendation": {
+        "total": "Number based on lifestyle",
+        "breakdown": "Breakdown by type",
+        "color_split": "Color distribution"
+      },
+      "jeans": [],
+      "chinos": [],
+      "trousers": []
     },
     "outerwear": {
-      "jackets": [...],
-      "coats": [...]
-    },
-    "footwear": {
-      "everyday": [...],
-      "formal": [...]
-    },
-    "bags": {
-      "everyday": [...],
-      "formal": [...]
-    },
-    "watches": {
-      "casual": [...],
-      "formal": [...]
-    },
-    "sunglasses": {
-      "everyday": [...]
-    },
     "belts": {
       "casual": [...],
       "formal": [...]

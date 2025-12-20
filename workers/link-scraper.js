@@ -211,13 +211,13 @@ async function searchGoogleForProduct(query, env) {
 
         // Extract first result that looks like a product page
         if (results.length > 0) {
-            // Comprehensive shopping site detection (50+ sites)
+            // Comprehensive shopping site detection (50+ sites) - EXCLUDING RESELLERS
             const shoppingSites = [
                 // India e-commerce
                 'amazon.in', 'flipkart.com', 'myntra.com', 'ajio.com', 'nykaa.com', 'tatacliq',
                 'shoppers', 'westside.com', 'lifestyle.com', 'centralbrand', 'pantaloons',
                 // International e-commerce
-                'amazon.com', 'amazon', 'ebay.', '6pm.com', 'asos.com', 'zalando',
+                'amazon.com', 'amazon', '6pm.com', 'asos.com', 'zalando',
                 // Fashion brands
                 'zara.com', 'hm.com', 'h&m', 'uniqlo.com', 'nike.com', 'adidas.co', 'adidas.com',
                 'mango.com', 'massimodutti', 'cosstores', 'marksandspencer', 'gap.com', 'gapinc',
@@ -227,15 +227,19 @@ async function searchGoogleForProduct(query, env) {
                 'gucci', 'louisvuitton', 'prada', 'hermes', 'dior', 'versace', 'armani',
                 // Activewear
                 'lululemon', 'athleta', 'underarmour', 'gymshark', 'fabletics',
-                // Others
+                // Premium retailers
+                'nordstrom.', 'saks', 'bloomingdales', 'neimanmarcus', 'ssense.', 'farfetch.',
+                'net-a-porter', 'mrporter.', 'harrods.', 'selfridges.',
                 'nordstrom', 'macys', 'kohls', 'target.com', 'walmart.com', 'jcpenney'
             ];
 
-            // Exclude non-shopping content
+            // CRITICAL: Exclude reseller and secondary market sites
             const excludePatterns = [
-                '/blog', '/article', '/news', '/review', '/guide', '/how-to', '/blog-post',
-                'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'pinterest.com',
-                'wikipedia.org', 'reddit.com', 'quora.com'
+                'ebay.', 'mercari.', 'poshmark.', 'depop.', 'vinted.', 'thredup.',
+                'vestiairecollective.', 'grailed.', 'therealreal.', 'rebag.',
+                '/blog', '/news', '/review', '/article', '/guide', '/how-to', '/tips',
+                'pinterest.', 'facebook.', 'instagram.', 'twitter.', 'reddit.',
+                'youtube.', 'tiktok.', 'wiki', 'quora.'
             ];
 
             // Product page indicators
@@ -265,9 +269,28 @@ async function searchGoogleForProduct(query, env) {
                 // Calculate relevance score
                 let score = 0;
 
-                // +10 points for known shopping site
+                // Brand categorization for scoring
+                const brandSites = [
+                    'zara.com', 'hm.com', 'uniqlo.com', 'nike.com', 'adidas.', 'mango.com',
+                    'tommy', 'ralphlauren', 'calvinklein', 'gucci', 'prada', 'hermes',
+                    'dior', 'versace', 'armani', 'levi', 'gap.com', 'vans.com', 'converse.'
+                ];
+                const premiumRetailers = [
+                    'nordstrom.', 'saks', 'bloomingdales', 'neimanmarcus', 'ssense.',
+                    'farfetch.', 'net-a-porter', 'mrporter.', 'harrods.', 'selfridges.'
+                ];
+
+                // +15 points for official brand websites (highest priority)
+                const isBrandSite = brandSites.some(site => lowerUrl.includes(site));
+                if (isBrandSite) score += 15;
+
+                // +10 points for premium retailers
+                const isPremiumRetailer = premiumRetailers.some(site => lowerUrl.includes(site));
+                if (isPremiumRetailer) score += 10;
+
+                // +5 points for other known shopping sites
                 const isShoppingSite = shoppingSites.some(site => lowerUrl.includes(site));
-                if (isShoppingSite) score += 10;
+                if (isShoppingSite && !isBrandSite && !isPremiumRetailer) score += 5;
 
                 // +5 points for product page indicators in URL
                 const hasProductIndicator = productIndicators.some(indicator => lowerUrl.includes(indicator));
