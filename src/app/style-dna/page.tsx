@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { getBrandSearchUrl, getProductImagePlaceholder, getFirstSearchResultUrl } from "@/lib/product-links";
@@ -44,6 +45,7 @@ function hexToColorName(hex: string): string {
 }
 
 export default function StyleDNAPage() {
+    const router = useRouter();
     const { profile, loading } = useProfile();
     const [productData, setProductData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
     const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
@@ -159,13 +161,34 @@ export default function StyleDNAPage() {
                         >
                             Regenerate ↻
                         </a>
-                        <a
-                            href="/onboarding"
+                        <button
+                            onClick={async () => {
+                                if (!confirm('This will clear your Style DNA and restart onboarding. Continue?')) return;
+
+                                try {
+                                    // Clear Style DNA from profile
+                                    const response = await fetch('/api/profile', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ styleDNA: null })
+                                    });
+
+                                    if (response.ok) {
+                                        // Navigate to onboarding
+                                        router.push('/onboarding');
+                                    } else {
+                                        alert('Failed to reset. Please try again.');
+                                    }
+                                } catch (error) {
+                                    console.error('Failed to reset onboarding:', error);
+                                    alert('Failed to reset. Please try again.');
+                                }
+                            }}
                             className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full transition-colors inline-flex items-center gap-1.5"
-                            title="Start onboarding from scratch"
+                            title="Clear all data and start onboarding from scratch"
                         >
                             Redo Onboarding →
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -200,20 +223,44 @@ export default function StyleDNAPage() {
                                 {styleDNA.color_palette.neutrals && Array.isArray(styleDNA.color_palette.neutrals) && (
                                     <div>
                                         <label className="text-sm text-gray-400 block mb-3">Your Neutrals</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {styleDNA.color_palette.neutrals.map((c: string, i: number) => (
-                                                <div key={i} className="w-12 h-12 rounded-lg border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
-                                            ))}
+                                        <div className="flex gap-3 flex-wrap">
+                                            {styleDNA.color_palette.neutrals.map((c: any, i: number) => {
+                                                const hexCode = typeof c === 'string' ? c : c.hex;
+                                                const colorName = typeof c === 'object' && c.name ? c.name : hexToColorName(hexCode);
+                                                return (
+                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                        <div
+                                                            className="w-16 h-16 rounded-lg border border-white/20 shadow-lg"
+                                                            style={{ backgroundColor: hexCode }}
+                                                            title={`${colorName} (${hexCode})`}
+                                                        />
+                                                        <span className="text-xs text-gray-300 font-medium">{colorName}</span>
+                                                        <span className="text-[10px] text-gray-500 font-mono">{hexCode}</span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
                                 {styleDNA.color_palette.accents && Array.isArray(styleDNA.color_palette.accents) && (
                                     <div>
                                         <label className="text-sm text-gray-400 block mb-3">Accent Colors</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {styleDNA.color_palette.accents.map((c: string, i: number) => (
-                                                <div key={i} className="w-12 h-12 rounded-lg border border-white/20 shadow-lg" style={{ backgroundColor: c }} title={c} />
-                                            ))}
+                                        <div className="flex gap-3 flex-wrap">
+                                            {styleDNA.color_palette.accents.map((c: any, i: number) => {
+                                                const hexCode = typeof c === 'string' ? c : c.hex;
+                                                const colorName = typeof c === 'object' && c.name ? c.name : hexToColorName(hexCode);
+                                                return (
+                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                        <div
+                                                            className="w-16 h-16 rounded-lg border border-white/20 shadow-lg"
+                                                            style={{ backgroundColor: hexCode }}
+                                                            title={`${colorName} (${hexCode})`}
+                                                        />
+                                                        <span className="text-xs text-gray-300 font-medium">{colorName}</span>
+                                                        <span className="text-[10px] text-gray-500 font-mono">{hexCode}</span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

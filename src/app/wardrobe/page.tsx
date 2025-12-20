@@ -77,11 +77,12 @@ export default function WardrobePage() {
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [groupByCategory, setGroupByCategory] = useState(true);
     const [gridSize, setGridSize] = useState<'4x4' | '5x5' | '6x6'>('4x4');
+    const [showGridSizePopup, setShowGridSizePopup] = useState(false);
 
     const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [recalculating, setRecalculating] = useState(false);
     const [wardrobeNames, setWardrobeNames] = useState<string[]>([]);
 
     const { profile } = useProfile();
@@ -199,10 +200,39 @@ export default function WardrobePage() {
         }
     };
 
+    const handleRecalculateScores = async () => {
+        if (!confirm('Recalculate scores for all items? This will update all product ratings based on your current Style DNA and wardrobe.')) {
+            return;
+        }
+
+        setRecalculating(true);
+        try {
+            const response = await fetch('/api/wardrobe/recalculate-scores', {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to recalculate scores');
+            }
+
+            const data = await response.json();
+            toast.success(`Recalculated ${data.count} items`, {
+                description: 'All product scores have been updated'
+            });
+
+            // Refresh the wardrobe
+            await fetchItems();
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to recalculate scores", { description: (err as Error).message });
+        } finally {
+            setRecalculating(false);
+        }
+    };
+
     const groupedItems = items.reduce((acc, item) => {
-        const group = groupByCategory
-            ? getMasterCategory(item.category, item.sub_category)
-            : 'All Items';
+        const group = getMasterCategory(item.category, item.sub_category);
 
         if (!acc[group]) acc[group] = [];
         acc[group].push(item);
@@ -490,11 +520,14 @@ export default function WardrobePage() {
             <header className="mb-12 flex justify-between items-center flex-wrap gap-4">
                 <h1 className="text-4xl font-bold">Wardrobe</h1>
 
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap relative">
                     {/* View Mode - Modern Segmented Control */}
                     <div className="inline-flex bg-white/5 rounded-lg p-1 border border-white/10">
                         <button
-                            onClick={() => handleSetViewMode('grid')}
+                            onClick={() => {
+                                handleSetViewMode('grid');
+                                setShowGridSizePopup(!showGridSizePopup);
+                            }}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${viewMode === 'grid'
                                 ? 'bg-primary text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white'
@@ -504,7 +537,10 @@ export default function WardrobePage() {
                             <span className="hidden sm:inline">Grid</span>
                         </button>
                         <button
-                            onClick={() => handleSetViewMode('list')}
+                            onClick={() => {
+                                handleSetViewMode('list');
+                                setShowGridSizePopup(false);
+                            }}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${viewMode === 'list'
                                 ? 'bg-primary text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white'
@@ -515,39 +551,49 @@ export default function WardrobePage() {
                         </button>
                     </div>
 
-                    {/* Grid Size - Only in grid mode */}
-                    {viewMode === 'grid' && (
-                        <div className="inline-flex bg-white/5 rounded-lg p-1 border border-white/10">
-                            {(['4x4', '5x5', '6x6'] as const).map((size) => (
-                                <button
-                                    key={size}
-                                    onClick={() => handleSetGridSize(size)}
-                                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${gridSize === size
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                        }`}
-                                >
-                                    {size}
-                                </button>
-                            ))}
+                    {/* Grid Size Popup - Only show when Grid is selected and popup is open */}
+                    {viewMode === 'grid' && showGridSizePopup && (
+                        <div className="absolute top-full left-0 mt-2 bg-gray-900 rounded-lg p-2 border border-white/20 shadow-xl z-50">
+                            <div className="flex flex-col gap-1 min-w-[120px]">
+                                <div className="text-xs text-gray-400 px-2 py-1">Grid Size</div>
+                                {(['4x4', '5x5', '6x6'] as const).map((size) => (
+                                    <button
+                                        key={size}
+                                        onClick={() => {
+                                            handleSetGridSize(size);
+                                            setShowGridSizePopup(false);
+                                        }}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 text-left ${gridSize === size
+                                            ? 'bg-primary text-black'
+                                            : 'text-gray-300 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    {/* Group Toggle - Modern Switch */}
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={groupByCategory}
-                            onChange={(e) => setGroupByCategory(e.target.checked)}
-                            className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-white/10 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        <span className="ml-3 text-sm font-medium text-gray-400 hidden md:inline">Group</span>
-                    </label>
-
-                    <Link href="/add-item" className="btn btn-primary">
-                        <Plus size={20} className="mr-2" /> <span className="hidden sm:inline">Add Item</span>
-                    </Link>
+                    {/* Recalculate Scores Button */}
+                    <button
+                        onClick={handleRecalculateScores}
+                        disabled={recalculating || items.length === 0}
+                        className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Recalculate all product scores with current Style DNA"
+                    >
+                        {recalculating ? (
+                            <>
+                                <Loader2 className="animate-spin" size={16} />
+                                <span className="hidden sm:inline">Recalculating...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={16} />
+                                <span className="hidden sm:inline">Recalculate Scores</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             </header>
 
@@ -574,11 +620,9 @@ export default function WardrobePage() {
                         <div className="space-y-12">
                             {sortedGroups.map(group => (
                                 <div key={group} className="animate-fade-in">
-                                    {groupByCategory && (
-                                        <h2 className="text-2xl font-serif font-bold mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
-                                            {group} <span className="text-xs font-sans font-normal text-gray-500 bg-white/5 px-2 py-1 rounded-full">{groupedItems[group].length}</span>
-                                        </h2>
-                                    )}
+                                    <h2 className="text-2xl font-serif font-bold mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
+                                        {group} <span className="text-xs font-sans font-normal text-gray-500 bg-white/5 px-2 py-1 rounded-full">{groupedItems[group].length}</span>
+                                    </h2>
 
                                     <div className={viewMode === 'grid' ? `grid-gallery-${gridSize}` : "space-y-4"}>
                                         {groupedItems[group].map((item) => (

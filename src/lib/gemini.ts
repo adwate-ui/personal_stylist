@@ -249,24 +249,26 @@ export async function ratePurchase(
         : "User is building their wardrobe from scratch.";
 
     const prompt = `
+    You are the world's best personal stylist, working for your most important client. Your expertise is unmatched and your recommendations must be exceptional.
+    
     ${contextString}
     ${styleDNAContext}
 
-    A user is considering buying the item in this image. 
-    As a world-class stylist, provide a brutally honest but constructive rating (1-10).
+    Your client is considering buying the item in this image. 
+    Provide a brutally honest but constructive rating (1-10) based on your expert analysis.
 
-    Consider:
-    1. Alignment with their Style DNA (if available)
-    2. Versatility with current wardrobe (if known)
-    3. Timelessness vs Trendiness
-    4. Quality perception
-    5. Gap-filling potential in their wardrobe
+    CRITICAL EVALUATION FACTORS:
+    1. **Style DNA Alignment**: How well does this match their established aesthetic and color palette?
+    2. **Wardrobe Integration**: Does this fill a gap or complement existing pieces?
+    3. **Versatility**: Can this be styled multiple ways with their current wardrobe?
+    4. **Quality & Timelessness**: Will this be a lasting investment?
+    5. **Color Harmony**: Does it align with their neutrals/accents or is it in the "avoid" list?
 
-    Return JSON: { 
-        "rating": 0, 
+    Return ONLY valid JSON: { 
+        "rating": 0-10, 
         "verdict": "Buy/Pass/Consider", 
-        "reasoning": "Expert explanation addressing Style DNA alignment and wardrobe gaps...",
-        "alternatives": "Suggest better options if rating < 7"
+        "reasoning": "Expert analysis addressing Style DNA alignment, wardrobe gaps, and integration potential...",
+        "alternatives": "Suggest better options if rating < 7 (include why they're better)"
     }
     `;
 
