@@ -62,41 +62,68 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
         const workerUrl = 'https://link-scraper.adwate.workers.dev';
 
         try {
+            // Request multiple results to allow for fallback if images are missing
             const workerResponse = await fetch(`${workerUrl}/search-product`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: searchQuery })
+                body: JSON.stringify({ query: searchQuery, limit: 5 })
             });
 
             if (workerResponse.ok) {
                 const data = await workerResponse.json();
-                if (data.url && data.url.startsWith('http')) {
-                    // Success: Found direct link
-                    // Enhance image using AuthentiQC (User Request)
-                    let finalImageUrl = data.imageUrl;
+
+                // Normalize results: Handle if worker returns array in 'results', 'items', or just a single object
+                let candidates: any[] = [];
+                if (data.results && Array.isArray(data.results)) candidates = data.results;
+                else if (data.items && Array.isArray(data.items)) candidates = data.items;
+                else if (data.url) candidates = [data]; // Fallback to single result if API doesn't support list
+
+                console.log(`[Product Search] Found ${candidates.length} candidates for "${searchQuery}"`);
+
+                // AuthentiQC Worker for image validation
+                const authWorkerUrl = 'https://authentiqc-worker.adwate.workers.dev/fetch-metadata';
+
+                // Iterate through candidates to find one with a valid connected image
+                for (const candidate of candidates) {
+                    if (!candidate.url || !candidate.url.startsWith('http')) continue;
+
+                    // Skip Google Search results to avoid loops/captchas
+                    if (candidate.url.includes('google.com/search')) continue;
 
                     try {
-                        // Skip AuthentiQC for Google Search URLs or if URL is missing
-                        if (data.url && !data.url.includes('google.com/search')) {
-                            const authResponse = await fetch(`https://authentiqc-worker.adwate.workers.dev/fetch-metadata?url=${encodeURIComponent(data.url)}`);
-                            if (authResponse.ok) {
-                                const authData = await authResponse.json();
-                                const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
-                                if (authImage) finalImageUrl = authImage;
-                            } else {
-                                // 502s are common for protected sites (Farfetch, etc.), silent fallback is fine
+                        console.log(`[Product Search] Checking image for: ${candidate.url}`);
+                        const authResponse = await fetch(`${authWorkerUrl}?url=${encodeURIComponent(candidate.url)}`);
+
+                        if (authResponse.ok) {
+                            const authData = await authResponse.json();
+                            const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
+
+                            if (authImage) {
+                                console.log(`[Product Search] ✅ Valid image found: ${authImage}`);
+                                return {
+                                    url: candidate.url,
+                                    imageUrl: authImage,
+                                    title: candidate.title || authData.title || itemName,
+                                    price: candidate.price || authData.price,
+                                    brand: candidate.brand || brand
+                                };
                             }
                         }
                     } catch (e) {
-                        // Network errors, silent fallback
+                        console.warn(`[Product Search] Failed to check image for ${candidate.url}`, e);
                     }
+                    // If no image, loop continues to next candidate
+                }
 
+                // If loop finishes with no images, fall back to the first valid URL (if any) without image
+                if (candidates.length > 0 && candidates[0].url) {
+                    console.log(`[Product Search] ⚠️ No images found, returning first result.`);
                     return {
-                        url: data.url,
-                        imageUrl: finalImageUrl,
-                        title: data.title,
-                        price: data.price,
-                        brand: data.brand
+                        url: candidates[0].url,
+                        imageUrl: candidates[0].imageUrl, // Might be null
+                        title: candidates[0].title,
+                        price: candidates[0].price,
+                        brand: candidates[0].brand
                     };
                 }
             }
@@ -104,7 +131,7 @@ export async function getFirstSearchResultUrl(brand: string, itemName: string, c
             console.warn('Worker search failed, using fallback', workerError);
         }
 
-        // Fallback: Google Search Page
+        // Final Fallback: Google Search Page
         const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=shop`;
 
         return {
