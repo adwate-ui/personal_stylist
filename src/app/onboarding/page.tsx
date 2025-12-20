@@ -1006,14 +1006,14 @@ function OnboardingContent() {
                                                 ...prev,
                                                 lifestyle: { ...prev.lifestyle, [item.id]: !prev.lifestyle[item.id as keyof typeof prev.lifestyle] }
                                             }))}
-                                            className={`rounded - xl border text-left transition-all h-40 flex flex-col justify-end relative overflow - hidden group ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'} `}
+                                            className={`rounded-xl border text-left transition-all h-40 flex flex-col justify-end relative overflow-hidden group ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'} `}
                                         >
                                             <div className="absolute inset-0">
                                                 <img src={item.img} alt={item.label} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                                <div className={`absolute inset - 0 bg - black / 60 transition-opacity ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'opacity-40' : 'opacity-60 group-hover:opacity-50'} `} />
+                                                <div className={`absolute inset-0 bg-black/60 transition-opacity ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'opacity-40' : 'opacity-60 group-hover:opacity-50'} `} />
                                             </div>
                                             <div className="relative z-10 p-4">
-                                                <span className={`font - bold text-lg ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'text-primary' : 'text-white'} `}>{item.label}</span>
+                                                <span className={`font-bold text-lg ${formData.lifestyle[item.id as keyof typeof formData.lifestyle] ? 'text-primary' : 'text-white'} `}>{item.label}</span>
                                             </div>
                                         </button>
                                     ))}
@@ -1118,7 +1118,7 @@ function OnboardingContent() {
                                                 key={archetype.name}
                                                 onClick={() => toggleArchetype(archetype.name)}
                                                 type="button"
-                                                className={`p-0 rounded-xl border text-left transition-all relative overflow - hidden group min - h-[140px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
+                                                className={`p-0 rounded-xl border text-left transition-all relative overflow-hidden group min - h-[140px] flex flex-col justify-end ${formData.archetypes.includes(archetype.name) ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 hover:border-white/30'} `}
                                             >
                                                 <div className="absolute inset-0 z-0">
                                                     {/* Fallback gradient background */}
@@ -1135,10 +1135,10 @@ function OnboardingContent() {
                                                         }}
                                                         loading="lazy"
                                                     />
-                                                    <div className={`absolute inset - 0 bg - gradient - to - t from - black via - black / 50 to - transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'} `} />
+                                                    <div className={`absolute inset-0 bg - gradient - to - t from - black via - black / 50 to - transparent ${formData.archetypes.includes(archetype.name) ? 'opacity-90' : 'opacity-100'} `} />
                                                 </div>
                                                 <div className="relative z-10 p-3">
-                                                    <div className={`font - bold text-lg leading - tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'} `}>{archetype.name}</div>
+                                                    <div className={`font-bold text-lg leading - tight ${formData.archetypes.includes(archetype.name) ? 'text-primary' : 'text-white'} `}>{archetype.name}</div>
                                                     <div className="text-xs text-gray-300 mt-1 line-clamp-2">{archetype.desc}</div>
                                                 </div>
                                             </button>

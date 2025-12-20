@@ -272,8 +272,23 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
       // Generate product URLs using Cloudflare Worker
       if (parsed.must_have_staples) {
         for (const category in parsed.must_have_staples) {
-          for (const type in parsed.must_have_staples[category]) {
-            const items = parsed.must_have_staples[category][type];
+          const categoryData = parsed.must_have_staples[category];
+
+          // Validate category is an object
+          if (typeof categoryData !== 'object' || categoryData === null) {
+            console.warn(`[Style DNA] ⚠️ Skipping category ${category} - not an object`);
+            continue;
+          }
+
+          for (const type in categoryData) {
+            const items = categoryData[type];
+
+            // CRITICAL: Validate items is an array before iterating
+            if (!Array.isArray(items)) {
+              console.warn(`[Style DNA] ⚠️ Skipping ${category}/${type} - not an array:`, typeof items);
+              continue;
+            }
+
             const updatedItems = [];
 
             for (const item of items) {
@@ -299,7 +314,7 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
               }
             }
 
-            parsed.must_have_staples[category][type] = updatedItems;
+            categoryData[type] = updatedItems;
           }
         }
       }
