@@ -56,7 +56,7 @@ export function getProductImagePlaceholder(itemName: string): string {
  */
 export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
     try {
-        const searchQuery = [brand, itemName, color].filter(Boolean).join(' ');
+        const searchQuery = [brand, itemName, color, 'official site'].filter(Boolean).join(' ');
 
         // Use link-scraper for URL discovery (User Request)
         const workerUrl = 'https://link-scraper.adwate.workers.dev';

@@ -129,7 +129,7 @@ export async function analyzeProductLink(url: string, imageBuffer?: ArrayBuffer,
     1. Category & Sub-category (Be specific: "Cashmere Turtleneck" not just "Sweater")
     2. Color (Precise fashion terminology: "Chartreuse", "Burgundy", "Navy", "Ecru")
     3. Brand (Identify from metadata or visual logo if possible)
-    4. Price (Estimate range if not in metadata)
+    4. Price (Estimate range in "Rs. X - Y" format. Do NOT use abstract symbols like $$$)
     5. Description: A sophisticated, editorial-style 1-sentence summary.
     6. Style Tags: [Old Money, Y2K, Minimalist, Avant-Garde, etc.]
     7. SKU / Search Query for this item.
@@ -194,7 +194,7 @@ export async function identifyWardrobeItem(imageBuffer: ArrayBuffer, styleProfil
     - Specific Occasions (e.g. "Boardroom", "Gallery Opening", "Weekend Brunch")
     - Brand Name (Prediction if logo visible or style is iconic)
     - SKU Search Query (Keywords to find this item online)
-    - Estimated Price Range (e.g. "Rs. 1,500-5,000", "Rs. 20,000+") based on brand/material visibility.
+    - Estimated Price Range (e.g. "Rs. 1,500-5,000". Do NOT use $$$)
     
     If Style DNA is provided, provide a "style_score" (0-100) and "reasoning".
     If Style DNA is NOT provided, set "style_score" to null.
