@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { generateOutfit } from "@/lib/gemini-client";
@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useTask } from "@/contexts/TaskContext";
 import { useSearchParams } from "next/navigation";
 
-export default function OutfitOfTheDay() {
+function OutfitContent() {
     const { profile, loading: profileLoading } = useProfile();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -614,5 +614,13 @@ export default function OutfitOfTheDay() {
                 </div>
             )}
         </main>
+    );
+}
+
+export default function OutfitOfTheDay() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>}>
+            <OutfitContent />
+        </Suspense>
     );
 }
