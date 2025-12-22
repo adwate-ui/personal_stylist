@@ -617,4 +617,4 @@ export default function AddItemPage() {
                     </div>
                 </div>
             );
-        }
+
