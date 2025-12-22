@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor, Upload, Sparkles, User, Shield, CreditCard, ChevronRight, Camera } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor, ChevronRight, Camera, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/useProfile";
@@ -239,58 +239,45 @@ export default function ProfilePage() {
                                     )}
 
                                     <div className="pt-6 border-t border-white/5">
-                                        <button
-                                            className="flex items-center justify-between w-full text-left group"
-                                            onClick={() => setIsEditingExtractorKey(!isEditingExtractorKey)}
-                                        >
+                                        <div className="flex items-start justify-between mb-6">
                                             <div>
-                                                <div className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">Advanced: Image Extraction API</div>
-                                                <div className="text-xs text-muted-foreground">Optional key for high-fidelity product imports</div>
+                                                <h4 className="text-sm font-bold mb-1">Image Extraction API</h4>
+                                                <p className="text-muted-foreground text-xs">Optional: High-fidelity product imports via Extract.pics</p>
                                             </div>
-                                            <ChevronRight size={16} className={`text-muted-foreground transition-transform ${isEditingExtractorKey ? 'rotate-90' : ''}`} />
-                                        </button>
+                                            <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${imageExtractorKey ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                                                {imageExtractorKey ? 'ACTIVE' : 'OPTIONAL'}
+                                            </div>
+                                        </div>
 
-                                        {isEditingExtractorKey && (
-                                            <div className="mt-4 animate-fade-in space-y-3">
+                                        {!isEditingExtractorKey && imageExtractorKey ? (
+                                            <div className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
+                                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs">
+                                                    <Key size={14} />
+                                                </div>
+                                                <div className="flex-1 font-mono text-xs text-gray-400">
+                                                    •••• {imageExtractorKey.slice(-4)}
+                                                </div>
+                                                <button onClick={() => setIsEditingExtractorKey(true)} className="text-[10px] font-bold text-primary hover:underline uppercase">
+                                                    Configure
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
                                                 <input
                                                     type="password"
                                                     value={imageExtractorKey}
                                                     onChange={(e) => setImageExtractorKey(e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 text-sm transition-all"
-                                                    placeholder="Paste Image Extractor Key..."
+                                                    className="flex-1 bg-black/50 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50 text-xs transition-all"
+                                                    placeholder="Paste Extract.pics Key..."
                                                 />
                                                 <button
                                                     onClick={handleSaveExtractorKey}
-                                                    className="w-full btn btn-outline py-2 rounded-lg text-xs font-bold uppercase"
+                                                    className="btn btn-outline px-4 py-2 rounded-lg text-xs font-bold uppercase"
                                                 >
-                                                    Update Extractor Key
+                                                    Save
                                                 </button>
                                             </div>
                                         )}
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Personal Details */}
-                        <section>
-                            <div className="section-title"><User size={16} /> Personal Style Profile</div>
-                            <div className="glass-card p-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Style DNA</label>
-                                        <div className="font-serif text-lg">{profile?.styleDNA?.archetype_name || "Unidentified"}</div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Body Shape</label>
-                                        <div className="font-serif text-lg">{profile.bodyShape || "Not set"}</div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Skin Tone</label>
-                                        <div className="font-serif text-lg">{profile.skinTone || "Not set"}</div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-center flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors" onClick={() => router.push('/onboarding?mode=regenerate')}>
-                                        <span className="text-primary text-sm font-bold uppercase tracking-wider">Refine Style Profile →</span>
                                     </div>
                                 </div>
                             </div>
@@ -336,12 +323,6 @@ export default function ProfilePage() {
                                     Sign Out
                                 </button>
                                 <button
-                                    className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition-colors text-sm font-medium opacity-50 cursor-not-allowed"
-                                >
-                                    <CreditCard size={18} className="text-muted-foreground" />
-                                    Manage Subscription
-                                </button>
-                                <button
                                     onClick={handleDeleteAccount}
                                     className="w-full p-4 flex items-center gap-3 text-left hover:bg-red-500/10 transition-colors text-sm font-medium text-red-500"
                                 >
@@ -352,7 +333,7 @@ export default function ProfilePage() {
                         </section>
 
                         <div className="text-center text-xs text-muted-foreground pb-8">
-                            <p>Personal Stylist v1.2.0</p>
+                            <p>AURUM v1.2.0</p>
                             <p>ID: {user?.id?.slice(0, 8)}</p>
                         </div>
 

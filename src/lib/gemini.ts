@@ -366,7 +366,7 @@ export async function generateStyleDNA(profile: any) {
             "evening": "Date outfit",
             "formal": "Event attire"
         },
-        "brand_recommendations": [
+        "recommended_brands": [
             { "name": "Brand in ${profile.location}", "tier": "${profile.priceRange}", "why": "Reason", "region": "${profile.location}", "gender": "${profile.gender}" }
         ],
         "shopping_strategy": {
