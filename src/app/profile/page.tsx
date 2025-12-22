@@ -13,26 +13,43 @@ export default function ProfilePage() {
     const { profile, user, saveProfile } = useProfile();
     const { theme, setTheme } = useTheme();
     const [apiKey, setApiKey] = useState("");
+    const [imageExtractorKey, setImageExtractorKey] = useState("");
     const [isEditingKey, setIsEditingKey] = useState(false);
+    const [isEditingExtractorKey, setIsEditingExtractorKey] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
+
+        // Load Gemini Key
         if (profile.gemini_api_key) {
             setApiKey(profile.gemini_api_key);
-            setIsEditingKey(false); // Key exists, don't show edit mode
+            setIsEditingKey(false);
         } else {
-            // Fallback to local storage if not in profile yet
             const stored = localStorage.getItem("gemini_api_key");
             if (stored) {
                 setApiKey(stored);
                 setIsEditingKey(false);
             } else {
-                setIsEditingKey(true); // No key, show input
+                setIsEditingKey(true);
             }
         }
-    }, [profile.gemini_api_key]);
+
+        // Load Image Extractor Key
+        if (profile.image_extractor_api_key) {
+            setImageExtractorKey(profile.image_extractor_api_key);
+            setIsEditingExtractorKey(false);
+        } else {
+            const stored = localStorage.getItem("image_extractor_api_key");
+            if (stored) {
+                setImageExtractorKey(stored);
+                setIsEditingExtractorKey(false);
+            } else {
+                setIsEditingExtractorKey(true);
+            }
+        }
+    }, [profile.gemini_api_key, profile.image_extractor_api_key]);
 
     const handleSaveKey = async () => {
         if (!apiKey.trim()) {
@@ -45,6 +62,17 @@ export default function ProfilePage() {
         await saveProfile({ gemini_api_key: apiKey });
         setIsEditingKey(false);
         toast.success("API Key saved to your account and device.");
+    };
+
+    const handleSaveExtractorKey = async () => {
+        if (!imageExtractorKey.trim()) {
+            toast.error("Please enter a valid Image Extractor API key");
+            return;
+        }
+        localStorage.setItem("image_extractor_api_key", imageExtractorKey);
+        await saveProfile({ image_extractor_api_key: imageExtractorKey });
+        setIsEditingExtractorKey(false);
+        toast.success("Image Extractor Key saved.");
     };
 
     const handleSignOut = async () => {
@@ -127,67 +155,110 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* AI Settings */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 text-primary mb-2">
-                        <Key size={24} />
-                        <span className="uppercase tracking-widest text-xs font-bold">AI Configuration</span>
-                    </div>
-                    <div className="card glass p-8 rounded-xl border border-border/50 space-y-6">
-                        <div>
-                            <h3 className="text-xl font-bold mb-2">Your Gemini API Key</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Your personal API key for AI analysis. This key is used exclusively for your requests and is stored securely in your profile.
-                                <strong className="text-primary"> No default keys are used.</strong>
-                            </p>
+            </div>
 
-                            {!isEditingKey && apiKey ? (
-                                // Show masked key with edit button
-                                <div className="space-y-3">
-                                    <div className="flex gap-2 items-center">
-                                        <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
-                                            {"•".repeat(32)} {apiKey.slice(-4)}
-                                        </div>
-                                        <button
-                                            onClick={() => setIsEditingKey(true)}
-                                            className="btn btn-outline px-6 flex items-center gap-2"
-                                        >
-                                            Edit
-                                        </button>
+            {/* AI Settings */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 text-primary mb-2">
+                    <Key size={24} />
+                    <span className="uppercase tracking-widest text-xs font-bold">AI Configuration</span>
+                </div>
+                <div className="card glass p-8 rounded-xl border border-border/50 space-y-8">
+                    {/* Gemini Key */}
+                    <div>
+                        <h3 className="text-xl font-bold mb-2">Your Gemini API Key</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Your personal API key for AI analysis. This key is used exclusively for your requests and is stored securely in your profile.
+                            <strong className="text-primary"> No default keys are used.</strong>
+                        </p>
+
+                        {!isEditingKey && apiKey ? (
+                            <div className="space-y-3">
+                                <div className="flex gap-2 items-center">
+                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
+                                        {"•".repeat(32)} {apiKey.slice(-4)}
                                     </div>
-                                    <p className="text-xs text-green-600 dark:text-green-400">✓ API Key configured</p>
+                                    <button
+                                        onClick={() => setIsEditingKey(true)}
+                                        className="btn btn-outline px-6 flex items-center gap-2"
+                                    >
+                                        Edit
+                                    </button>
                                 </div>
-                            ) : (
-                                // Show input for new/editing key
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="password"
-                                            value={apiKey}
-                                            onChange={(e) => setApiKey(e.target.value)}
-                                            className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
-                                            placeholder="Enter your Google Gemini API Key"
-                                        />
-                                        <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2">
-                                            <Save size={18} /> Save
-                                        </button>
+                                <p className="text-xs text-green-600 dark:text-green-400">✓ API Key configured</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
+                                        placeholder="Enter your Google Gemini API Key"
+                                    />
+                                    <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2">
+                                        <Save size={18} /> Save
+                                    </button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t border-border/50"></div>
+
+                    {/* Image Extractor Key */}
+                    <div>
+                        <h3 className="text-xl font-bold mb-2">Image Extractor API Key (Optional)</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Enhance product image imports by using the Image Extractor API.
+                            <a href="https://extract.pics/api" target="_blank" className="text-primary underline ml-1">Get a key here</a>.
+                        </p>
+
+                        {!isEditingExtractorKey && imageExtractorKey ? (
+                            <div className="space-y-3">
+                                <div className="flex gap-2 items-center">
+                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
+                                        {"•".repeat(32)} {imageExtractorKey.slice(-4)}
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</p>
+                                    <button
+                                        onClick={() => setIsEditingExtractorKey(true)}
+                                        className="btn btn-outline px-6 flex items-center gap-2"
+                                    >
+                                        Edit
+                                    </button>
                                 </div>
-                            )}
-                        </div>
+                                <p className="text-xs text-green-600 dark:text-green-400">✓ Image Extractor Key configured</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        value={imageExtractorKey}
+                                        onChange={(e) => setImageExtractorKey(e.target.value)}
+                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
+                                        placeholder="Enter your Image Extractor API Key"
+                                    />
+                                    <button onClick={handleSaveExtractorKey} className="btn btn-primary px-6 flex items-center gap-2">
+                                        <Save size={18} /> Save
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
+            </div>
 
-                <div className="flex items-center gap-3 text-red-400 mb-2 pt-6">
-                    <Settings size={24} />
-                    <span className="uppercase tracking-widest text-xs font-bold">Danger Zone</span>
-                </div>
-                <div className="space-y-4">
-                    <button onClick={handleDeleteAccount} className="w-full p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
-                        <Trash2 size={18} /> Delete Account
-                    </button>
-                </div>
+            <div className="flex items-center gap-3 text-red-400 mb-2 pt-6">
+                <Settings size={24} />
+                <span className="uppercase tracking-widest text-xs font-bold">Danger Zone</span>
+            </div>
+            <div className="space-y-4">
+                <button onClick={handleDeleteAccount} className="w-full p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
+                    <Trash2 size={18} /> Delete Account
+                </button>
             </div>
         </div>
     );

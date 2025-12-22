@@ -70,6 +70,7 @@ function OnboardingContent() {
         age: "",
         location: "", // Climate context
         gemini_api_key: "",
+        image_extractor_api_key: "",
 
         // Body
         height: "",
@@ -716,6 +717,30 @@ function OnboardingContent() {
                                             Don't have one? <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get your free API key here →</a>
                                         </p>
                                         <p className="text-xs text-gray-500 italic">You can also add this later from Settings</p>
+                                    </div>
+                                </div>
+
+                                {/* Image Extractor Key Input */}
+                                <div className="mt-8 p-6 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl">
+                                    <div className="flex items-start gap-3 mb-4">
+                                        <Sparkles className="text-primary mt-1" size={24} />
+                                        <div>
+                                            <h4 className="font-bold text-lg">Better Image Imports</h4>
+                                            <p className="text-sm text-gray-300">Optional: Add an Extract.pics API key for high-quality product image extraction.</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="block text-sm font-medium">Image Extractor API Key</label>
+                                        <input
+                                            type="password"
+                                            placeholder="Enter Image Extractor API Key"
+                                            value={formData.image_extractor_api_key}
+                                            onChange={e => setFormData({ ...formData, image_extractor_api_key: e.target.value })}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                                        />
+                                        <p className="text-xs text-gray-400">
+                                            Get a key at <a href="https://extract.pics/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">extract.pics</a>
+                                        </p>
                                     </div>
                                 </div>
                             </div>

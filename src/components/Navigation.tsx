@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import Image from "next/image";
 
 export default function Navigation() {
     const pathname = usePathname();
@@ -116,8 +117,17 @@ function SidebarNav({ navItems, profile, loading, handleSignOut }: any) {
             {/* Profile & Logout - Simplified for collapsed state */}
             <div className="pt-6 border-t border-white/10 space-y-4">
                 <Link href="/profile" className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}>
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0 text-xs font-bold text-primary">
-                        {profile?.name?.[0] || "U"}
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0 text-xs font-bold text-primary relative overflow-hidden">
+                        {profile?.avatar_url ? (
+                            <Image
+                                src={profile.avatar_url}
+                                alt={profile.name || "Profile"}
+                                fill
+                                className="object-cover"
+                            />
+                        ) : (
+                            profile?.name?.[0] || "U"
+                        )}
                     </div>
                     {!isCollapsed && <span className="text-sm truncate">{profile?.name || "Profile"}</span>}
                 </Link>

@@ -46,4 +46,5 @@ export interface DatabaseProfile {
     style_report: any;
     created_at: string;
     avatar_url: string | null;
+    image_extractor_api_key?: string;
 }

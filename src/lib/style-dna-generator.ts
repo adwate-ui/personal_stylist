@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getFirstSearchResultUrl } from "./product-links";
+import { getProductLink } from "./product-links";
 
 // Model priority: Premium models first, free tier as fallback
 const MODELS = {
@@ -316,11 +316,11 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
 
             for (const item of items) {
               try {
-                const productData = await getFirstSearchResultUrl(
-                  item.brand || '',
-                  item.item || '',
-                  item.color || ''
-                );
+                const productData = await getProductLink({
+                  brand: item.brand || '',
+                  name: item.item || '',
+                  color: item.color || ''
+                });
                 updatedItems.push({
                   ...item,
                   product_url: productData.url,

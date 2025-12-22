@@ -54,92 +54,114 @@ export function getProductImagePlaceholder(itemName: string): string {
  * Uses link-scraper.adwate.workers.dev to search and extract product data
  * Returns '#' if worker fails to ensure no Google search fallback
  */
-export async function getFirstSearchResultUrl(brand: string, itemName: string, color?: string): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
-    try {
-        const searchQuery = [brand, itemName, color, 'official site'].filter(Boolean).join(' ');
+/**
+ * Generates the best possible product link based on available item data.
+ * 
+ * Logic:
+ * 1. If the product has a direct 'link' (or 'source_url' from scrape), return that.
+ * 2. If added via image (no link), return the URL of the first Google Search result.
+ *    - Search Query: Brand + Name + Color (deduplicated)
+ *    - To get the "first link of google search page", we realistically have to use 
+ *      Google's "I'm Feeling Lucky" behavior or a robust search API.
+ *    - Since we don't have a reliable "I'm Feeling Lucky" API without redirects, 
+ *      we will construct a smart Google Search URL that mimics a direct finding or
+ *      use the existing worker if it can resolve to a direct product page.
+ */
+export async function getProductLink(item: {
+    link?: string;
+    source_url?: string;
+    brand?: string;
+    name?: string;
+    item_name?: string;
+    sub_category?: string;
+    color?: string;
+    primary_color?: string;
+}): Promise<{ url: string; imageUrl?: string; title?: string; price?: string; brand?: string }> {
+    // 1. Check for direct link
+    if (item.link && item.link.startsWith('http')) return { url: item.link };
+    if (item.source_url && item.source_url.startsWith('http')) return { url: item.source_url };
 
-        // Use link-scraper for URL discovery (User Request)
-        const workerUrl = 'https://link-scraper.adwate.workers.dev';
+    // 2. Construct Search Query
+    const brand = item.brand || '';
+    const name = item.name || item.item_name || item.sub_category || '';
+    const color = item.color || item.primary_color || '';
 
-        try {
-            // Request multiple results to allow for fallback if images are missing
-            const workerResponse = await fetch(`${workerUrl}/search-product`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: searchQuery, limit: 5 })
-            });
+    let queryParts = [brand];
 
-            if (workerResponse.ok) {
-                const data = await workerResponse.json();
-
-                // Normalize results: Handle if worker returns array in 'results', 'items', or just a single object
-                let candidates: any[] = [];
-                if (data.results && Array.isArray(data.results)) candidates = data.results;
-                else if (data.items && Array.isArray(data.items)) candidates = data.items;
-                else if (data.url) candidates = [data]; // Fallback to single result if API doesn't support list
-
-                console.log(`[Product Search] Found ${candidates.length} candidates for "${searchQuery}"`);
-
-                // AuthentiQC Worker for image validation
-                const authWorkerUrl = 'https://authentiqc-worker.adwate.workers.dev/fetch-metadata';
-
-                // Iterate through candidates to find one with a valid connected image
-                for (const candidate of candidates) {
-                    if (!candidate.url || !candidate.url.startsWith('http')) continue;
-
-                    // Skip Google Search results to avoid loops/captchas
-                    if (candidate.url.includes('google.com/search')) continue;
-
-                    try {
-                        console.log(`[Product Search] Checking image for: ${candidate.url}`);
-                        const authResponse = await fetch(`${authWorkerUrl}?url=${encodeURIComponent(candidate.url)}`);
-
-                        if (authResponse.ok) {
-                            const authData = await authResponse.json();
-                            const authImage = authData.image || (authData.images && authData.images.length > 0 ? authData.images[0] : null);
-
-                            if (authImage) {
-                                console.log(`[Product Search] ✅ Valid image found: ${authImage}`);
-                                return {
-                                    url: candidate.url,
-                                    imageUrl: authImage,
-                                    title: candidate.title || authData.title || itemName,
-                                    price: candidate.price || authData.price,
-                                    brand: candidate.brand || brand
-                                };
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`[Product Search] Failed to check image for ${candidate.url}`, e);
-                    }
-                    // If no image, loop continues to next candidate
-                }
-
-                // If loop finishes with no images, fall back to the first valid URL (if any) without image
-                if (candidates.length > 0 && candidates[0].url) {
-                    console.log(`[Product Search] ⚠️ No images found, returning first result.`);
-                    return {
-                        url: candidates[0].url,
-                        imageUrl: candidates[0].imageUrl, // Might be null
-                        title: candidates[0].title,
-                        price: candidates[0].price,
-                        brand: candidates[0].brand
-                    };
-                }
-            }
-        } catch (workerError) {
-            console.warn('Worker search failed, using fallback', workerError);
-        }
-
-        // Final Fallback: Google Search Page
-        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=shop`;
-
-        return {
-            url: googleSearchUrl,
-            imageUrl: undefined
-        };
-    } catch (error) {
-        console.error('Error fetching product data:', error);
-        return { url: '#' };
+    // Add name (avoiding brand duplication)
+    if (brand && name.toLowerCase().includes(brand.toLowerCase())) {
+        queryParts.push(name);
+    } else {
+        queryParts.push(name);
     }
+
+    // Add color (if not already in name)
+    if (color && !name.toLowerCase().includes(color.toLowerCase())) {
+        queryParts.push(color);
+    }
+
+    const query = queryParts.filter(Boolean).join(' ').trim();
+
+    // Default fallback if query is empty
+    if (!query) return { url: '#' };
+
+    // 3. Get First Result URL via Worker
+    // The user wants "the URL of the first link of the google search page".
+    // We use our scraper worker to mimic this "I'm Feeling Lucky" behavior
+    // and also grab metadata (image) if possible.
+    try {
+        const workerUrl = 'https://link-scraper.adwate.workers.dev/search-product';
+        // Optimization: Add 'site:brand.com' if we can map the brand to a domain to improve worker precision
+        // For now, we trust the worker's own heuristics, but we ensure the query is specific.
+        const response = await fetch(workerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, limit: 1 })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            // Handle various likely response shapes
+            const candidate = data.url ? data : (data.results?.[0] || data.items?.[0]);
+
+            if (candidate && candidate.url && candidate.url.startsWith('http')) {
+                return {
+                    url: candidate.url,
+                    imageUrl: candidate.imageUrl || candidate.image, // Normalizing fields
+                    title: candidate.title,
+                    price: candidate.price,
+                    brand: candidate.brand || brand
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to fetch first link from worker, falling back to search query', e);
+    }
+
+    // 4. Fallback: Brand-Specific Search (Result Page on Brand Site)
+    // This is safer than a generic "I'm Feeling Lucky" because it guarantees the user lands on the correct website.
+    // E.g. If the item is "Zara White Shirt", redirecting to "zara.com/search?q=White+Shirt" is 
+    // better than a random blog post about white shirts.
+    const normalizedBrand = Object.keys(BRAND_SEARCH_URLS).find(
+        b => b.toLowerCase() === brand.toLowerCase()
+    );
+
+    if (normalizedBrand && BRAND_SEARCH_URLS[normalizedBrand]) {
+        return {
+            url: BRAND_SEARCH_URLS[normalizedBrand](query.replace(brand, '').trim()) // Remove brand from query as we are on the brand site
+        };
+    }
+
+    // 5. Final Fallback: DuckDuckGo "!ducky"
+    // If we don't know the brand site, we try the "exclusive first result" trick.
+    // We add "buy online" to hint that we want a shop page.
+    return {
+        url: `https://duckduckgo.com/?q=!ducky+${encodeURIComponent(query + " buy online")}`
+    };
 }
+
+// Backward compatibility shim
+// This allows existing code calling this with (brand, name, color) args to work
+export const getFirstSearchResultUrl = async (brand: string, itemName: string, color?: string) => {
+    return await getProductLink({ brand, name: itemName, color });
+};

@@ -30,7 +30,8 @@ const DEFAULT_PROFILE = {
     priceRange: "",
     styleReport: null as any,
     styleDNA: null as any,
-    gemini_api_key: process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""
+    gemini_api_key: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "",
+    image_extractor_api_key: ""
 };
 
 export function useProfile() {
@@ -70,7 +71,8 @@ export function useProfile() {
             price_range: profileData.priceRange,
             style_dna: profileData.styleDNA,
             style_report: profileData.styleReport,
-            gemini_api_key: profileData.gemini_api_key
+            gemini_api_key: profileData.gemini_api_key,
+            image_extractor_api_key: profileData.image_extractor_api_key
         };
     };
 
@@ -95,7 +97,8 @@ export function useProfile() {
             priceRange: dbProfile.price_range || "",
             styleDNA: dbProfile.style_dna || null,
             styleReport: dbProfile.style_report || null,
-            gemini_api_key: dbProfile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""
+            gemini_api_key: dbProfile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "",
+            image_extractor_api_key: dbProfile.image_extractor_api_key || ""
         };
     };
 

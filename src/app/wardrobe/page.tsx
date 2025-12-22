@@ -8,7 +8,7 @@ import { Plus, Sparkles, Loader2, AlertCircle, LayoutGrid, List, Layers, X, Shop
 import { supabase } from "@/lib/supabase";
 import { WardrobeItem } from "@/types/wardrobe";
 import { useProfile } from "@/hooks/useProfile";
-import { getBrandSearchUrl, getFirstSearchResultUrl } from "@/lib/product-links";
+import { getProductLink } from "@/lib/product-links";
 import { formatPrice } from "@/lib/currency";
 import { getBrandTier, getSimilarBrands } from "@/lib/brand-tiers";
 
@@ -292,11 +292,11 @@ export default function WardrobePage() {
                                                 <button
                                                     onClick={async () => {
                                                         const color = selectedItem.color || selectedItem.ai_analysis?.primary_color;
-                                                        const data = await getFirstSearchResultUrl(
-                                                            selectedItem.brand || '',
-                                                            selectedItem.name || selectedItem.sub_category || '',
-                                                            color
-                                                        );
+                                                        const data = await getProductLink({
+                                                            brand: selectedItem.brand || '',
+                                                            name: selectedItem.name || selectedItem.sub_category || '',
+                                                            color: color
+                                                        });
                                                         window.open(data.url, '_blank');
                                                     }}
                                                     className="text-primary hover:text-primary/80 text-sm underline underline-offset-2 flex items-center gap-1"

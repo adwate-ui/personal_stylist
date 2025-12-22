@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
-import { getBrandSearchUrl, getProductImagePlaceholder, getFirstSearchResultUrl } from "@/lib/product-links";
+import { getBrandSearchUrl, getProductImagePlaceholder, getProductLink } from "@/lib/product-links";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -96,7 +96,11 @@ export default function StyleDNAPage() {
                 for (const item of essentials) {
                     const key = `${item.brand || ''}-${item.item}`;
                     try {
-                        const data = await getFirstSearchResultUrl(item.brand || '', item.item, item.color || '');
+                        const data = await getProductLink({
+                            brand: item.brand || '',
+                            name: item.item,
+                            color: item.color || ''
+                        });
                         newData.set(key, data);
                     } catch (error) {
                         console.error(`Failed to fetch product data for ${key}:`, error);
@@ -113,7 +117,11 @@ export default function StyleDNAPage() {
                         for (const item of items) {
                             const key = `${item.brand || ''}-${item.item}`;
                             try {
-                                const data = await getFirstSearchResultUrl(item.brand || '', item.item, item.color || '');
+                                const data = await getProductLink({
+                                    brand: item.brand || '',
+                                    name: item.item,
+                                    color: item.color || ''
+                                });
                                 newData.set(key, data);
                             } catch (error) {
                                 console.error(`Failed to fetch product data for ${key}:`, error);

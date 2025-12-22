@@ -12,7 +12,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { analyzeImageWithGemini, analyzeLinkWithGemini } from "@/lib/gemini-client";
 import { WardrobeItemAnalysis } from "@/types/wardrobe";
 import { supabase } from "@/lib/supabase";
-import { getFirstSearchResultUrl } from "@/lib/product-links";
+import { getProductLink } from "@/lib/product-links";
+import { extractBestImage } from "@/lib/image-extractor";
 
 export default function AddItemPage() {
     const router = useRouter();
@@ -133,55 +134,74 @@ export default function AddItemPage() {
             if ((!data.imageBase64 && !data.image && !data.imageUrl) || fetchFailed) {
                 console.warn('[Add Item] No image found or worker failed, attempting fallback search...');
 
-                // FALLBACK: Try searching for the URL itself using our search worker
-                // If that fails, try constructing a query from the URL path
-                try {
-                    console.log('[Add Item] Attempting fallback search with URL...');
-                    let fallbackData = await getFirstSearchResultUrl('', url, '');
-
-                    if (!fallbackData.imageUrl) {
-                        // Strategy 2: Extract keywords from URL path
-                        try {
-                            const urlObj = new URL(url);
-                            const pathSegments = urlObj.pathname.split('/').filter(p => p.length > 2 && !['p', 'product', 'item', 'shop', 'en', 'in', 'html'].includes(p.toLowerCase()));
-                            const slug = pathSegments.pop() || '';
-                            const keywords = slug.replace(/[_]/g, ' ').replace(/-/g, ' ').replace(/\.html.*/, '').replace(/\d+/g, '').trim();
-
-                            const brand = data.brand || urlObj.hostname.replace('www.', '').split('.')[0];
-                            const smartQuery = `${brand} ${keywords}`.trim();
-
-                            if (keywords.length > 3) {
-                                console.log('[Add Item] Attempting smart fallback search:', smartQuery);
-                                fallbackData = await getFirstSearchResultUrl(smartQuery, '', '');
-                            }
-                        } catch (e) {
-                            console.warn('Smart query generation failed:', e);
+                // NEW: Try Image Extractor API if key is available
+                if (profile.image_extractor_api_key) {
+                    try {
+                        console.log('[Add Item] 🚀 Trying Image Extractor API...');
+                        const extractedUrl = await extractBestImage(url, profile.image_extractor_api_key);
+                        if (extractedUrl) {
+                            console.log('[Add Item] ✅ Image Extractor found:', extractedUrl);
+                            data.imageUrl = extractedUrl;
+                            fetchFailed = false; // Recovery successful
                         }
+                    } catch (ieError) {
+                        console.error('[Add Item] Image Extraction failed:', ieError);
                     }
-
-                    if (fallbackData.imageUrl) {
-                        console.log('[Add Item] ✅ Fallback search found image:', fallbackData.imageUrl);
-                        data.imageUrl = fallbackData.imageUrl;
-                        // If we got metadata from fallback, fill it in if missing
-                        if (!data.title) data.title = fallbackData.title;
-                        if (!data.price) data.price = fallbackData.price;
-                        if (!data.brand) data.brand = fallbackData.brand;
-                    } else {
-                        throw new Error('Fallback search failed');
-                    }
-                } catch (fallbackError) {
-                    console.error('[Add Item] Fallback failed:', fallbackError);
-                    clearInterval(interval);
-                    setLoading(false);
-                    // Only show specific error if user input was valid but site failed
-                    toast.error("Couldn't load product image", {
-                        description: "This site has strict security blocks. Please upload a screenshot instead.",
-                        duration: 6000
-                    });
-                    return;
                 }
-            }
 
+                // If still no image, try legacy fallback (Search)
+                if (!data.imageUrl) {
+                    // FALLBACK: Try searching for the URL itself using our search worker
+                    // If that fails, try constructing a query from the URL path
+                    try {
+                        console.log('[Add Item] Attempting fallback search with URL...');
+                        let fallbackData = await getProductLink({ link: url });
+
+                        if (!fallbackData.imageUrl) {
+                            // Strategy 2: Extract keywords from URL path
+                            try {
+                                const urlObj = new URL(url);
+                                const pathSegments = urlObj.pathname.split('/').filter(p => p.length > 2 && !['p', 'product', 'item', 'shop', 'en', 'in', 'html'].includes(p.toLowerCase()));
+                                const slug = pathSegments.pop() || '';
+                                const keywords = slug.replace(/[_]/g, ' ').replace(/-/g, ' ').replace(/\.html.*/, '').replace(/\d+/g, '').trim();
+
+                                const brand = data.brand || urlObj.hostname.replace('www.', '').split('.')[0];
+                                const smartQuery = `${brand} ${keywords}`.trim();
+
+                                if (keywords.length > 3) {
+                                    console.log('[Add Item] Attempting smart fallback search:', smartQuery);
+                                    fallbackData = await getProductLink({ name: smartQuery });
+                                }
+                            } catch (e) {
+                                console.warn('Smart query generation failed:', e);
+                            }
+                        }
+
+                        if (fallbackData.imageUrl) {
+                            console.log('[Add Item] ✅ Fallback search found image:', fallbackData.imageUrl);
+                            data.imageUrl = fallbackData.imageUrl;
+                            // If we got metadata from fallback, fill it in if missing
+                            if (!data.title) data.title = fallbackData.title;
+                            if (!data.price) data.price = fallbackData.price;
+                            if (!data.brand) data.brand = fallbackData.brand;
+                        } else {
+                            throw new Error('Fallback search failed');
+                        }
+                    } catch (fallbackError) {
+                        console.error('[Add Item] Fallback failed:', fallbackError);
+                        clearInterval(interval);
+                        setLoading(false);
+                        // Only show specific error if user input was valid but site failed
+                        toast.error("Couldn't load product image", {
+                            description: "This site has strict security blocks. Please upload a screenshot instead.",
+                            duration: 6000
+                        });
+                        return;
+                    }
+                }
+
+
+            }
 
             // Convert to blob for Gemini analysis
             let imgBlob: Blob;
@@ -599,7 +619,11 @@ export default function AddItemPage() {
                                     if (activeTab === 'link' && url) {
                                         window.open(url, '_blank');
                                     } else {
-                                        const data = await getFirstSearchResultUrl(preview.brand || '', preview.item_name || preview.sub_category || '', preview.color || preview.primary_color);
+                                        const data = await getProductLink({
+                                            brand: preview.brand,
+                                            name: preview.item_name || preview.sub_category,
+                                            color: preview.color || preview.primary_color
+                                        });
                                         window.open(data.url, '_blank');
                                     }
                                 }}>

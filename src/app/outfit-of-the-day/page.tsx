@@ -187,7 +187,7 @@ export default function OutfitOfTheDay() {
     if (profileLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <main className="min-h-screen p-4 md:p-8 md:ml-64 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950 flex flex-col items-center">
+        <main className="min-h-screen p-4 md:p-8 pb-24 safe-area-pb bg-gradient-to-br from-black to-zinc-950 flex flex-col items-center">
             <div className="max-w-7xl w-full mx-auto flex flex-col items-center flex-1 justify-center">
 
                 <header className="mb-12 text-center">
