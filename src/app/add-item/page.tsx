@@ -295,17 +295,6 @@ export default function AddItemPage() {
 
             setPreview(previewData);
         } catch (err) {
-            // ... (rest of file) ...
-            <div className="mt-2">
-                <a
-                    href={activeTab === 'link' && url ? url : preview.product_link || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-bold text-primary hover:text-primary/80 flex items-center gap-2 underline underline-offset-4"
-                >
-                    <LinkIcon size={14} /> Product Link
-                </a>
-            </div>
             console.error(err);
             toast.error("Link Analysis Failed", {
                 description: (err as Error).message || "Please check the URL or try uploading a photo.",
