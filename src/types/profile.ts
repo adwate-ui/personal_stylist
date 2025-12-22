@@ -21,6 +21,7 @@ export interface ProfileData {
     priceRange: string;
     styleDNA?: any;
     styleReport?: any;
+    image_extractor_api_key?: string;
     avatar_url?: string;
     avatar?: string; // Legacy field for backward compatibility
 }

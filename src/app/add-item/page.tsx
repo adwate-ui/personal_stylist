@@ -277,11 +277,35 @@ export default function AddItemPage() {
                 color: analysis.primary_color || data.color, // Map primary_color to color
             };
 
+            // Pre-fetch product link for "Upload" mode
+            // This ensures we have a valid URL ready for the "Product Link" button
+            try {
+                const linkData = await getProductLink({
+                    brand: previewData.brand,
+                    name: previewData.item_name || previewData.sub_category,
+                    color: previewData.color || previewData.primary_color
+                });
+                previewData.product_link = linkData.url;
+            } catch (e) {
+                console.warn("Failed to pre-fetch product link", e);
+            }
+
             clearInterval(interval);
             setProgress(100);
 
             setPreview(previewData);
         } catch (err) {
+            // ... (rest of file) ...
+            <div className="mt-2">
+                <a
+                    href={activeTab === 'link' && url ? url : preview.product_link || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-bold text-primary hover:text-primary/80 flex items-center gap-2 underline underline-offset-4"
+                >
+                    <LinkIcon size={14} /> Product Link
+                </a>
+            </div>
             console.error(err);
             toast.error("Link Analysis Failed", {
                 description: (err as Error).message || "Please check the URL or try uploading a photo.",
@@ -615,28 +639,21 @@ export default function AddItemPage() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-primary/30 transition-colors group cursor-pointer" onClick={async () => {
-                                    if (activeTab === 'link' && url) {
-                                        window.open(url, '_blank');
-                                    } else {
-                                        const data = await getProductLink({
-                                            brand: preview.brand,
-                                            name: preview.item_name || preview.sub_category,
-                                            color: preview.color || preview.primary_color
-                                        });
-                                        window.open(data.url, '_blank');
-                                    }
-                                }}>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <div className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
-                                            {activeTab === 'link' ? <LinkIcon size={12} /> : <Search size={12} />}
-                                            {activeTab === 'link' ? "Product Link" : "Find on Google"}
-                                        </div>
-                                        <ArrowRight size={14} className="text-gray-500 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0" />
-                                    </div>
-                                    <div className="text-sm font-medium hover:text-primary underline decoration-primary/30 underline-offset-4">
-                                        View Purchasing Options
-                                    </div>
+                                <div className="mt-2">
+                                    <a
+                                        href={activeTab === 'link' && url ? url : preview.product_link || '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-bold text-primary hover:text-primary/80 flex items-center gap-2 underline underline-offset-4"
+                                        onClick={(e) => {
+                                            if (!preview.product_link && activeTab !== 'link') {
+                                                e.preventDefault();
+                                                toast.error("Link not available yet");
+                                            }
+                                        }}
+                                    >
+                                        <LinkIcon size={14} /> Product Link
+                                    </a>
                                 </div>
 
                                 <div>

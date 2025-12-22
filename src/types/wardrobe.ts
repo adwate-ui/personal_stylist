@@ -13,6 +13,7 @@ export interface WardrobeItemAnalysis {
     tags?: string[];
     style_reasoning?: string;
     image_url?: string;
+    product_link?: string;
     styling_tips?: string[];
     error?: string;
     message?: string;

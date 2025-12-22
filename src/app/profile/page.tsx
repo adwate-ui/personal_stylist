@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor, Upload } from "lucide-react";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
@@ -107,12 +108,59 @@ export default function ProfilePage() {
         <div className="min-h-screen p-8 lg:p-12 animate-fade-in bg-background text-foreground">
             <div className="max-w-3xl mx-auto space-y-12">
                 <div className="flex items-center gap-4 border-b border-border/50 pb-8">
-                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center font-serif text-2xl text-primary font-bold border border-primary/20">
-                        {profile?.name?.[0] || "U"}
+                    <div className="relative group">
+                        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center font-serif text-2xl text-primary font-bold border border-primary/20 overflow-hidden relative">
+                            {profile?.avatar_url ? (
+                                <Image
+                                    src={profile.avatar_url}
+                                    alt={profile.name || "Profile"}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                profile?.name?.[0] || "U"
+                            )}
+                        </div>
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full backdrop-blur-sm">
+                            <Upload size={20} className="text-white" />
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                    if (!e.target.files?.[0]) return;
+                                    if (!isSupabaseConfigured) {
+                                        toast.error("Storage not configured for uploads");
+                                        return;
+                                    }
+                                    const file = e.target.files[0];
+                                    const toastId = toast.loading("Uploading avatar...");
+                                    try {
+                                        const fileExt = file.name.split('.').pop();
+                                        const fileName = `${user?.id || 'unknown'}/${Date.now()}.${fileExt}`;
+                                        const { error: uploadError } = await supabase.storage
+                                            .from('avatars')
+                                            .upload(fileName, file);
+
+                                        if (uploadError) throw uploadError;
+
+                                        const { data: { publicUrl } } = supabase.storage
+                                            .from('avatars')
+                                            .getPublicUrl(fileName);
+
+                                        await saveProfile({ avatar_url: publicUrl });
+                                        toast.success("Avatar updated!", { id: toastId });
+                                    } catch (err) {
+                                        console.error(err);
+                                        toast.error("Failed to upload avatar", { id: toastId });
+                                    }
+                                }}
+                            />
+                        </label>
                     </div>
                     <div>
-                        <h1 className="text-4xl font-serif font-bold">{profile?.name || "Style Icon"}</h1>
-                        <p className="text-muted-foreground">{user?.email || "User Profile"}</p>
+                        <h1 className="text-3xl font-serif font-bold">{profile?.name || "Style Icon"}</h1>
+                        <p className="text-muted-foreground text-sm">{user?.email || "User Profile"}</p>
                     </div>
                 </div>
 
@@ -174,7 +222,7 @@ export default function ProfilePage() {
 
                         {!isEditingKey && apiKey ? (
                             <div className="space-y-3">
-                                <div className="flex gap-2 items-center">
+                                <div className="flex gap-2 items-center max-w-lg">
                                     <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
                                         {"•".repeat(32)} {apiKey.slice(-4)}
                                     </div>
@@ -189,7 +237,7 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 max-w-lg">
                                     <input
                                         type="password"
                                         value={apiKey}
@@ -218,7 +266,7 @@ export default function ProfilePage() {
 
                         {!isEditingExtractorKey && imageExtractorKey ? (
                             <div className="space-y-3">
-                                <div className="flex gap-2 items-center">
+                                <div className="flex gap-2 items-center max-w-lg">
                                     <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
                                         {"•".repeat(32)} {imageExtractorKey.slice(-4)}
                                     </div>
@@ -233,7 +281,7 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 max-w-lg">
                                     <input
                                         type="password"
                                         value={imageExtractorKey}
@@ -256,7 +304,7 @@ export default function ProfilePage() {
                 <span className="uppercase tracking-widest text-xs font-bold">Danger Zone</span>
             </div>
             <div className="space-y-4">
-                <button onClick={handleDeleteAccount} className="w-full p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
+                <button onClick={handleDeleteAccount} className="w-full max-w-lg p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
                     <Trash2 size={18} /> Delete Account
                 </button>
             </div>

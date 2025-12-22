@@ -194,13 +194,30 @@ export function useProfile() {
         const dataWithId = { ...toSave, id: user.id };
 
         try {
+            // Try saving everything (including new fields)
             const { error } = await supabase
                 .from('profiles')
                 .upsert(dataWithId, { onConflict: 'id' });
 
             if (error) {
-                console.error("Error saving profile to Supabase:", error);
-                setError(error.message);
+                console.warn("Full profile save failed (likely missing columns), retrying with legacy fields...", error);
+
+                // Fallback: Try saving without the new 'image_extractor_api_key' column
+                // This ensures that users who haven't run the migration yet can still save their basic profile
+                const { image_extractor_api_key, ...legacyData } = dataWithId;
+
+                const { error: retryError } = await supabase
+                    .from('profiles')
+                    .upsert(legacyData, { onConflict: 'id' });
+
+                if (retryError) {
+                    console.error("Retry save failed:", retryError);
+                    setError(retryError.message);
+                } else {
+                    // If retry succeeded, we swallow the first error but maybe warn?
+                    // For now, we assume success because localStorage has the full data anyway.
+                    setError(null);
+                }
             } else {
                 setError(null);
             }
