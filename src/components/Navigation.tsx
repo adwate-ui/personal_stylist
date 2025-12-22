@@ -167,8 +167,10 @@ function SidebarNav({ navItems, profile, loading, handleSignOut }: any) {
             </button>
 
             <div className={`flex items-center gap-2 mb-10 px-2 text-primary overflow-hidden whitespace-nowrap ${isCollapsed ? 'justify-center' : ''}`}>
-                <Sparkles size={24} className="shrink-0" />
-                {!isCollapsed && <span className="font-serif text-xl font-bold tracking-tight">Gemini Stylist</span>}
+                <div className="w-8 h-8 relative shrink-0">
+                    <Image src="/icon.png" alt="AURUM Logo" fill className="object-contain" />
+                </div>
+                {!isCollapsed && <span className="font-serif text-xl font-bold tracking-widest">AURUM</span>}
             </div>
 
             <nav className="flex-1 space-y-2">

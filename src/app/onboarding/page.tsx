@@ -158,12 +158,28 @@ function OnboardingContent() {
     useEffect(() => {
         if (!profileLoading && mode !== 'preferences' && mode !== 'regenerate') {
             // If user has Style DNA, they've completed onboarding
-            if (profile.styleDNA) {
-                router.push('/wardrobe');
+            if (profile?.styleDNA) {
+                console.log("User already onboarded, redirecting to wardrobe...");
+                router.replace('/wardrobe'); // Use replace to prevent back-button loop
                 return;
             }
         }
     }, [profileLoading, profile, mode, router]);
+
+    // Show loading state while checking profile
+    if (profileLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white">
+                <Loader2 size={48} className="text-primary animate-spin mb-4" />
+                <p className="text-gray-400 font-serif text-lg">Loading your profile...</p>
+            </div>
+        );
+    }
+
+    // If redirection is happening, don't render content to avoid flicker
+    if (!profileLoading && profile?.styleDNA && mode !== 'preferences' && mode !== 'regenerate') {
+        return null;
+    }
 
     // Load saved form data from localStorage on mount
     useEffect(() => {
@@ -574,58 +590,83 @@ function OnboardingContent() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden bg-background">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8 relative overflow-hidden bg-background">
             {/* Background Texture */}
             <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none"
                 style={{ background: 'radial-gradient(circle at 15% 50%, rgba(212,175,55,0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(255,255,255,0.05), transparent 25%)' }}
             />
 
-            <div className="w-full max-w-2xl z-10">
-                {/* Progress Bar */}
-                <div className="mb-8">
-                    <div className="flex justify-between text-sm text-gray-500 mb-2">
+            <div className="w-full max-w-2xl z-10 flex flex-col gap-6">
+                {/* Progress Bar - Only visible if we have steps */}
+                <div className="w-full">
+                    <div className="flex justify-between text-sm text-gray-500 mb-2 font-medium">
                         <span>Profile Completion</span>
                         <span>{Math.round((step / totalSteps) * 100)}%</span>
                     </div>
-                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-primary transition-all duration-500 ease-out"
+                            className="h-full bg-primary transition-all duration-500 ease-out shadow-[0_0_10px_rgba(212,175,55,0.5)]"
                             style={{ width: `${(step / totalSteps) * 100}% ` }}
                         />
                     </div>
                 </div>
 
-                <div className="card glass p-8 md:p-10 min-h-[500px] flex flex-col justify-between animate-fade-in relative">
+                <div className="card glass p-6 md:p-10 w-full flex flex-col justify-between animate-fade-in relative shadow-2xl border border-white/10" style={{ minHeight: '600px' }}>
 
                     {/* Analyzing Overlay */}
                     {(analyzing || saving) && (
-                        <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center p-8 rounded-[var(--radius-lg)]">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-center p-8 rounded-[var(--radius-lg)]">
                             <Loader2 size={48} className="text-primary animate-spin mb-6" />
-                            <h2 className="text-3xl font-serif font-bold mb-2">{analyzing ? "Decoding Your Style DNA" : "Saving Your Profile"}</h2>
-                            <p className="text-gray-400 max-w-md">{analyzing ? "Analysing your biometrics, lifestyle, and preferences to build your unique style profile..." : "Setting up your digital wardrobe..."}</p>
+                            <h2 className="text-3xl font-serif font-bold mb-3">{analyzing ? "Decoding Your Style DNA" : "Saving Your Profile"}</h2>
+                            <p className="text-gray-400 max-w-md text-lg">{analyzing ? "Analysing your biometrics, lifestyle, and preferences to build your unique style profile..." : "Setting up your digital wardrobe..."}</p>
                         </div>
                     )}
 
                     {/* Step Content */}
-                    <div className="flex-1">
+                    <div className="flex-1 flex flex-col">
                         {step === 1 && mode !== 'preferences' && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div className="flex items-center gap-3 text-primary mb-2">
-                                    <User size={24} />
-                                    <span className="uppercase tracking-widest text-xs font-bold">The Basics</span>
+                            <div className="space-y-8 animate-fade-in flex-1">
+                                <div>
+                                    <div className="flex items-center gap-3 text-primary mb-3">
+                                        <User size={24} />
+                                        <span className="uppercase tracking-widest text-xs font-bold">The Basics</span>
+                                    </div>
+                                    <h1 className="text-4xl font-serif font-bold mb-2">Introduction</h1>
+                                    <p className="text-gray-400 text-lg">Let&apos;s start with the essentials to address you properly and understand your environment.</p>
                                 </div>
-                                <h1 className="text-4xl font-serif font-bold">Introduction</h1>
-                                <p className="text-gray-400">Let&apos;s start with the essentials to address you properly and understand your environment.</p>
 
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                        <label className="block text-sm font-medium">Full Name</label>
-                                        <input type="text" placeholder="Your Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full" />
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="block text-sm font-medium">Gender Identity</label>
-                                            <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="w-full">
+                                            <label className="block text-sm font-medium text-gray-300">Full Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Your Name"
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-300">Age</label>
+                                            <input
+                                                type="number"
+                                                placeholder="25"
+                                                value={formData.age}
+                                                onChange={e => setFormData({ ...formData, age: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all appearance-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-300">Gender Identity</label>
+                                            <select
+                                                value={formData.gender}
+                                                onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                                            >
                                                 <option value="">Select...</option>
                                                 <option value="female">Female</option>
                                                 <option value="male">Male</option>
@@ -634,7 +675,7 @@ function OnboardingContent() {
                                             </select>
                                         </div>
                                         <div className="space-y-2 relative">
-                                            <label className="block text-sm font-medium">City</label>
+                                            <label className="block text-sm font-medium text-gray-300">City</label>
                                             <input
                                                 type="text"
                                                 placeholder="Start typing (e.g., Mumbai, Bangalore, Delhi)"
@@ -658,19 +699,19 @@ function OnboardingContent() {
 
                                             {/* Autocomplete Dropdown */}
                                             {showCitySuggestions && citySuggestions.length > 0 && (
-                                                <div className="absolute z-50 w-full mt-1 bg-surface border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto">
+                                                <div className="absolute z-50 w-full mt-1 bg-[#1a1a1a] border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto">
                                                     {citySuggestions.slice(0, 10).map(city => (
                                                         <button
                                                             key={city}
                                                             type="button"
-                                                            className="w-full text-left px-4 py-2 hover:bg-primary/10 hover:text-primary transition-colors text-sm border-b border-white/5 last:border-0"
+                                                            className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors text-sm border-b border-white/5 last:border-0"
                                                             onMouseDown={() => selectCity(city)}
                                                         >
                                                             {city}
                                                         </button>
                                                     ))}
                                                     {citySuggestions.length > 10 && (
-                                                        <div className="px-4 py-2 text-xs text-gray-500 text-center">
+                                                        <div className="px-4 py-2 text-xs text-gray-500 text-center border-t border-white/5">
                                                             ...and {citySuggestions.length - 10} more
                                                         </div>
                                                     )}
@@ -678,20 +719,7 @@ function OnboardingContent() {
                                             )}
 
                                             {cityError && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><span>⚠️</span>{cityError}</p>}
-                                            {!cityError && formData.location.length > 0 && formData.location.length < 3 && (
-                                                <p className="text-gray-500 text-xs mt-1">Type at least 3 characters to see suggestions</p>
-                                            )}
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium">Age</label>
-                                        <input
-                                            type="number"
-                                            placeholder="25"
-                                            value={formData.age}
-                                            onChange={e => setFormData({ ...formData, age: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all appearance-none"
-                                        />
                                     </div>
                                 </div>
 
@@ -720,40 +748,49 @@ function OnboardingContent() {
                                     </div>
                                 </div>
 
-                                {/* Image Extractor Key Input */}
-                                <div className="mt-8 p-6 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl">
-                                    <div className="flex items-start gap-3 mb-4">
-                                        <Sparkles className="text-primary mt-1" size={24} />
-                                        <div>
-                                            <h4 className="font-bold text-lg">Better Image Imports</h4>
-                                            <p className="text-sm text-gray-300">Optional: Add an Extract.pics API key for high-quality product image extraction.</p>
+                                {/* Image Extractor Key Input - Hidden behind a toggle or simplified? Kept for now but styled consistent */}
+                                <div className="mt-4 p-4 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                                        className="flex items-center justify-between w-full text-left"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-black/30 rounded-lg"><Sparkles size={14} className="text-gray-400" /></div>
+                                            <div>
+                                                <h4 className="font-bold text-sm text-gray-300">Advanced: Extract.pics API</h4>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="block text-sm font-medium">Image Extractor API Key</label>
-                                        <input
-                                            type="password"
-                                            placeholder="Enter Image Extractor API Key"
-                                            value={formData.image_extractor_api_key}
-                                            onChange={e => setFormData({ ...formData, image_extractor_api_key: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                                        />
-                                        <p className="text-xs text-gray-400">
-                                            Get a key at <a href="https://extract.pics/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">extract.pics</a>
-                                        </p>
-                                    </div>
+                                        <ChevronRight size={16} className={`transition-transform text-gray-500 ${showApiKeyInput ? 'rotate-90' : ''}`} />
+                                    </button>
+
+                                    {showApiKeyInput && (
+                                        <div className="mt-4 pt-4 border-t border-white/10 space-y-3 animate-fade-in">
+                                            <label className="block text-sm font-medium">Image Extractor API Key</label>
+                                            <input
+                                                type="password"
+                                                placeholder="Enter API Key"
+                                                value={formData.image_extractor_api_key}
+                                                onChange={e => setFormData({ ...formData, image_extractor_api_key: e.target.value })}
+                                                className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 transition-all text-sm"
+                                            />
+                                            <p className="text-xs text-gray-500">Only needed for high-quality product image extraction from specific URL types.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {step === 2 && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div className="flex items-center gap-3 text-primary mb-2">
-                                    <Ruler size={24} />
-                                    <span className="uppercase tracking-widest text-xs font-bold">Measurements</span>
+                            <div className="space-y-8 animate-fade-in flex-1">
+                                <div>
+                                    <div className="flex items-center gap-3 text-primary mb-3">
+                                        <Ruler size={24} />
+                                        <span className="uppercase tracking-widest text-xs font-bold">Measurements</span>
+                                    </div>
+                                    <h1 className="text-4xl font-serif font-bold mb-2">Body & Fit</h1>
+                                    <p className="text-gray-400 text-lg">Help us find clothes that flatter your unique geometry.</p>
                                 </div>
-                                <h1 className="text-4xl font-serif font-bold">Body & Fit</h1>
-                                <p className="text-gray-400">Help us find clothes that flatter your unique geometry.</p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">

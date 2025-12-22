@@ -30,8 +30,11 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center py-2">
             <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-serif font-bold mb-2">Welcome Back</h1>
-                    <p className="text-gray-400">Sign in to access your personal stylist.</p>
+                    <div className="w-16 h-16 relative mx-auto mb-4">
+                        <img src="/icon.png" alt="AURUM" className="w-full h-full object-contain" />
+                    </div>
+                    <h1 className="text-3xl font-serif font-bold mb-2 tracking-widest">AURUM</h1>
+                    <p className="text-gray-400 text-sm tracking-wide uppercase">Personal Styling Intelligence</p>
                 </div>
 
                 {!isSupabaseConfigured ? (

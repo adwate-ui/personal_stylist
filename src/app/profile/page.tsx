@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor, Upload } from "lucide-react";
+import { Settings, Save, Key, Trash2, LogOut, Moon, Sun, Monitor, Upload, Sparkles, User, Shield, CreditCard, ChevronRight, Camera } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/useProfile";
@@ -62,7 +62,7 @@ export default function ProfilePage() {
         // Save to DB
         await saveProfile({ gemini_api_key: apiKey });
         setIsEditingKey(false);
-        toast.success("API Key saved to your account and device.");
+        toast.success("API Key saved securely.");
     };
 
     const handleSaveExtractorKey = async () => {
@@ -77,17 +77,14 @@ export default function ProfilePage() {
     };
 
     const handleSignOut = async () => {
+        const toastId = toast.loading("Signing out...");
         await supabase.auth.signOut();
+        toast.dismiss(toastId);
         router.push("/auth/login");
     };
 
     const handleDeleteAccount = async () => {
         if (window.confirm("Are you sure? This action is irreversible. All your data (wardrobe, profile) will be deleted.")) {
-            // Delete profile data first (optional if using cascading deletes)
-            await supabase.rpc('delete_user'); // Rpc call if advanced, or simple delete
-            // Since we don't have an RPC for full delete, we can delete the profile row and auth user (if applicable/allowed)
-            // For now, let's just clear user data we can access
-
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
@@ -97,7 +94,7 @@ export default function ProfilePage() {
                 }
             } catch (e) {
                 console.error("Delete error", e);
-                toast.error("Could not complete account deletion via static request. Please contact support.");
+                toast.error("Could not complete account deletion. Please contact support.");
             }
         }
     };
@@ -105,11 +102,16 @@ export default function ProfilePage() {
     if (!mounted) return null;
 
     return (
-        <div className="min-h-screen p-8 lg:p-12 animate-fade-in bg-background text-foreground">
-            <div className="max-w-3xl mx-auto space-y-12">
-                <div className="flex items-center gap-4 border-b border-border/50 pb-8">
+        <div className="min-h-screen bg-background text-foreground pb-20">
+            {/* Hero Section */}
+            <div className="relative h-[300px] w-full overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-background to-background z-0" />
+                <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:32px_32px] z-0" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background z-10" />
+
+                <div className="relative z-20 container mx-auto px-6 h-full flex flex-col items-center justify-center pt-10">
                     <div className="relative group">
-                        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center font-serif text-2xl text-primary font-bold border border-primary/20 overflow-hidden relative">
+                        <div className="w-32 h-32 rounded-full border-4 border-background shadow-2xl overflow-hidden relative bg-black/50 backdrop-blur-md">
                             {profile?.avatar_url ? (
                                 <Image
                                     src={profile.avatar_url}
@@ -118,21 +120,19 @@ export default function ProfilePage() {
                                     className="object-cover"
                                 />
                             ) : (
-                                profile?.name?.[0] || "U"
+                                <div className="w-full h-full flex items-center justify-center text-4xl font-serif text-primary/50">
+                                    {profile?.name?.[0] || "U"}
+                                </div>
                             )}
                         </div>
-                        <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full backdrop-blur-sm">
-                            <Upload size={20} className="text-white" />
+                        <label className="absolute bottom-0 right-0 p-2 bg-primary text-black rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform hover:bg-white">
+                            <Camera size={18} />
                             <input
                                 type="file"
                                 className="hidden"
                                 accept="image/*"
                                 onChange={async (e) => {
                                     if (!e.target.files?.[0]) return;
-                                    if (!isSupabaseConfigured) {
-                                        toast.error("Storage not configured for uploads");
-                                        return;
-                                    }
                                     const file = e.target.files[0];
                                     const toastId = toast.loading("Uploading avatar...");
                                     try {
@@ -158,155 +158,206 @@ export default function ProfilePage() {
                             />
                         </label>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-serif font-bold">{profile?.name || "Style Icon"}</h1>
-                        <p className="text-muted-foreground text-sm">{user?.email || "User Profile"}</p>
+                    <h1 className="text-3xl font-serif font-bold mt-4">{profile?.name || "Style Icon"}</h1>
+                    <p className="text-muted-foreground">{user?.email}</p>
+
+                    <div className="flex gap-2 mt-4">
+                        {profile?.archetypes?.map(arch => (
+                            <span key={arch} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-wider text-primary/80">
+                                {arch}
+                            </span>
+                        ))}
                     </div>
                 </div>
-
-                {/* API Key Setup Alert */}
-                {!apiKey && (
-                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-6 space-y-3">
-                        <div className="flex items-start gap-3">
-                            <Key size={24} className="text-primary flex-shrink-0 mt-1" />
-                            <div>
-                                <h3 className="text-lg font-bold text-primary">⚠️ Action Required: Set Your Gemini API Key</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    To use AI-powered wardrobe analysis and shopping recommendations, you need to provide your own Google Gemini API key.
-                                    This key is securely stored in your profile and used exclusively for your requests.
-                                </p>
-                                <p className="text-sm text-primary/80 mt-2 font-medium">
-                                    👇 Scroll down to &quot;AI Configuration&quot; section to add your key.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Theme Settings */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 text-primary mb-2">
-                        <Monitor size={24} />
-                        <span className="uppercase tracking-widest text-xs font-bold">Appearance</span>
-                    </div>
-                    <div className="card glass p-8 rounded-xl border border-border/50 space-y-4">
-                        <h3 className="text-xl font-bold">Theme Preference</h3>
-                        <p className="text-sm text-muted-foreground">Select your interface mode.</p>
-                        <div className="flex gap-4">
-                            <button onClick={() => setTheme('light')} className={`flex-1 p-4 rounded-lg border flex flex-col items-center gap-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/10 text-primary' : 'border-border/20 text-muted-foreground hover:bg-card/50'}`}>
-                                <Sun size={24} /> <span className="text-sm font-medium">Light</span>
-                            </button>
-                            <button onClick={() => setTheme('dark')} className={`flex-1 p-4 rounded-lg border flex flex-col items-center gap-2 transition-all ${theme === 'dark' ? 'border-primary bg-primary/10 text-primary' : 'border-border/20 text-muted-foreground hover:bg-card/50'}`}>
-                                <Moon size={24} /> <span className="text-sm font-medium">Dark</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
-            {/* AI Settings */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3 text-primary mb-2">
-                    <Key size={24} />
-                    <span className="uppercase tracking-widest text-xs font-bold">AI Configuration</span>
-                </div>
-                <div className="card glass p-6 rounded-xl border border-border/50 space-y-6">
-                    {/* Gemini Key */}
-                    <div>
-                        <h3 className="text-lg font-bold mb-1">Your Gemini API Key</h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            Your personal API key for AI analysis. This key is used exclusively for your requests and is stored securely in your profile.
-                            <strong className="text-primary"> No default keys are used.</strong>
-                        </p>
+            <div className="container mx-auto px-6 -mt-10 relative z-30">
+                <style jsx global>{`
+                    .glass-card {
+                        @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl hover:border-white/20 transition-all duration-300;
+                    }
+                    .section-title {
+                        @apply text-sm uppercase tracking-widest font-bold text-muted-foreground mb-4 pl-2 flex items-center gap-2;
+                    }
+                `}</style>
 
-                        {!isEditingKey && apiKey ? (
-                            <div className="space-y-3">
-                                <div className="flex gap-2 items-center w-full">
-                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm truncate">
-                                        {"•".repeat(32)} {apiKey.slice(-4)}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column: Main Settings */}
+                    <div className="lg:col-span-2 space-y-8">
+
+                        {/* AI Intelligence */}
+                        <section>
+                            <div className="section-title text-primary"><Sparkles size={16} /> Virtual Stylist Intelligence</div>
+                            <div className="glass-card p-8">
+                                <div className="flex items-start justify-between mb-8">
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-2">Gemini Pro Configuration</h3>
+                                        <p className="text-muted-foreground text-sm max-w-md">
+                                            Your personal API key superpowers the AI stylist. It enables deep analysis of your wardrobe, trend forecasting, and outfit generation.
+                                        </p>
                                     </div>
-                                    <button
-                                        onClick={() => setIsEditingKey(true)}
-                                        className="btn btn-outline px-6 flex items-center gap-2"
-                                    >
-                                        Edit
-                                    </button>
+                                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${apiKey ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'}`}>
+                                        {apiKey ? 'ACTIVE' : 'SETUP REQUIRED'}
+                                    </div>
                                 </div>
-                                <p className="text-xs text-green-600 dark:text-green-400">✓ API Key configured</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <div className="flex gap-2 w-full">
-                                    <input
-                                        type="password"
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none min-w-0"
-                                        placeholder="Enter your Google Gemini API Key"
-                                    />
-                                    <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2 shrink-0">
-                                        <Save size={18} /> Save
-                                    </button>
+
+                                <div className="space-y-6">
+                                    {!isEditingKey && apiKey ? (
+                                        <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                <Key size={20} />
+                                            </div>
+                                            <div className="flex-1 font-mono text-sm text-gray-400">
+                                                •••• •••• •••• {apiKey.slice(-4)}
+                                            </div>
+                                            <button onClick={() => setIsEditingKey(true)} className="text-xs font-bold text-primary hover:underline uppercase tracking-wide">
+                                                Configure
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Enter API Key</label>
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="password"
+                                                    value={apiKey}
+                                                    onChange={(e) => setApiKey(e.target.value)}
+                                                    className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 text-sm transition-all"
+                                                    placeholder="Paste your Gemini API key here..."
+                                                />
+                                                <button
+                                                    onClick={handleSaveKey}
+                                                    className="btn btn-primary px-6 rounded-xl font-bold"
+                                                >
+                                                    <Save size={18} className="mr-2" /> Save Active Key
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Don't have a key? <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary hover:underline">Generate one freely at Google AI Studio</a>.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 border-t border-white/5">
+                                        <button
+                                            className="flex items-center justify-between w-full text-left group"
+                                            onClick={() => setIsEditingExtractorKey(!isEditingExtractorKey)}
+                                        >
+                                            <div>
+                                                <div className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">Advanced: Image Extraction API</div>
+                                                <div className="text-xs text-muted-foreground">Optional key for high-fidelity product imports</div>
+                                            </div>
+                                            <ChevronRight size={16} className={`text-muted-foreground transition-transform ${isEditingExtractorKey ? 'rotate-90' : ''}`} />
+                                        </button>
+
+                                        {isEditingExtractorKey && (
+                                            <div className="mt-4 animate-fade-in space-y-3">
+                                                <input
+                                                    type="password"
+                                                    value={imageExtractorKey}
+                                                    onChange={(e) => setImageExtractorKey(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 text-sm transition-all"
+                                                    placeholder="Paste Image Extractor Key..."
+                                                />
+                                                <button
+                                                    onClick={handleSaveExtractorKey}
+                                                    className="w-full btn btn-outline py-2 rounded-lg text-xs font-bold uppercase"
+                                                >
+                                                    Update Extractor Key
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</p>
                             </div>
-                        )}
+                        </section>
+
+                        {/* Personal Details */}
+                        <section>
+                            <div className="section-title"><User size={16} /> Personal Style Profile</div>
+                            <div className="glass-card p-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Style DNA</label>
+                                        <div className="font-serif text-lg">{profile?.styleDNA?.archetype_name || "Unidentified"}</div>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Body Shape</label>
+                                        <div className="font-serif text-lg">{profile.bodyShape || "Not set"}</div>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Skin Tone</label>
+                                        <div className="font-serif text-lg">{profile.skinTone || "Not set"}</div>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-center flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors" onClick={() => router.push('/onboarding?mode=regenerate')}>
+                                        <span className="text-primary text-sm font-bold uppercase tracking-wider">Refine Style Profile →</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
                     </div>
 
-                    <div className="border-t border-border/50"></div>
+                    {/* Right Column: Sidebar */}
+                    <div className="space-y-8">
 
-                    {/* Image Extractor Key */}
-                    <div>
-                        <h3 className="text-lg font-bold mb-1">Image Extractor API Key (Optional)</h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            Enhance product image imports by using the Image Extractor API.
-                            <a href="https://extract.pics/api" target="_blank" className="text-primary underline ml-1">Get a key here</a>.
-                        </p>
-
-                        {!isEditingExtractorKey && imageExtractorKey ? (
-                            <div className="space-y-3">
-                                <div className="flex gap-2 items-center w-full">
-                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm truncate">
-                                        {"•".repeat(32)} {imageExtractorKey.slice(-4)}
-                                    </div>
+                        {/* Appearance / Theme */}
+                        <section>
+                            <div className="section-title"><Monitor size={16} /> Appearance</div>
+                            <div className="glass-card p-6">
+                                <div className="grid grid-cols-2 gap-3">
                                     <button
-                                        onClick={() => setIsEditingExtractorKey(true)}
-                                        className="btn btn-outline px-6 flex items-center gap-2"
+                                        onClick={() => setTheme('light')}
+                                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${theme === 'light' ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'}`}
                                     >
-                                        Edit
+                                        <Sun size={24} />
+                                        <span className="text-xs font-bold uppercase">Light</span>
                                     </button>
-                                </div>
-                                <p className="text-xs text-green-600 dark:text-green-400">✓ Image Extractor Key configured</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <div className="flex gap-2 w-full">
-                                    <input
-                                        type="password"
-                                        value={imageExtractorKey}
-                                        onChange={(e) => setImageExtractorKey(e.target.value)}
-                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none min-w-0"
-                                        placeholder="Enter your Image Extractor API Key"
-                                    />
-                                    <button onClick={handleSaveExtractorKey} className="btn btn-primary px-6 flex items-center gap-2 shrink-0">
-                                        <Save size={18} /> Save
+                                    <button
+                                        onClick={() => setTheme('dark')}
+                                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${theme === 'dark' ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'}`}
+                                    >
+                                        <Moon size={24} />
+                                        <span className="text-xs font-bold uppercase">Dark</span>
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        </section>
+
+                        {/* Account Actions */}
+                        <section>
+                            <div className="section-title"><Settings size={16} /> Account</div>
+                            <div className="glass-card divide-y divide-white/10">
+                                <button
+                                    onClick={handleSignOut}
+                                    className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition-colors text-sm font-medium"
+                                >
+                                    <LogOut size={18} className="text-muted-foreground" />
+                                    Sign Out
+                                </button>
+                                <button
+                                    className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition-colors text-sm font-medium opacity-50 cursor-not-allowed"
+                                >
+                                    <CreditCard size={18} className="text-muted-foreground" />
+                                    Manage Subscription
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    className="w-full p-4 flex items-center gap-3 text-left hover:bg-red-500/10 transition-colors text-sm font-medium text-red-500"
+                                >
+                                    <Trash2 size={18} />
+                                    Delete Account
+                                </button>
+                            </div>
+                        </section>
+
+                        <div className="text-center text-xs text-muted-foreground pb-8">
+                            <p>Personal Stylist v1.2.0</p>
+                            <p>ID: {user?.id?.slice(0, 8)}</p>
+                        </div>
+
                     </div>
                 </div>
-            </div>
-
-            <div className="flex items-center gap-3 text-red-400 mb-2 pt-6">
-                <Settings size={24} />
-                <span className="uppercase tracking-widest text-xs font-bold">Danger Zone</span>
-            </div>
-            <div className="space-y-4">
-                <button onClick={handleDeleteAccount} className="w-full max-w-lg p-4 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-all">
-                    <Trash2 size={18} /> Delete Account
-                </button>
             </div>
         </div>
     );

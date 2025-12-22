@@ -28,11 +28,13 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Stylist - Gemini 3",
-  description: "AI-Powered Personal Stylist",
+  title: "AURUM | Personal Stylist",
+  description: "Experience the future of personal styling with AI-powered insights.",
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.png',
+    apple: '/apple-icon.png'
   },
+  manifest: '/manifest.json'
 };
 
 export default function RootLayout({
