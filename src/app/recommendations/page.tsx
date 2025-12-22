@@ -7,6 +7,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { generateWeeklyRecommendations } from "@/lib/gemini-client";
 import { toast } from "sonner";
+import { getProductLink, getBrandSearchUrl } from "@/lib/product-links";
 import { fetchAllWardrobeItems } from "@/app/wardrobe/page";
 
 interface ShoppingOption {
@@ -20,6 +21,63 @@ interface Recommendation {
     priority: "High" | "Medium" | "Low";
     reason: string;
     options: ShoppingOption[];
+}
+
+interface ProductSearchLinkProps {
+    item: string;
+    brand: string;
+    color: string;
+    className?: string;
+    children: React.ReactNode;
+}
+
+function ProductSearchLink({ item, brand, color, className, children }: ProductSearchLinkProps) {
+    const [url, setUrl] = useState<string>("");
+
+    useEffect(() => {
+        let mounted = true;
+
+        const resolveLink = async () => {
+            // 1. Immediate fallback (Brand Search or DuckDuckGo)
+            // We use this while waiting for the smarter worker-based search
+            const fallbackUrl = getBrandSearchUrl(brand, item);
+
+            if (mounted) setUrl(fallbackUrl);
+
+            // 2. Async optimized search
+            try {
+                const result = await getProductLink({
+                    brand,
+                    name: item,
+                    color
+                });
+
+                if (mounted && result.url && result.url !== '#') {
+                    setUrl(result.url);
+                }
+            } catch (e) {
+                // Keep fallback
+            }
+        };
+
+        resolveLink();
+
+        return () => { mounted = false; };
+    }, [item, brand, color]);
+
+    return (
+        <a
+            href={url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={className}
+            onClick={(e) => {
+                if (!url) e.preventDefault();
+            }}
+        >
+            {children}
+        </a>
+    );
 }
 
 export default function RecommendationsPage() {
@@ -56,7 +114,6 @@ export default function RecommendationsPage() {
                 .from('weekly_recommendations')
                 .select('*')
                 .eq('user_id', user.id)
-                .eq('week_start_date', weekStart)
                 .eq('week_start_date', weekStart)
                 .maybeSingle();
 
@@ -113,7 +170,6 @@ export default function RecommendationsPage() {
                         .select('recommendations')
                         .eq('user_id', userId)
                         .eq('week_start_date', weekStartDate)
-                        .eq('week_start_date', weekStartDate)
                         .maybeSingle();
                     if (data) setRecommendations(data.recommendations);
                 } else {
@@ -130,11 +186,6 @@ export default function RecommendationsPage() {
             setGenerating(false);
             setLoading(false);
         }
-    };
-
-    const getGoogleSearchUrl = (item: string, brand: string, color: string) => {
-        const query = `${brand} ${color} ${item} buy`;
-        return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     };
 
     if (profileLoading || loading) {
@@ -217,14 +268,14 @@ export default function RecommendationsPage() {
 
                                         <div className="flex items-end justify-between mt-auto">
                                             <span className="text-sm font-mono text-primary/80">{option.price_range_text}</span>
-                                            <a
-                                                href={getGoogleSearchUrl(rec.item_name, option.brand, option.color)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                            <ProductSearchLink
+                                                item={rec.item_name}
+                                                brand={option.brand}
+                                                color={option.color}
                                                 className="text-xs flex items-center gap-1 text-white opacity-60 group-hover:opacity-100 hover:text-primary transition-all"
                                             >
                                                 Search <ArrowRight size={12} />
-                                            </a>
+                                            </ProductSearchLink>
                                         </div>
                                     </div>
                                 ))}

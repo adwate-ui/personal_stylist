@@ -4,6 +4,7 @@ import "./globals.css";
 import LayoutContent from "@/components/LayoutContent";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { TaskProvider } from "@/contexts/TaskContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,11 +49,13 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <TaskProvider>
-            <LayoutContent>
-              {children}
-            </LayoutContent>
-          </TaskProvider>
+          <ProfileProvider>
+            <TaskProvider>
+              <LayoutContent>
+                {children}
+              </LayoutContent>
+            </TaskProvider>
+          </ProfileProvider>
         </ThemeProvider>
       </body>
     </html>

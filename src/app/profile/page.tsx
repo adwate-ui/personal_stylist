@@ -211,10 +211,10 @@ export default function ProfilePage() {
                     <Key size={24} />
                     <span className="uppercase tracking-widest text-xs font-bold">AI Configuration</span>
                 </div>
-                <div className="card glass p-8 rounded-xl border border-border/50 space-y-8">
+                <div className="card glass p-6 rounded-xl border border-border/50 space-y-6">
                     {/* Gemini Key */}
                     <div>
-                        <h3 className="text-xl font-bold mb-2">Your Gemini API Key</h3>
+                        <h3 className="text-lg font-bold mb-1">Your Gemini API Key</h3>
                         <p className="text-sm text-muted-foreground mb-4">
                             Your personal API key for AI analysis. This key is used exclusively for your requests and is stored securely in your profile.
                             <strong className="text-primary"> No default keys are used.</strong>
@@ -222,8 +222,8 @@ export default function ProfilePage() {
 
                         {!isEditingKey && apiKey ? (
                             <div className="space-y-3">
-                                <div className="flex gap-2 items-center max-w-lg">
-                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
+                                <div className="flex gap-2 items-center w-full">
+                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm truncate">
                                         {"•".repeat(32)} {apiKey.slice(-4)}
                                     </div>
                                     <button
@@ -237,15 +237,15 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <div className="flex gap-2 max-w-lg">
+                                <div className="flex gap-2 w-full">
                                     <input
                                         type="password"
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
-                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
+                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none min-w-0"
                                         placeholder="Enter your Google Gemini API Key"
                                     />
-                                    <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2">
+                                    <button onClick={handleSaveKey} className="btn btn-primary px-6 flex items-center gap-2 shrink-0">
                                         <Save size={18} /> Save
                                     </button>
                                 </div>
@@ -258,7 +258,7 @@ export default function ProfilePage() {
 
                     {/* Image Extractor Key */}
                     <div>
-                        <h3 className="text-xl font-bold mb-2">Image Extractor API Key (Optional)</h3>
+                        <h3 className="text-lg font-bold mb-1">Image Extractor API Key (Optional)</h3>
                         <p className="text-sm text-muted-foreground mb-4">
                             Enhance product image imports by using the Image Extractor API.
                             <a href="https://extract.pics/api" target="_blank" className="text-primary underline ml-1">Get a key here</a>.
@@ -266,8 +266,8 @@ export default function ProfilePage() {
 
                         {!isEditingExtractorKey && imageExtractorKey ? (
                             <div className="space-y-3">
-                                <div className="flex gap-2 items-center max-w-lg">
-                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm">
+                                <div className="flex gap-2 items-center w-full">
+                                    <div className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 font-mono text-sm truncate">
                                         {"•".repeat(32)} {imageExtractorKey.slice(-4)}
                                     </div>
                                     <button
@@ -281,15 +281,15 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <div className="flex gap-2 max-w-lg">
+                                <div className="flex gap-2 w-full">
                                     <input
                                         type="password"
                                         value={imageExtractorKey}
                                         onChange={(e) => setImageExtractorKey(e.target.value)}
-                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none"
+                                        className="flex-1 bg-background/50 border border-border/50 rounded-lg px-4 py-2 focus:border-primary focus:outline-none min-w-0"
                                         placeholder="Enter your Image Extractor API Key"
                                     />
-                                    <button onClick={handleSaveExtractorKey} className="btn btn-primary px-6 flex items-center gap-2">
+                                    <button onClick={handleSaveExtractorKey} className="btn btn-primary px-6 flex items-center gap-2 shrink-0">
                                         <Save size={18} /> Save
                                     </button>
                                 </div>

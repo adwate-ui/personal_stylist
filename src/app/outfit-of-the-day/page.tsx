@@ -321,86 +321,106 @@ function OutfitContent() {
                 )}
 
                 {step === 'result' && outfit && (
-                    <div className="w-full animate-fade-in max-w-6xl">
-                        {/* Reasoning */}
-                        <div className="bg-gradient-to-r from-primary/10 via-transparent to-transparent p-6 mb-10 text-center border-l-4 border-primary/50">
-                            <h3 className="text-primary font-bold mb-2 flex items-center justify-center gap-2 uppercase tracking-wide text-xs"><Sparkles size={14} /> Stylist's Rationale</h3>
-                            <p className="text-white/90 text-xl font-serif italic leading-relaxed max-w-3xl mx-auto">"{outfit.reasoning}"</p>
-                        </div>
+                    <div className="w-full animate-fade-in max-w-7xl">
+                        <div className="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
 
-                        {/* Outfit Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                            {[
-                                { label: 'Top', item: outfit.top },
-                                { label: 'Bottom', item: outfit.bottom },
-                                { label: 'Shoes', item: outfit.shoes },
-                                { label: 'Layering', item: outfit.layering },
-                                { label: 'Bag', item: outfit.bag },
-                                { label: 'Watch', item: outfit.watch },
-                                { label: 'Wallet', item: outfit.wallet },
-                                { label: 'Headwear', item: outfit.headwear },
-                                { label: 'Belt', item: outfit.belt },
-                                { label: 'Sunglasses', item: outfit.sunglasses },
-                                { label: 'Jewelry', item: outfit.jewelry },
-                                { label: 'Scarf', item: outfit.scarf },
-                                { label: 'Gloves', item: outfit.gloves },
-                                ...(outfit.accessories || []).map((item: any, i: number) => ({ label: `Accessory ${i + 1}`, item }))
-                            ].filter(x => x.item).map((slot, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={() => openSwapModal(slot.label, slot.item)}
-                                    className="group relative cursor-pointer"
-                                >
-                                    <div className="aspect-[3/4] bg-surface rounded-2xl overflow-hidden mb-3 relative border border-white/5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                                        <img
-                                            src={slot.item.image_url}
-                                            alt={slot.item.name}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            <span className="text-white font-medium flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"><RotateCcw size={16} /> Swap</span>
+                            {/* LEFT COLUMN: Visuals (The Look) */}
+                            <div className="lg:col-span-8 mb-12 lg:mb-0">
+                                <h2 className="text-2xl font-serif font-bold text-white mb-6 flex items-center gap-2">
+                                    <span className="w-8 h-[1px] bg-primary/50"></span> The Look
+                                </h2>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                                    {[
+                                        { label: 'Top', item: outfit.top },
+                                        { label: 'Bottom', item: outfit.bottom },
+                                        { label: 'Shoes', item: outfit.shoes },
+                                        { label: 'Layering', item: outfit.layering },
+                                        { label: 'Bag', item: outfit.bag },
+                                        { label: 'Headwear', item: outfit.headwear },
+                                        { label: 'Jewelry', item: outfit.jewelry },
+                                        { label: 'Watch', item: outfit.watch },
+                                        { label: 'Wallet', item: outfit.wallet },
+                                        { label: 'Belt', item: outfit.belt },
+                                        { label: 'Sunglasses', item: outfit.sunglasses },
+                                        { label: 'Scarf', item: outfit.scarf },
+                                        { label: 'Gloves', item: outfit.gloves },
+                                        ...(outfit.accessories || []).map((item: any, i: number) => ({ label: `Accessory ${i + 1}`, item }))
+                                    ].filter(x => x.item).map((slot, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => openSwapModal(slot.label, slot.item)}
+                                            className="group relative cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl overflow-hidden border border-white/5 hover:border-primary/30"
+                                        >
+                                            <div className="aspect-[3/4] relative overflow-hidden">
+                                                <img
+                                                    src={slot.item.image_url}
+                                                    alt={slot.item.name}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
+                                                    <span className="text-white text-sm font-medium flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20">
+                                                        <RotateCcw size={14} /> Swap
+                                                    </span>
+                                                </div>
+                                                {/* Badge */}
+                                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-gray-300 uppercase tracking-wider font-bold z-10">
+                                                    {slot.label}
+                                                </div>
+                                            </div>
+                                            <div className="p-3">
+                                                <div className="text-[10px] text-primary font-bold uppercase tracking-wider mb-0.5">{slot.item.brand}</div>
+                                                <div className="text-sm font-medium text-white truncate opacity-90">{slot.item.name || slot.item.sub_category}</div>
+                                            </div>
                                         </div>
-                                        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-[10px] text-gray-300 uppercase tracking-wider font-bold">
-                                            {slot.label}
-                                        </div>
-                                    </div>
-                                    <div className="text-center px-2">
-                                        <div className="text-xs text-primary font-bold uppercase tracking-wider mb-1">{slot.item.brand}</div>
-                                        <div className="font-medium text-white truncate w-full">{slot.item.name || slot.item.sub_category}</div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Tips */}
-                        <div className="bg-[#090909] rounded-2xl p-8 border border-white/5 mb-10 max-w-4xl mx-auto">
-                            <h3 className="font-bold text-white mb-6 text-center uppercase tracking-widest text-sm">Styling Tips</h3>
-                            <div className="grid md:grid-cols-3 gap-6">
-                                {(outfit.style_tips || []).map((tip: string, i: number) => (
-                                    <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                        <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 text-sm font-bold mb-3">{i + 1}</span>
-                                        <p className="text-sm text-gray-300 leading-relaxed">{tip}</p>
-                                    </div>
-                                ))}
                             </div>
-                        </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-4 justify-center">
-                            <button
-                                onClick={() => setStep('input')}
-                                className="px-8 py-4 rounded-xl border border-white/10 text-white hover:bg-white/5 flex items-center gap-2 font-bold transition-all hover:scale-105"
-                            >
-                                <RotateCcw size={20} /> Discard & Try Again
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="px-10 py-4 rounded-xl bg-primary text-black font-bold hover:brightness-110 flex items-center gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40"
-                            >
-                                {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-                                Confirm & Save to History
-                            </button>
+                            {/* RIGHT COLUMN: Context (Sticky Sidebar) */}
+                            <div className="lg:col-span-4 lg:sticky lg:top-8 space-y-8">
+
+                                {/* Rationale Card */}
+                                <div className="card glass p-6 rounded-2xl border border-primary/20 bg-primary/5">
+                                    <h3 className="text-primary font-bold mb-3 flex items-center gap-2 uppercase tracking-wide text-xs">
+                                        <Sparkles size={14} /> Stylist's Note
+                                    </h3>
+                                    <p className="text-white/90 text-lg font-serif italic leading-relaxed">
+                                        "{outfit.reasoning}"
+                                    </p>
+                                </div>
+
+                                {/* Tips List */}
+                                <div className="space-y-4">
+                                    <h3 className="text-white font-bold uppercase tracking-widest text-xs ml-1">Key Styling Tips</h3>
+                                    <ul className="space-y-3">
+                                        {(outfit.style_tips || []).map((tip: string, i: number) => (
+                                            <li key={i} className="flex gap-3 text-sm text-gray-300 bg-white/[0.02] p-3 rounded-lg border border-white/5">
+                                                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">{i + 1}</span>
+                                                <span className="leading-relaxed">{tip}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="pt-4 space-y-3">
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="w-full py-4 rounded-xl bg-primary text-black font-bold hover:brightness-110 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
+                                    >
+                                        {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+                                        Confirm & Save Look
+                                    </button>
+                                    <button
+                                        onClick={() => setStep('input')}
+                                        className="w-full py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 text-sm font-medium transition-colors"
+                                    >
+                                        <RotateCcw size={16} /> Discard & Start Over
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
