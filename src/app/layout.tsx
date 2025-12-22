@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import LayoutContent from "@/components/LayoutContent";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { TaskProvider } from "@/contexts/TaskContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,9 +48,11 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <LayoutContent>
-            {children}
-          </LayoutContent>
+          <TaskProvider>
+            <LayoutContent>
+              {children}
+            </LayoutContent>
+          </TaskProvider>
         </ThemeProvider>
       </body>
     </html>

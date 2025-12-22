@@ -8,6 +8,83 @@ import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import Image from "next/image";
+import { useTask, Task } from "@/contexts/TaskContext";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
+
+function TaskStatusIndicator({ isCollapsed }: { isCollapsed: boolean }) {
+    const { tasks, clearTask } = useTask();
+    const router = useRouter();
+
+    // Show most recent active or completed task
+    const latestTask = tasks[tasks.length - 1];
+
+    if (!latestTask) return null;
+
+    const handleTaskClick = (task: Task) => {
+        if (task.status === 'success') {
+            if (task.type === 'analysis') {
+                router.push(`/add-item?taskId=${task.id}`);
+            } else if (task.type === 'ootd') {
+                router.push(`/outfit-of-the-day?taskId=${task.id}`);
+            }
+            // Don't clear immediately
+        }
+    };
+
+    return (
+        <div className={`mt-auto mb-4 px-2 transistion-all ${isCollapsed ? 'flex justify-center' : ''}`}>
+            <div
+                onClick={() => handleTaskClick(latestTask)}
+                className={`
+                    relative overflow-hidden rounded-xl border p-3 cursor-pointer transition-all
+                    ${latestTask.status === 'running' ? 'bg-primary/10 border-primary/30' :
+                        latestTask.status === 'success' ? 'bg-green-500/10 border-green-500/30' :
+                            'bg-red-500/10 border-red-500/30'}
+                `}
+            >
+                <div className="flex items-center gap-3">
+                    {latestTask.status === 'running' ? (
+                        <Loader2 size={20} className="animate-spin text-primary shrink-0" />
+                    ) : latestTask.status === 'success' ? (
+                        <CheckCircle size={20} className="text-green-400 shrink-0" />
+                    ) : (
+                        <XCircle size={20} className="text-red-400 shrink-0" />
+                    )}
+
+                    {!isCollapsed && (
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate text-white">
+                                {latestTask.status === 'running' ? 'Processing...' :
+                                    latestTask.status === 'success' ? 'Ready!' : 'Failed'}
+                            </p>
+                            <p className="text-[10px] text-gray-400 truncate">
+                                {latestTask.message}
+                            </p>
+                        </div>
+                    )}
+
+                    {!isCollapsed && latestTask.status !== 'running' && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                clearTask(latestTask.id);
+                            }}
+                            className="p-1 hover:bg-white/10 rounded-full"
+                        >
+                            <XCircle size={14} className="text-gray-500" />
+                        </button>
+                    )}
+                </div>
+
+                {latestTask.status === 'running' && !isCollapsed && (
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary/20">
+                        <div className="h-full bg-primary animate-progress origin-left"></div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function Navigation() {
     const pathname = usePathname();
@@ -114,7 +191,9 @@ function SidebarNav({ navItems, profile, loading, handleSignOut }: any) {
                 })}
             </nav>
 
-            {/* Profile & Logout - Simplified for collapsed state */}
+            {/* Task Status Indicator */}
+            <TaskStatusIndicator isCollapsed={isCollapsed} />
+
             <div className="pt-6 border-t border-white/10 space-y-4">
                 <Link href="/profile" className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}>
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0 text-xs font-bold text-primary relative overflow-hidden">

@@ -8,9 +8,17 @@ import { Loader2, Sparkles, Calendar, Clock, RotateCcw, Save, X, PlusCircle, Che
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+import { useTask } from "@/contexts/TaskContext";
+import { useSearchParams } from "next/navigation";
+
 export default function OutfitOfTheDay() {
     const { profile, loading: profileLoading } = useProfile();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { startTask, getTaskResult } = useTask();
+
+    // Check for returned task results
+    const taskId = searchParams.get('taskId');
 
     const [step, setStep] = useState<'input' | 'generating' | 'result'>('input');
     const [occasion, setOccasion] = useState("");
@@ -59,6 +67,17 @@ export default function OutfitOfTheDay() {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (taskId) {
+            const result = getTaskResult(taskId);
+            if (result) {
+                setOutfit(result);
+                setStep('result');
+                toast.success("Outfit ready!");
+            }
+        }
+    }, [taskId, getTaskResult]);
+
     const toggleBuildSelection = (id: string) => {
         if (selectedForBuild.includes(id)) {
             setSelectedForBuild(prev => prev.filter(i => i !== id));
@@ -86,15 +105,21 @@ export default function OutfitOfTheDay() {
         }
 
         setStep('generating');
+
+        const taskId = `ootd-${Date.now()}`;
+        const taskPromise = generateOutfit(
+            wardrobeItems,
+            occasion,
+            timing,
+            profile.location,
+            profile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+            selectedForBuild
+        );
+
+        startTask(taskId, 'ootd', `Styling for ${occasion}...`, taskPromise);
+
         try {
-            const result = await generateOutfit(
-                wardrobeItems,
-                occasion,
-                timing,
-                profile.location,
-                profile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
-                selectedForBuild // Pass the anchor items
-            );
+            const result = await taskPromise;
             setOutfit(result);
             setStep('result');
         } catch (error) {
