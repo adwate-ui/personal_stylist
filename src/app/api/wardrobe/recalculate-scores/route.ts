@@ -3,7 +3,7 @@ import { ratePurchase } from "@/lib/gemini";
 
 export const runtime = 'edge';
 
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

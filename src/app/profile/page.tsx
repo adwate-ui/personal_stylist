@@ -20,7 +20,7 @@ export default function ProfilePage() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+
         setMounted(true);
 
         // Load Gemini Key
@@ -233,7 +233,7 @@ export default function ProfilePage() {
                                                 </button>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Don't have a key? <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary hover:underline">Generate one freely at Google AI Studio</a>.
+                                                Don&apos;t have a key? <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary hover:underline">Generate one freely at Google AI Studio</a>.
                                             </p>
                                         </div>
                                     )}

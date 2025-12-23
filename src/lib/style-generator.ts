@@ -18,7 +18,7 @@ export interface StyleDNA {
     styling_tips: string[];
 }
 
-export function generateStyleDNA(profile: any): StyleDNA {
+export function generateStyleDNA(_profile: any): StyleDNA {
     // Mock implementation expanded to match UI requirements
     return {
         archetype_name: "Modern Minimalist",

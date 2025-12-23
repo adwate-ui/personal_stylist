@@ -118,8 +118,7 @@ export default function Navigation() {
     return (
         <>
             {/* Desktop Sidebar */}
-            {/* Added persistence logic manually without extra lib to keep it simple */}
-            <SidebarNav navItems={navItems} profile={profile} loading={loading} handleSignOut={handleSignOut} />
+            <SidebarNav navItems={navItems} profile={profile} handleSignOut={handleSignOut} />
 
             {/* Mobile Bottom Bar */}
             <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 p-4 z-50 flex justify-around items-center pb-8 safe-area-pb">
@@ -142,13 +141,21 @@ export default function Navigation() {
     );
 }
 
-function SidebarNav({ navItems, profile, loading, handleSignOut }: any) {
+interface SidebarNavProps {
+    navItems: { name: string; href: string; icon: any }[];
+    profile: any;
+    handleSignOut: () => void;
+}
+
+function SidebarNav({ navItems, profile, handleSignOut }: SidebarNavProps) {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem("sidebar_collapsed");
-        if (stored) setIsCollapsed(JSON.stringify(stored) === '"true"'); // Simple check
+        if (stored) {
+            setTimeout(() => setIsCollapsed(JSON.stringify(stored) === '"true"'), 0);
+        }
     }, []);
 
     const toggleSidebar = () => {

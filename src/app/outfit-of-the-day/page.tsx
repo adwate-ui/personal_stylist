@@ -71,9 +71,11 @@ function OutfitContent() {
         if (taskId) {
             const result = getTaskResult(taskId);
             if (result) {
-                setOutfit(result);
-                setStep('result');
-                toast.success("Outfit ready!");
+                setTimeout(() => {
+                    setOutfit(result);
+                    setStep('result');
+                    toast.success("Outfit ready!");
+                }, 0);
             }
         }
     }, [taskId, getTaskResult]);
@@ -383,10 +385,10 @@ function OutfitContent() {
                                 {/* Rationale Card */}
                                 <div className="card glass p-6 rounded-2xl border border-primary/20 bg-primary/5">
                                     <h3 className="text-primary font-bold mb-3 flex items-center gap-2 uppercase tracking-wide text-xs">
-                                        <Sparkles size={14} /> Stylist's Note
+                                        <Sparkles size={14} /> Stylist&apos;s Note
                                     </h3>
                                     <p className="text-white/90 text-lg font-serif italic leading-relaxed">
-                                        "{outfit.reasoning}"
+                                        &quot;{outfit.reasoning}&quot;
                                     </p>
                                 </div>
 
@@ -577,7 +579,7 @@ function OutfitContent() {
                             {/* Rationale */}
                             <div className="bg-primary/10 p-6 rounded-2xl mb-10 text-center border border-primary/20">
                                 <h3 className="text-primary font-bold mb-2 flex items-center justify-center gap-2 uppercase tracking-wide text-xs"><Sparkles size={14} /> Analysis</h3>
-                                <p className="text-white/90 text-lg font-serif italic leading-relaxed max-w-3xl mx-auto">"{selectedHistoryItem.outfit_data.reasoning}"</p>
+                                <p className="text-white/90 text-lg font-serif italic leading-relaxed max-w-3xl mx-auto">&quot;{selectedHistoryItem.outfit_data.reasoning}&quot;</p>
                             </div>
 
                             {/* Outfit Grid */}

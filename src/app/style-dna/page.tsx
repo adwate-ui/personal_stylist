@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Heart, TrendingUp, Briefcase, ShoppingBag, Loader2, AlertCircle, Palette, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
-import { getBrandSearchUrl, getProductImagePlaceholder, getProductLink } from "@/lib/product-links";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -76,67 +75,11 @@ function hexToColorName(hex: string): string {
 export default function StyleDNAPage() {
     const router = useRouter();
     const { profile, loading } = useProfile();
-    const [productData, setProductData] = useState<Map<string, { url: string; imageUrl?: string }>>(new Map());
-    const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
     const styleDNA = profile?.styleDNA;
 
     // Fetch product URLs and images for wardrobe items
     // IMPORTANT: This useEffect must be called before any conditional returns
-    useEffect(() => {
-        // Early return if no profile or styleDNA to prevent crash
-        if (!profile || !styleDNA?.must_have_staples) return;
-
-        const fetchProductData = async () => {
-            const essentials = styleDNA.must_have_staples;
-            const newData = new Map();
-
-            // Handle array format
-            if (Array.isArray(essentials)) {
-                for (const item of essentials) {
-                    const key = `${item.brand || ''}-${item.item}`;
-                    try {
-                        const data = await getProductLink({
-                            brand: item.brand || '',
-                            name: item.item,
-                            color: item.color || ''
-                        });
-                        newData.set(key, data);
-                    } catch (error) {
-                        console.error(`Failed to fetch product data for ${key}:`, error);
-                    }
-                }
-            }
-
-            // Handle object format
-            if (typeof essentials === 'object' && essentials !== null) {
-                for (const [category, productTypes] of Object.entries(essentials as object)) {
-                    if (typeof productTypes !== 'object') continue;
-                    for (const [type, items] of Object.entries(productTypes)) {
-                        if (!Array.isArray(items)) continue;
-                        for (const item of items) {
-                            const key = `${item.brand || ''}-${item.item}`;
-                            try {
-                                const data = await getProductLink({
-                                    brand: item.brand || '',
-                                    name: item.item,
-                                    color: item.color || ''
-                                });
-                                newData.set(key, data);
-                            } catch (error) {
-                                console.error(`Failed to fetch product data for ${key}:`, error);
-                            }
-                        }
-                    }
-                }
-            }
-
-            setProductData(newData);
-        };
-
-        fetchProductData();
-    }, [profile, styleDNA]);
-
     // Conditional renders AFTER all hooks
     if (loading) {
         return (

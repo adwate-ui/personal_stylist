@@ -14,6 +14,8 @@ interface ShoppingOption {
     brand: string;
     color: string;
     price_range_text: string;
+    url?: string;
+    imageUrl?: string;
 }
 
 interface Recommendation {
@@ -22,6 +24,34 @@ interface Recommendation {
     reason: string;
     options: ShoppingOption[];
 }
+
+// Helper to batch process links
+const enrichRecommendations = async (recs: Recommendation[]): Promise<Recommendation[]> => {
+    const enriched = await Promise.all(recs.map(async (rec) => {
+        const enrichedOptions = await Promise.all(rec.options.map(async (opt) => {
+            // If URL already exists and is valid, keep it
+            if (opt.url && opt.url !== '#') return opt;
+
+            try {
+                const linkData = await getProductLink({
+                    brand: opt.brand,
+                    name: rec.item_name,
+                    color: opt.color
+                });
+                return {
+                    ...opt,
+                    url: linkData.url,
+                    imageUrl: linkData.imageUrl
+                };
+            } catch (e) {
+                console.error(`Failed to resolve link for ${rec.item_name} ${opt.brand}`, e);
+                return opt;
+            }
+        }));
+        return { ...rec, options: enrichedOptions };
+    }));
+    return enriched;
+};
 
 interface ProductSearchLinkProps {
     item: string;
@@ -37,14 +67,22 @@ function ProductSearchLink({ item, brand, color, className, children }: ProductS
     useEffect(() => {
         let mounted = true;
 
-        const resolveLink = async () => {
-            // 1. Immediate fallback (Brand Search or DuckDuckGo)
-            // We use this while waiting for the smarter worker-based search
-            const fallbackUrl = getBrandSearchUrl(brand, item);
+        if (item === '#' || (brand === '#' && color === '#')) {
+            // Special case for persisted links passed as props (hacky but effective if we refactor Usage)
+            // Actually, the Component consumes item/brand/color props. 
+            // We'll trust the parent passed the URL if available.
+            return;
+        }
 
+        const resolveLink = async () => {
+            // If we already have a direct link passed via a different prop (not currently possible with this signature), 
+            // we'd use it. But here we are purely client-side fallback.
+
+            // 1. Immediate fallback 
+            const fallbackUrl = getBrandSearchUrl(brand, item);
             if (mounted) setUrl(fallbackUrl);
 
-            // 2. Async optimized search
+            // 2. Async optimized search (Only if we don't have a persisted URL from parent - handled in parent now)
             try {
                 const result = await getProductLink({
                     brand,
@@ -87,11 +125,47 @@ export default function RecommendationsPage() {
     const [generating, setGenerating] = useState(false);
 
     useEffect(() => {
+        let mounted = true;
+
+        const fetchRecommendations = async () => {
+            if (!profile) return;
+            try {
+                if (mounted) setLoading(true);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const weekStart = getWeekStartDate();
+
+                // Try to find existing for this week
+                const { data, error } = await supabase
+                    .from('weekly_recommendations')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('week_start_date', weekStart)
+                    .maybeSingle();
+
+                if (data && data.recommendations) {
+                    if (mounted) {
+                        setRecommendations(data.recommendations);
+                        setLoading(false);
+                    }
+                } else {
+                    // If not found, generating new one
+                    if (mounted) await generateNew(user.id, weekStart);
+                }
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+                if (mounted) setLoading(false);
+            }
+        };
+
         if (!profileLoading && profile) {
             fetchRecommendations();
         } else if (!profileLoading && !profile) {
-            setLoading(false);
+            if (mounted) setLoading(false);
         }
+
+        return () => { mounted = false; };
     }, [profile, profileLoading]);
 
     const getWeekStartDate = () => {
@@ -101,34 +175,7 @@ export default function RecommendationsPage() {
         return d.toISOString().split('T')[0];
     };
 
-    const fetchRecommendations = async () => {
-        try {
-            setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
 
-            const weekStart = getWeekStartDate();
-
-            // Try to find existing for this week
-            const { data, error } = await supabase
-                .from('weekly_recommendations')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('week_start_date', weekStart)
-                .maybeSingle();
-
-            if (data && data.recommendations) {
-                setRecommendations(data.recommendations);
-                setLoading(false);
-            } else {
-                // If not found, generating new one
-                generateNew(user.id, weekStart);
-            }
-        } catch (error) {
-            console.error('Error fetching recommendations:', error);
-            setLoading(false);
-        }
-    };
 
     const generateNew = async (userId: string, weekStartDate: string) => {
         setGenerating(true);
@@ -153,31 +200,22 @@ export default function RecommendationsPage() {
 
             if (!newRecs || !Array.isArray(newRecs)) throw new Error("Invalid AI response");
 
-            // 4. Save to DB
+            // 4. Enrich with Links (Server-Side Logic simulation)
+            // We do this BEFORE saving so the links are persisted
+            const enrichedRecs = await enrichRecommendations(newRecs);
+
+            // 5. Save to DB
             const { error } = await supabase
                 .from('weekly_recommendations')
-                .insert({
+                .upsert({
                     user_id: userId,
                     week_start_date: weekStartDate,
-                    recommendations: newRecs
-                });
+                    recommendations: enrichedRecs
+                }, { onConflict: 'user_id,week_start_date' });
 
-            if (error) {
-                // If duplicate key error (race condition), just ignore and refetch
-                if (error.code === '23505') {
-                    const { data } = await supabase
-                        .from('weekly_recommendations')
-                        .select('recommendations')
-                        .eq('user_id', userId)
-                        .eq('week_start_date', weekStartDate)
-                        .maybeSingle();
-                    if (data) setRecommendations(data.recommendations);
-                } else {
-                    throw error;
-                }
-            } else {
-                setRecommendations(newRecs);
-            }
+            if (error) throw error;
+
+            setRecommendations(enrichedRecs);
 
         } catch (error) {
             console.error("Failed to generate recommendations:", error);
@@ -187,6 +225,47 @@ export default function RecommendationsPage() {
             setLoading(false);
         }
     };
+
+    const regenerateLinks = async () => {
+        if (!recommendations || !profile) return;
+        setGenerating(true);
+        toast.info("Updating product links...");
+
+        try {
+            const enriched = await enrichRecommendations(recommendations);
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const weekStart = getWeekStartDate();
+                const { error } = await supabase
+                    .from('weekly_recommendations')
+                    .update({ recommendations: enriched })
+                    .eq('user_id', user.id)
+                    .eq('week_start_date', weekStart);
+
+                if (error) throw error;
+                setRecommendations(enriched);
+                toast.success("Links updated successfully");
+            }
+        } catch (error) {
+            console.error("Failed to update links:", error);
+            toast.error("Failed to update links");
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const regeneratePicks = async () => {
+        if (!confirm("This will replace your current weekly picks with new ones. Continue?")) return;
+        if (!profile) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await generateNew(user.id, getWeekStartDate());
+        }
+    };
+
+
 
     if (profileLoading || loading) {
         return (
@@ -206,7 +285,7 @@ export default function RecommendationsPage() {
                     <AlertCircle className="mx-auto mb-4 text-yellow-400" size={48} />
                     <h3 className="text-xl font-bold mb-2">Style DNA Required</h3>
                     <p className="text-gray-400 mb-6">
-                        We need your Style DNA to identify what's missing.
+                        We need your Style DNA to identify what&apos;s missing.
                     </p>
                     <a href="/onboarding" className="btn btn-primary">
                         create Style DNA
@@ -230,6 +309,24 @@ export default function RecommendationsPage() {
                     <p className="text-gray-400 max-w-xl mx-auto">
                         Curated shopping recommendations to fill the critical gaps in your wardrobe, based on your unique Style DNA.
                     </p>
+
+                    {/* Controls */}
+                    <div className="flex justify-center gap-3 pt-2">
+                        <button
+                            onClick={regenerateLinks}
+                            disabled={generating || !recommendations}
+                            className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                            <ExternalLink size={12} /> Refresh Link
+                        </button>
+                        <button
+                            onClick={regeneratePicks}
+                            disabled={generating}
+                            className="text-xs px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-full transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                            <Sparkles size={12} /> New Picks
+                        </button>
+                    </div>
                 </div>
 
                 {/* Recommendations Grid */}
@@ -268,14 +365,25 @@ export default function RecommendationsPage() {
 
                                         <div className="flex items-end justify-between mt-auto">
                                             <span className="text-sm font-mono text-primary/80">{option.price_range_text}</span>
-                                            <ProductSearchLink
-                                                item={rec.item_name}
-                                                brand={option.brand}
-                                                color={option.color}
-                                                className="text-xs flex items-center gap-1 text-white opacity-60 group-hover:opacity-100 hover:text-primary transition-all"
-                                            >
-                                                Search <ArrowRight size={12} />
-                                            </ProductSearchLink>
+                                            {option.url && option.url !== '#' ? (
+                                                <a
+                                                    href={option.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs flex items-center gap-1 text-white opacity-60 group-hover:opacity-100 hover:text-primary transition-all"
+                                                >
+                                                    Buy Now <ArrowRight size={12} />
+                                                </a>
+                                            ) : (
+                                                <ProductSearchLink
+                                                    item={rec.item_name}
+                                                    brand={option.brand}
+                                                    color={option.color}
+                                                    className="text-xs flex items-center gap-1 text-white opacity-60 group-hover:opacity-100 hover:text-primary transition-all"
+                                                >
+                                                    Search <ArrowRight size={12} />
+                                                </ProductSearchLink>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

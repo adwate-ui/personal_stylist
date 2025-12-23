@@ -1,5 +1,5 @@
 
-import { ProfileData } from "@/types/profile";
+
 
 export interface ExtractedImage {
     url: string;
@@ -96,7 +96,7 @@ function selectBestImage(images: ExtractedImage[], targetUrl: string): string | 
     if (!images || images.length === 0) return null;
 
     // Filter out obviously bad images (too small)
-    let candidates = images.filter(img => {
+    const candidates = images.filter(img => {
         // Assume valid images are decent size. 
         // If width/height is missing, we accept it tentatively.
         if (img.width && img.width < 200) return false;

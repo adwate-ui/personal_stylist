@@ -182,7 +182,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
             if (error) {
                 console.warn("Full profile save failed, retrying with legacy fields...", error);
-                const { image_extractor_api_key, ...legacyData } = dataWithId;
+                const { image_extractor_api_key: _image_extractor_api_key, ...legacyData } = dataWithId;
                 const { error: retryError } = await supabase
                     .from('profiles')
                     .upsert(legacyData, { onConflict: 'id' });

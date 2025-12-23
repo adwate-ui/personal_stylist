@@ -342,8 +342,7 @@ export default function WardrobePage() {
                                         const sub2 = (item2.sub_category || item2.name || "").toLowerCase();
 
                                         // Formality & Type Flags
-                                        const isFormal1 = sub1.includes('suit') || sub1.includes('blazer') || sub1.includes('dress') || sub1.includes('formal') || cat1 === 'Ties' || cat1 === 'Suits';
-                                        const isFormal2 = sub2.includes('suit') || sub2.includes('blazer') || sub2.includes('dress') || sub2.includes('formal') || cat2 === 'Ties' || cat2 === 'Suits';
+
                                         const isAthletic1 = cat1 === 'Activewear' || sub1.includes('gym') || sub1.includes('sport') || sub1.includes('run') || sub1.includes('jogger');
                                         const isAthletic2 = cat2 === 'Activewear' || sub2.includes('gym') || sub2.includes('sport') || sub2.includes('run') || sub2.includes('jogger');
                                         const isTee1 = sub1.includes('t-shirt') || sub1.includes('tee') || sub1.includes('tank') || sub1.includes('polo');

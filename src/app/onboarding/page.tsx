@@ -166,20 +166,10 @@ function OnboardingContent() {
         }
     }, [profileLoading, profile, mode, router]);
 
-    // Show loading state while checking profile
-    if (profileLoading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white">
-                <Loader2 size={48} className="text-primary animate-spin mb-4" />
-                <p className="text-gray-400 font-serif text-lg">Loading your profile...</p>
-            </div>
-        );
-    }
+    // Derived state for conditional rendering
+    const showLoading = profileLoading;
+    const isRedirecting = !profileLoading && profile?.styleDNA && mode !== 'preferences' && mode !== 'regenerate';
 
-    // If redirection is happening, don't render content to avoid flicker
-    if (!profileLoading && profile?.styleDNA && mode !== 'preferences' && mode !== 'regenerate') {
-        return null;
-    }
 
     // Load saved form data from localStorage on mount
     useEffect(() => {
@@ -443,8 +433,8 @@ function OnboardingContent() {
         }
     };
 
-    // If Style DNA is generated, show the Report View
-    if (styleDNA) {
+    // If Style DNA is generated, show the Report View first (but only if we're not waiting for redirect/loading)
+    if (!showLoading && !isRedirecting && styleDNA) {
         return (
             <div className="min-h-screen bg-background p-6 lg:p-12 overflow-y-auto pb-20">
                 <div className="w-full max-w-[1600px] mx-auto space-y-8 animate-fade-in">
@@ -587,6 +577,21 @@ function OnboardingContent() {
                 </div>
             </div>
         );
+    }
+
+    // Handle loading state after hooks
+    if (showLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white">
+                <Loader2 size={48} className="text-primary animate-spin mb-4" />
+                <p className="text-gray-400 font-serif text-lg">Loading your profile...</p>
+            </div>
+        );
+    }
+
+    // Handle redirect state (avoid flicker)
+    if (isRedirecting) {
+        return null;
     }
 
     return (
@@ -742,7 +747,7 @@ function OnboardingContent() {
                                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                                         />
                                         <p className="text-xs text-gray-400">
-                                            Don't have one? <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get your free API key here →</a>
+                                            Don&apos;t have one? <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get your free API key here →</a>
                                         </p>
                                         <p className="text-xs text-gray-500 italic">You can also add this later from Settings</p>
                                     </div>

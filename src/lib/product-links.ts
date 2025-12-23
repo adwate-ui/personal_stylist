@@ -86,7 +86,7 @@ export async function getProductLink(item: {
     const name = item.name || item.item_name || item.sub_category || '';
     const color = item.color || item.primary_color || '';
 
-    let queryParts = [brand];
+    const queryParts = [brand];
 
     // Add name (avoiding brand duplication)
     if (brand && name.toLowerCase().includes(brand.toLowerCase())) {

@@ -116,7 +116,7 @@ function AddItemContent() {
     const performAnalysis = async (urlToAnalyze: string) => {
         // Use Cloudflare Worker for server-side scraping
         const workerUrl = 'https://authentiqc-worker.adwate.workers.dev/fetch-metadata';
-        let data: any = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
+        const data: any = { imageUrl: null, imageBase64: null, title: null, price: null, brand: null };
         let fetchFailed = false;
 
         try {
