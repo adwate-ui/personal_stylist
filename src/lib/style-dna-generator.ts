@@ -31,6 +31,7 @@ export interface StyleDNA {
   };
 
   styling_wisdom: string[];
+  recommended_brands: Array<{ name: string; reason: string }>;
   style_pillars?: string[];
   generated_by_model?: string; // Track which model generated this DNA
 }
@@ -160,6 +161,11 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
     "Actionable styling tip 1",
     "Actionable styling tip 2",
     "Actionable styling tip 3"
+  ],
+  "recommended_brands": [
+    { "name": "Brand Name", "reason": "Specific reason why this fits their style/budget" },
+    { "name": "Brand Name", "reason": "Specific reason why this fits their style/budget" },
+    { "name": "Brand Name", "reason": "Specific reason why this fits their style/budget" }
   ]
 }
 
@@ -361,10 +367,13 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         parsed.color_palette.accents = normalizeArray(parsed.color_palette.accents);
         parsed.color_palette.avoid = normalizeArray(parsed.color_palette.avoid);
 
-        if (parsed.color_palette.seasonal_variations) {
-          parsed.color_palette.seasonal_variations.spring_summer = normalizeArray(parsed.color_palette.seasonal_variations.spring_summer);
-          parsed.color_palette.seasonal_variations.fall_winter = normalizeArray(parsed.color_palette.seasonal_variations.fall_winter);
-        }
+        parsed.color_palette.seasonal_variations.spring_summer = normalizeArray(parsed.color_palette.seasonal_variations.spring_summer);
+        parsed.color_palette.seasonal_variations.fall_winter = normalizeArray(parsed.color_palette.seasonal_variations.fall_winter);
+      }
+
+
+      if (parsed.recommended_brands) {
+        parsed.recommended_brands = normalizeArray(parsed.recommended_brands);
       }
 
 

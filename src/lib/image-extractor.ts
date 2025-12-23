@@ -17,7 +17,7 @@ export interface ExtractionResult {
     images: ExtractedImage[];
 }
 
-const API_BASE = "https://api.extract.pics/v0";
+const API_BASE = "/api/extract";
 
 /**
  * Extracts images from a given URL using the Image Extractor API.
@@ -27,19 +27,18 @@ const API_BASE = "https://api.extract.pics/v0";
  */
 export async function extractBestImage(targetUrl: string, apiKey: string): Promise<string | null> {
     try {
-        console.log("🚀 Starting extraction for:", targetUrl);
+        console.log("🚀 Starting extraction via Proxy for:", targetUrl);
 
-        // 1. Start Extraction
-        const startRes = await fetch(`${API_BASE}/extractions`, {
+        // 1. Start Extraction (via Proxy)
+        const startRes = await fetch(API_BASE, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 url: targetUrl,
-                mode: "advanced", // Use advanced mode for better results
-                ignoreInlineImages: true
+                apiKey: apiKey, // Pass key to proxy
+                mode: "advanced"
             })
         });
 
@@ -59,9 +58,7 @@ export async function extractBestImage(targetUrl: string, apiKey: string): Promi
         while (attempts < maxAttempts) {
             await new Promise(r => setTimeout(r, 2000)); // Wait 2s
 
-            const statusRes = await fetch(`${API_BASE}/extractions/${extractionId}`, {
-                headers: { "Authorization": `Bearer ${apiKey}` }
-            });
+            const statusRes = await fetch(`${API_BASE}?id=${extractionId}&apiKey=${apiKey}`);
 
             if (!statusRes.ok) continue;
 
