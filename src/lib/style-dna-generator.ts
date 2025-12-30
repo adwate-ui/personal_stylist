@@ -117,6 +117,10 @@ Create a comprehensive Style DNA that feels personalized, professional, and acti
       { "color": "#hexcode", "reason": "Why this color doesn't work for them" },
       { "color": "#hexcode", "reason": "Why this color doesn't work for them" }
     ],
+    "seasonal_variations": {
+      "spring_summer": ["#hexcode", "#hexcode"],
+      "fall_winter": ["#hexcode", "#hexcode"]
+    },
     "rationale": "DETAILED explanation covering:\\n    1) Why these specific colors were chosen based on skin tone, hair, and eye color\\n    2) Specific product color recommendations (e.g., 'Navy blazer', 'Cream trousers', 'Burgundy accessories')\\n    3) How to combine these colors effectively\\n    4) Seasonal variations if applicable"
   },
   "must_have_staples": {
@@ -367,8 +371,13 @@ export async function generateStyleDNAWithAI(profile: UserProfile, apiKey: strin
         parsed.color_palette.accents = normalizeArray(parsed.color_palette.accents);
         parsed.color_palette.avoid = normalizeArray(parsed.color_palette.avoid);
 
-        parsed.color_palette.seasonal_variations.spring_summer = normalizeArray(parsed.color_palette.seasonal_variations.spring_summer);
-        parsed.color_palette.seasonal_variations.fall_winter = normalizeArray(parsed.color_palette.seasonal_variations.fall_winter);
+        parsed.color_palette.seasonal_variations = parsed.color_palette.seasonal_variations || {};
+        if (parsed.color_palette.seasonal_variations.spring_summer) {
+          parsed.color_palette.seasonal_variations.spring_summer = normalizeArray(parsed.color_palette.seasonal_variations.spring_summer);
+        }
+        if (parsed.color_palette.seasonal_variations.fall_winter) {
+          parsed.color_palette.seasonal_variations.fall_winter = normalizeArray(parsed.color_palette.seasonal_variations.fall_winter);
+        }
       }
 
 
