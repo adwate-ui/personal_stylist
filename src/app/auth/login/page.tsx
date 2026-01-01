@@ -17,9 +17,24 @@ export default function LoginPage() {
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event) => {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN') {
-                router.push('/onboarding');
+                if (session?.user) {
+                    // Check if profile exists to determine redirect
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (profile) {
+                        router.push('/wardrobe');
+                    } else {
+                        router.push('/onboarding');
+                    }
+                } else {
+                    router.push('/onboarding');
+                }
             }
         });
 

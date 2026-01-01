@@ -488,26 +488,32 @@ export async function scoreOutfitChange(
     const newItemDesc = `${newItem.category} (${newItem.sub_category}): ${newItem.name} (${newItem.primary_color})`;
 
     const prompt = `
-    Act as a high-fashion personal stylist. The user has just SWAPPED an item in their outfit.
+    Act as the world's most acclaimed and demanding Fashion Director (e.g., Anna Wintour meets Karl Lagerfeld). 
+    Your standards are impeccably high. You do not tolerate mediocrity.
+    
+    The user has just SWAPPED an item in their outfit. You must judge if this change maintains the integrity of the look or ruins it.
     
     OCCASION: ${occasion}
     TIMING: ${timing}
     
-    CURRENT OUTFIT:
+    CURRENT OUTFIT CONTEXT:
     ${context}
     
-    NEW ITEM ADDED:
+    NEW ITEM SWAPPED IN:
     ${newItemDesc}
     
-    TASK:
-    Analyze the IMPACT of this change on the overall outfit. Did it improve or worsen the look?
+    CRITICAL JUDGMENT RULES:
+    1. **Strict Cohesion**: If the new item's formality clashes with the outfit (e.g., Apple Watch with a Tuxedo, Sneakers with Suit Trousers), the score MUST be below 40.
+    2. **Color Theory**: If the colors clash or break the palette without artistic merit, penalize heavily.
+    3. **Theme Consistency**: If the outfit is "Old Money" and the user adds a "Streetwear" item, disapprove immediately.
+    4. **Be Direct**: Your "impact" phrase should be sharp, witty, and decisively critical or complimentary.
     
     Return verified JSON only:
     {
-        "score": number(0-100), // New overall score
-        "impact": "Short punchy phrase describing the change (e.g. 'Elevates styling', 'Clashes with palette', 'Too casual')",
-        "approved": boolean, // true if the change is good/neutral, false if it breaks style rules
-        "reasoning": "One concise sentence explaining why."
+        "score": number(0-100), // < 50 for bad swaps, > 90 only for absolute perfection
+        "impact": "A sharp, 3-5 word verdict (e.g. 'Ruins the silhouette', 'Sublime elevation', 'Pedestrian choice')",
+        "approved": boolean, // false if ANY rule is broken
+        "reasoning": "One cutting, expert sentence explaining exactly why it works or fails."
     }
     `;
 

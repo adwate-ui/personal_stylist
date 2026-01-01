@@ -170,12 +170,17 @@ function OutfitContent() {
         const targetCategory = currentItem?.category || slotLabel;
         const options = wardrobeItems.filter(item =>
             item.id !== currentItem?.id && (
-                item.category === targetCategory || // Match exact category
-                item.sub_category === currentItem?.sub_category || // Match exact sub-category
-                (slotLabel === 'Layering' && ['Jackets', 'Coats', 'Suits'].includes(item.category)) || // Smart fallback for layering
-                (slotLabel.includes('Accessory') && item.category === 'Accessories') ||
-                (slotLabel === 'Watch' && (item.category === 'Watches' || item.category === 'Accessories')) ||
-                (slotLabel === 'Wallet' && (item.category === 'Bags' || item.category === 'Accessories'))
+                (slotLabel === 'Layering' && ['Jackets', 'Coats', 'Suits', 'Blazers', 'Cardigans'].includes(item.category)) ||
+                (slotLabel === 'Watch' && (item.category === 'Watches' || item.sub_category === 'Watch')) ||
+                (slotLabel === 'Wallet' && (item.category === 'Bags' || item.sub_category === 'Wallet')) ||
+                (slotLabel === 'Belt' && (item.category === 'Accessories' && item.sub_category === 'Belt')) ||
+                (slotLabel === 'Sunglasses' && (item.category === 'Accessories' && item.sub_category === 'Sunglasses')) ||
+                (slotLabel === 'Headwear' && (item.category === 'Accessories' && (item.sub_category === 'Hat' || item.sub_category === 'Cap'))) ||
+                (slotLabel === 'Jewelry' && (item.category === 'Jewelry' || item.category === 'Accessories')) ||
+                (slotLabel === 'Bag' && item.category === 'Bags') ||
+                // Default fallback for main clothing items
+                (!['Watch', 'Wallet', 'Belt', 'Sunglasses', 'Headwear', 'Jewelry', 'Bag', 'Layering'].includes(slotLabel) &&
+                    (item.category === targetCategory || item.sub_category === currentItem?.sub_category))
             )
         );
         setSwapOptions(options);
