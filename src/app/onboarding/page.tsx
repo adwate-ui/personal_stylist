@@ -128,15 +128,18 @@ function OnboardingContent() {
         'Addis Ababa', 'Dar es Salaam', 'Algiers', 'Khartoum', 'Tunis'
     ];
 
-    const bodyShapeVisuals: Record<string, string> = {
-        // Women's body shapes
+    const bodyShapeVisualsFemale: Record<string, string> = {
         'Hourglass': '/body_shape_hourglass_1766144787860.png',
         'Rectangle': '/body_shape_rectangle_1766144804765.png',
         'Pear': '/body_shape_pear_1766144822050.png',
         'Inverted Triangle': '/body_shape_inverted_triangle_f_1766144838895.png',
         'Apple': '/body_shape_apple_1766144855874.png',
-        // Men's body shapes
+    };
+
+    const bodyShapeVisualsMale: Record<string, string> = {
         'Triangle': '/body_shape_triangle_m_1766144882748.png',
+        'Inverted Triangle': '/body_shape_inverted_triangle_m_1766144899586.png',
+        'Rectangle': '/body_shape_rectangle_m_1766144915846.png',
         'Oval': '/body_shape_oval_m_1766144932373.png',
         'Trapezoid': '/body_shape_trapezoid_m_1766144949305.png'
     };
@@ -859,10 +862,10 @@ function OnboardingContent() {
                                                 onClick={() => setFormData({ ...formData, bodyShape: shape.name })}
                                             >
                                                 <div className="text-center mb-2">
-                                                    {bodyShapeVisuals[shape.name] ? (
+                                                    {(formData.gender === 'male' ? bodyShapeVisualsMale[shape.name] : bodyShapeVisualsFemale[shape.name]) ? (
                                                         <div className="w-20 h-20 mx-auto bg-gradient-to-br from-white/5 to-white/10 rounded-lg p-2 border border-white/10">
                                                             <img
-                                                                src={bodyShapeVisuals[shape.name]}
+                                                                src={formData.gender === 'male' ? bodyShapeVisualsMale[shape.name] : bodyShapeVisualsFemale[shape.name]}
                                                                 alt={shape.name}
                                                                 className="w-full h-full object-contain"
                                                             />
@@ -1036,7 +1039,7 @@ function OnboardingContent() {
                                             </div>
                                         </div>
                                         <div className="space-y-6">
-                                            <label className="block text-lg font-bold">Style Archetypes (Select 1-3)</label>
+                                            <label className="block text-base font-semibold mb-3">Eye Color</label>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                                 {[
                                                     { name: 'Brown', color: '#5C4033' },
@@ -1126,7 +1129,7 @@ function OnboardingContent() {
                                         ].map(opt => (
                                             <button
                                                 key={opt.id}
-                                                onClick={() => setFormData({ ...formData, priceRange: opt.id })}
+                                                onClick={() => setFormData({ ...formData, priceRange: opt.id, brands: [] })}
                                                 className={`p-4 rounded-lg border text-left flex justify-between items-center ${formData.priceRange === opt.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 hover:bg-white/5'} `}
                                             >
                                                 <span className="font-medium">{opt.label}</span>
