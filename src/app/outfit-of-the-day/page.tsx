@@ -170,15 +170,57 @@ function OutfitContent() {
         const targetCategory = currentItem?.category || slotLabel;
         const options = wardrobeItems.filter(item =>
             item.id !== currentItem?.id && (
-                (slotLabel === 'Layering' && ['Jackets', 'Coats', 'Suits', 'Blazers', 'Cardigans'].includes(item.category)) ||
-                (slotLabel === 'Watch' && (item.category === 'Watches' || item.sub_category === 'Watch')) ||
-                (slotLabel === 'Wallet' && (item.category === 'Bags' || item.sub_category === 'Wallet')) ||
-                (slotLabel === 'Belt' && (item.category === 'Accessories' && item.sub_category === 'Belt')) ||
-                (slotLabel === 'Sunglasses' && (item.category === 'Accessories' && item.sub_category === 'Sunglasses')) ||
-                (slotLabel === 'Headwear' && (item.category === 'Accessories' && (item.sub_category === 'Hat' || item.sub_category === 'Cap'))) ||
-                (slotLabel === 'Jewelry' && (item.category === 'Jewelry' || item.category === 'Accessories')) ||
-                (slotLabel === 'Bag' && item.category === 'Bags') ||
-                // Default fallback for main clothing items
+                // Layering: Allow Outerwear category explicitly, plus specific sub-cats
+                (slotLabel === 'Layering' && (
+                    item.category === 'Outerwear' ||
+                    ['Jackets', 'Coats', 'Suits', 'Blazers', 'Cardigans', 'Vest'].some(c => item.category === c || item.sub_category?.includes(c))
+                )) ||
+
+                // Accessories: Check both Category AND Sub-category flexibly
+                (slotLabel === 'Watch' && (
+                    item.category === 'Watches' ||
+                    item.sub_category?.toLowerCase().includes('watch') ||
+                    (item.category === 'Accessories' && item.sub_category?.toLowerCase().includes('watch'))
+                )) ||
+
+                (slotLabel === 'Wallet' && (
+                    item.category === 'Wallets' ||
+                    item.category === 'Bags' ||
+                    item.sub_category?.toLowerCase().includes('wallet')
+                )) ||
+
+                (slotLabel === 'Belt' && (
+                    item.category === 'Belts' ||
+                    item.sub_category?.toLowerCase().includes('belt') ||
+                    (item.category === 'Accessories' && item.sub_category?.toLowerCase().includes('belt'))
+                )) ||
+
+                (slotLabel === 'Sunglasses' && (
+                    item.category === 'Sunglasses' ||
+                    item.sub_category?.toLowerCase().includes('glass') ||
+                    (item.category === 'Accessories' && item.sub_category?.toLowerCase().includes('glass'))
+                )) ||
+
+                (slotLabel === 'Headwear' && (
+                    item.category === 'Headwear' ||
+                    item.category === 'Hats' ||
+                    ['Hat', 'Cap', 'Beanie'].some(t => item.sub_category?.includes(t)) ||
+                    (item.category === 'Accessories' && ['Hat', 'Cap', 'Beanie'].some(t => item.sub_category?.includes(t)))
+                )) ||
+
+                (slotLabel === 'Jewelry' && (
+                    item.category === 'Jewelry' ||
+                    ['Ring', 'Necklace', 'Bracelet', 'Earring'].some(t => item.sub_category?.includes(t)) ||
+                    (item.category === 'Accessories' && ['Ring', 'Necklace', 'Bracelet', 'Earring'].some(t => item.sub_category?.includes(t)))
+                )) ||
+
+                (slotLabel === 'Bag' && (
+                    item.category === 'Bags' ||
+                    item.sub_category?.toLowerCase().includes('bag') ||
+                    item.sub_category?.toLowerCase().includes('tote')
+                )) ||
+
+                // Default fallback for main clothing items (Top, Bottom, Shoes)
                 (!['Watch', 'Wallet', 'Belt', 'Sunglasses', 'Headwear', 'Jewelry', 'Bag', 'Layering'].includes(slotLabel) &&
                     (item.category === targetCategory || item.sub_category === currentItem?.sub_category))
             )
