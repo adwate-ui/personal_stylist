@@ -471,6 +471,65 @@ export async function rateOutfit(
     return JSON.parse(cleanJson);
 }
 
+export async function scoreOutfitChange(
+    outfitItems: any[],
+    newItem: any,
+    occasion: string,
+    timing: string,
+    apiKey: string
+): Promise<{ score: number; impact: string; approved: boolean; reasoning: string }> {
+    if (!apiKey) throw new Error("API Key required");
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const context = outfitItems.map(item =>
+        `- ${item.category} (${item.sub_category}): ${item.name} (${item.primary_color}, ${item.style_tags?.join(', ')})`
+    ).join('\n');
+
+    const newItemDesc = `${newItem.category} (${newItem.sub_category}): ${newItem.name} (${newItem.primary_color})`;
+
+    const prompt = `
+    Act as a high-fashion personal stylist. The user has just SWAPPED an item in their outfit.
+    
+    OCCASION: ${occasion}
+    TIMING: ${timing}
+    
+    CURRENT OUTFIT:
+    ${context}
+    
+    NEW ITEM ADDED:
+    ${newItemDesc}
+    
+    TASK:
+    Analyze the IMPACT of this change on the overall outfit. Did it improve or worsen the look?
+    
+    Return verified JSON only:
+    {
+        "score": number(0-100), // New overall score
+        "impact": "Short punchy phrase describing the change (e.g. 'Elevates styling', 'Clashes with palette', 'Too casual')",
+        "approved": boolean, // true if the change is good/neutral, false if it breaks style rules
+        "reasoning": "One concise sentence explaining why."
+    }
+    `;
+
+    // Use Gemini 3.0 Flash (simulated by experimental flash model)
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+    try {
+        const result = await model.generateContent(prompt);
+        const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleanJson = cleanJsonString(text);
+        return JSON.parse(cleanJson);
+    } catch (e) {
+        // Fallback to standard model if flash-exp fails
+        console.warn("Gemini 3.0 Flash failed, falling back to standard...", e);
+        const fallbackModel = await createModelWithFallback(genAI);
+        const result = await fallbackModel.generateContent(prompt);
+        const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleanJson = cleanJsonString(text);
+        return JSON.parse(cleanJson);
+    }
+}
+
 // Helpers
 async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {

@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
-import { generateOutfit } from "@/lib/gemini-client";
-import { Loader2, Sparkles, Calendar, Clock, RotateCcw, Save, X, PlusCircle, Check, History, ArrowRight } from "lucide-react";
+import { generateOutfit, scoreOutfitChange } from "@/lib/gemini-client";
+import { Loader2, Sparkles, Calendar, Clock, RotateCcw, Save, X, PlusCircle, Check, History, ArrowRight, ThumbsUp, ThumbsDown, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -26,6 +26,8 @@ function OutfitContent() {
     const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
     const [outfit, setOutfit] = useState<any>(null);
     const [saving, setSaving] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState<{ score: number; impact: string; approved: boolean; reasoning: string } | null>(null);
+    const [analyzingChange, setAnalyzingChange] = useState(false);
 
     // History
     const [history, setHistory] = useState<any[]>([]);
@@ -144,7 +146,7 @@ function OutfitContent() {
                 occasion,
                 date: new Date().toISOString().split('T')[0],
                 outfit_data: outfit,
-                feedback: null
+                feedback: aiFeedback // Save the AI feedback too if available
             })
             .select() // Return the saved row to update UI
             .single();
@@ -159,6 +161,7 @@ function OutfitContent() {
             setStep('input');
             setOccasion("");
             setOutfit(null);
+            setAiFeedback(null);
             setSelectedForBuild([]);
         }
     };
@@ -207,7 +210,37 @@ function OutfitContent() {
         }
         setOutfit(newOutfit);
         setSwappingSlot(null);
+        setOutfit(newOutfit);
+        setSwappingSlot(null);
         toast.success("Item updated!");
+
+        // Trigger AI Scoring
+        const apiKey = profile.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        if (apiKey) {
+            setAnalyzingChange(true);
+            // Collect all current items into a flat array for the context
+            const currentItems = [
+                newOutfit.top, newOutfit.bottom, newOutfit.shoes, newOutfit.layering,
+                newOutfit.bag, newOutfit.headwear, newOutfit.jewelry, newOutfit.watch,
+                newOutfit.wallet, newOutfit.belt, newOutfit.sunglasses, newOutfit.scarf,
+                newOutfit.gloves, ...(newOutfit.accessories || [])
+            ].filter(Boolean);
+
+            scoreOutfitChange(currentItems, newItem, occasion, timing, apiKey)
+                .then(feedback => {
+                    setAiFeedback(feedback);
+                    setAnalyzingChange(false);
+                    if (feedback.approved) {
+                        toast.success("Great styling choice!");
+                    } else {
+                        toast("AI Suggestion: " + feedback.reasoning);
+                    }
+                })
+                .catch(err => {
+                    console.error("Scoring failed", err);
+                    setAnalyzingChange(false);
+                });
+        }
     };
 
 
@@ -391,6 +424,45 @@ function OutfitContent() {
                                         &quot;{outfit.reasoning}&quot;
                                     </p>
                                 </div>
+
+                                {/* Live Style Analysis Card */}
+                                {(analyzingChange || aiFeedback) && (
+                                    <div className="card glass p-6 rounded-2xl border border-white/10 relative overflow-hidden animate-fade-in">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
+
+                                        <h3 className="text-white font-bold mb-4 flex items-center justify-between uppercase tracking-wide text-xs">
+                                            <span className="flex items-center gap-2"><Activity size={14} className="text-primary" /> Live Style Check</span>
+                                            {analyzingChange && <Loader2 size={14} className="animate-spin text-primary" />}
+                                        </h3>
+
+                                        {analyzingChange ? (
+                                            <p className="text-gray-400 text-sm italic">Analyzing style impact...</p>
+                                        ) : aiFeedback ? (
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`text-4xl font-bold font-serif ${aiFeedback.score >= 80 ? 'text-green-400' :
+                                                        aiFeedback.score >= 60 ? 'text-yellow-400' : 'text-red-400'
+                                                        }`}>
+                                                        {aiFeedback.score}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-xs text-gray-400 uppercase tracking-wider">Style Score</div>
+                                                        <div className="text-sm font-medium text-white">{aiFeedback.impact}</div>
+                                                    </div>
+                                                    <div className={`p-2 rounded-full ${aiFeedback.approved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                        {aiFeedback.approved ? <ThumbsUp size={20} /> : <ThumbsDown size={20} />}
+                                                    </div>
+                                                </div>
+                                                <div className="pt-3 border-t border-white/5">
+                                                    <p className="text-sm text-gray-300 italic">"{aiFeedback.reasoning}"</p>
+                                                </div>
+                                                <div className="text-[10px] text-primary/50 text-right font-mono">
+                                                    Powered by Gemini 3.0 Flash
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
 
                                 {/* Tips List */}
                                 <div className="space-y-4">
